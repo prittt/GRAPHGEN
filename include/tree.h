@@ -27,7 +27,9 @@ struct tree {
     node *root = nullptr;
 
     friend void swap(tree& t1, tree& t2) {
+        using std::swap;
         swap(t1.root, t2.root);
+        swap(t1.nodes, t2.nodes);
     }
 
     // Recursive function to copy a tree. This is required by the copy constructor
@@ -53,10 +55,6 @@ struct tree {
     tree& operator=(tree t) {
         swap(*this, t);
         return *this;
-    }
-
-    void CopyTo(tree &t) {
-        t.root = make_copy_rec(this->root);
     }
 
     node* make_root() { return root = make_node(); }
