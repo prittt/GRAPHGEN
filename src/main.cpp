@@ -168,11 +168,10 @@ void Tree2OptimalDagRec(ltree& t, ltree::node* n, vector<ltree>& trees) {
         if (actions_list.size() > 1) {
             for (size_t i = 0; i < actions_list.size() - 1; ++i) {
                 n->data.action = 1 << (actions_list[i] - 1);
-                t.CopyTo(nt);
+                nt = t;
                 Tree2OptimalDagRec(nt, nt.root, trees);
             }
             n->data.action = 1 << (actions_list[actions_list.size() - 1] - 1);
-            Tree2OptimalDagRec(t, t.root, trees);
         }
         return;
     }
@@ -193,15 +192,27 @@ void Tree2OptimalDag(ltree& t) {
     vector<ltree> trees;
     Tree2OptimalDagRec(t, t.root, trees);
 
-    for(size_t i = 0; i<trees.size(); ++i)
-    {
-        string s_txt = "tree_" + to_string(i) + ".txt";
-        string s_pdf = "tree_" + to_string(i) + ".pdf";
-        ofstream os(s_txt);
-        DrawDag(os, trees[i]);
-        os.close();
-        string cmd = "..\\tools\\dot\\dot -Tpdf " + s_txt + " -o " + s_pdf;
-        system(cmd.c_str());
+    for(size_t i = 0; i<trees.size(); ++i) {
+        {
+            string s_txt = "tree_" + to_string(i) + ".txt";
+            string s_pdf = "tree_" + to_string(i) + ".pdf";
+            ofstream os(s_txt);
+            DrawDag(os, trees[i]);
+            os.close();
+            string cmd = "..\\tools\\dot\\dot -Tpdf " + s_txt + " -o " + s_pdf;
+            system(cmd.c_str());
+        }
+
+        {
+            convert_tree_to_dag(trees[i]);
+            string s_txt = "dag_" + to_string(i) + ".txt";
+            string s_pdf = "dag_" + to_string(i) + ".pdf";
+            ofstream os(s_txt);
+            DrawDag(os, trees[i]);
+            os.close();
+            string cmd = "..\\tools\\dot\\dot -Tpdf " + s_txt + " -o " + s_pdf;
+            system(cmd.c_str());
+        }
     }
 
 }
