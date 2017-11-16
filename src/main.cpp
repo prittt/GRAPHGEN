@@ -176,7 +176,6 @@ void Tree2OptimalDagRec(ltree& t, ltree::node* n, vector<ltree>& trees) {
         return;
     }
 
-
     Tree2OptimalDagRec(t, n->left, trees);
     Tree2OptimalDagRec(t, n->right, trees);
 
@@ -280,6 +279,57 @@ int main()
 
         rs.set_action("x<-newlabel", i);
     });
+
+    pixel_set grana_mask{
+        { "a", -1, -1 }, { "b", -1, -1 }, { "c",  0, -1 }, { "d",  0, -1 }, { "e", +1, -1 }, { "f", +1, -1 },
+        { "g", -1, -1 }, { "h", -1, -1 }, { "i",  0, -1 }, { "j",  0, -1 }, { "k", +1, -1 }, { "l", +1, -1 },
+        { "m", -1,  0 }, { "n", -1,  0 }, { "o",  0,  0 }, { "p",  0,  0 },
+        { "q", -1,  0 }, { "r", -1,  0 }, { "s",  0,  0 }, { "t",  0,  0 },
+    };
+
+    //pixel_set grana_mask{
+    //    { "P", -1, -1 }, { "Q",  0, -1 }, { "R", +1, -1 },
+    //    { "S", -1,  0 }, { "X",  0,  0 },
+    //};
+
+    rule_set labeling_bbdt;
+    labeling_bbdt.init_conditions(rosenfeld_mask);
+    labeling_bbdt.init_actions({ "nothing", "X<-newlabel", 
+                                 "X<-P", "X<-Q", "X<-R", "X<-S", 
+                                 "X<-P+Q", "X<-P+R", "X<-P+S", "X<-Q+R", "X<-Q+S", "X<-R+S",
+                                 "X<-P+Q+R", "X<-P+Q+S", "X<-P+R+S", "X<-Q+R+S", });
+
+    labeling_bbdt.generate_rules([](rule_set& rs, uint i) {
+        if (rs.get_condition("x", i) == 0) {
+            rs.set_action("nothing", i);
+            return;
+        }
+
+        if (rs.get_condition("p", i) == 1 && rs.get_condition("q", i) == 0 && rs.get_condition("r", i) == 1)
+            rs.set_action("x<-p+r", i);
+        if (rs.get_condition("s", i) == 1 && rs.get_condition("q", i) == 0 && rs.get_condition("r", i) == 1)
+            rs.set_action("x<-s+r", i);
+        if (rs.rules[i].actions != 0)
+            return;
+
+        if (rs.get_condition("p", i) == 1)
+            rs.set_action("x<-p", i);
+        if (rs.get_condition("q", i) == 1)
+            rs.set_action("x<-q", i);
+        if (rs.get_condition("r", i) == 1)
+            rs.set_action("x<-r", i);
+        if (rs.get_condition("s", i) == 1)
+            rs.set_action("x<-s", i);
+        if (rs.rules[i].actions != 0)
+            return;
+
+        rs.set_action("x<-newlabel", i);
+    });
+
+
+
+
+
 
     labeling.print_rules(cout);
 
