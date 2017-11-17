@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <set>
 #include <iostream>
 #include <fstream>
 #include <iterator>
@@ -259,8 +260,8 @@ struct rule_wrapper {
     uint i_;
     rule_wrapper(rule_set& rs, uint i) : rs_{ rs }, i_{ i } {}
 
-    uint operator[](const std::string& s) const {
-        return rs_.get_condition(s, i_);
+    bool operator[](const std::string& s) const {
+        return rs_.get_condition(s, i_) != 0;
     }
     void operator<<(const std::string& s) {
         rs_.set_action(s, i_);
@@ -310,63 +311,54 @@ struct connectivity_mat {
 
 template <uint N>
 struct MergeSet {
-    vector<vector<string>> mergesets_;
+    set<vector<string>> mergesets_;
     connectivity_mat<N> &con_;
 
     MergeSet(connectivity_mat<N> &con) : con_{ con } {}
 
-    void ReduceMergeSetRec(uint *id) {
-        auto &rms = mergsets_;
-        uint cur_id = *id;
-        for (size_t i = 0; i < rms[cur_id].size(); ++i) {
-            for (size_t j = i + 1; j < rms[cur_id].size(); ++j) {
-                if (con_(rms[cur_id][i], rms[cur_id][j])) {
-                    // two possible cases
-                    vector<string> new_m(rms[cur_id].size() - 1);
-                    for (size_t k = 0; k < rms[cur_id].size(); ++k) {
-                        if (k != j) {
-                            new_m[k] = rms[cur_id][k];
-                        }
-                    }
-                    //std::copy(rms[cur_id].begin(), rms[cur_id].begin() + j, new_m.end());
-                    //std::copy(rms[cur_id].begin() + j + 1, rms[cur_id].end(), new_m.end());
-                    rms.push_back(new_m);
-                    ReduceMergeSetRec(rms, &(++(*id)));
-                    new_m[i] = rms[cur_id][j];
-                    rms.push_back(new_m);
-                    ReduceMergeSetRec(rms, &(++(*id)));
+    void ReduceMergeSet(vector<string>& ms) {
+        for (size_t i = 0; i < ms.size(); ++i) {
+            for (size_t j = i + 1; j < ms.size(); ) {
+                if (con_(ms[i], ms[j])) {
+                    // remove j-th element
+                    ms.erase(begin(ms) + j);
+                }
+                else {
+                    // move next
+                    ++j;
                 }
             }
         }
     }
 
-    void RemoveEquivalentSets(vector<vector<string>> &rms) {
-        //vector<vector<string>> correct_list;
-        //for (size_t i = 0; i < rms.size() ++i) {
-        //    for (size_t j = i + 1; j < rms.size() ++j) {
-        //        // Compare the vector i with the vector j
-        //        size_t k;
-        //        for (k = 0; k < rms[i].size(); ++k) {
-        //            if (find(rms[j].begin(), rms[j].end(), rms[i][k]) == rms[j].end()) {
-        //                break;
-        //            }
-        //        }
-        //    }
-        //}
+    void ExpandAllEquivalences(vector<string> ms, size_t pos) {
+        if (pos >= ms.size()) {
+            sort(begin(ms), end(ms));
+            mergesets_.emplace(ms);
+        }
+        else {
+            string cur = ms[pos];
+            for (size_t i = 0; i < N; ++i) {
+                string h = con_.GetHeader(i);
+                if (h != "x" && con_(cur, h)) {
+                    ms[pos] = h;
+                    ExpandAllEquivalences(ms, pos + 1);
+                }
+            }
+        }
     }
 
     void BuildMergeSet() {
-        mergesets_ = vector<vector<string>>(1);
-
+        vector<string> ms;
+        // Create initial merge set
         for (size_t i = 0; i < N; ++i) {
             string h = con_.GetHeader(i);
             if (h != "x" && con_("x", h)) {
-                mergesets_[0].push_back(h);
+                ms.push_back(h);
             }
         }
-        uint id = 0;
-        ReduceMergeSetRec(&id);
-        RemoveEquivalentSets();
+        ReduceMergeSet(ms);
+        ExpandAllEquivalences(ms, 0);
     }
 
 };
@@ -375,7 +367,7 @@ struct MergeSet {
 
 int main()
 {
-    tree_loader tl;
+/*  tree_loader tl;
     tl.load_tree(ifstream("../doc/t1.txt"));
     ltree t1 = tl.t;
 
@@ -389,7 +381,7 @@ int main()
 
     t1.preorder(print_node);
     return 0;
-
+    */
     pixel_set rosenfeld_mask{
         { "p", -1, -1 }, { "q", 0, -1 }, { "r", +1, -1 },
         { "s", -1,  0 }, { "x", 0, 0 },
@@ -397,7 +389,14 @@ int main()
 
     rule_set labeling;
     labeling.init_conditions(rosenfeld_mask);
-    labeling.init_actions({ "nothing", "x<-newlabel", "x<-p", "x<-q", "x<-r", "x<-s", "x<-p+r", "x<-s+r", });
+    labeling.init_actions({ 
+        "nothing", 
+        "x<-newlabel", 
+        "x<-p", "x<-q", "x<-r", "x<-s", 
+        "x<-p+q", "x<-p+r", "x<-p+s", "x<-q+r", "x<-q+s", "x<-r+s",
+        "x<-p+q+r", "x<-p+q+s", "x<-p+r+s", "x<-q+r+s", 
+        "x<-p+q+r+s", 
+    });
 
     /*labeling.generate_rules([](rule_set& rs, uint i) {
         rule_wrapper r(rs, i);
@@ -457,60 +456,74 @@ int main()
         MergeSet<5> ms(con);
         ms.BuildMergeSet();
 
+        for (const auto& s : ms.mergesets_) {
+            string action = "x<-";
+            if (s.empty())
+                action += "newlabel";
+            else {
+                action += s[0];
+                for (size_t i=1;i<s.size();++i)
+                    action += "+" + s[i];
+            }
+            r << action;
+        }
     });
 
     pixel_set grana_mask{
-        { "a", -2, -2 }, { "b", -1, -2 }, { "c", +0, -2 }, { "d", +1, -2 }, { "e", +2, -2 }, { "f", +3, -2 },
-        { "g", -2, -1 }, { "h", -1, -1 }, { "i", +0, -1 }, { "j", +1, -1 }, { "k", +2, -1 }, { "l", +3, -1 },
-        { "m", -2, +0 }, { "n", -1, +0 }, { "o", +0, +0 }, { "p", +1, +0 },
-        { "q", -2, +1 }, { "r", -1, +1 }, { "s", +0, +1 }, { "t", +1, +1 },
+        /*{ "a", -2, -2 },*/ { "b", -1, -2 }, { "c", +0, -2 }, { "d", +1, -2 }, { "e", +2, -2 }, /*{ "f", +3, -2 },*/
+          { "g", -2, -1 },   { "h", -1, -1 }, { "i", +0, -1 }, { "j", +1, -1 }, { "k", +2, -1 }, /*{ "l", +3, -1 },*/
+          { "m", -2, +0 },   { "n", -1, +0 }, { "o", +0, +0 }, { "p", +1, +0 },
+        /*{ "q", -2, +1 },*/ { "r", -1, +1 }, { "s", +0, +1 }, { "t", +1, +1 },
     };
 
-    //pixel_set grana_mask{
-    //    { "P", -1, -1 }, { "Q",  0, -1 }, { "R", +1, -1 },
-    //    { "S", -1,  0 }, { "X",  0,  0 },
-    //};
-
     rule_set labeling_bbdt;
-    labeling_bbdt.init_conditions(rosenfeld_mask);
-    labeling_bbdt.init_actions({ "nothing", "X<-newlabel",
-                                 "X<-P", "X<-Q", "X<-R", "X<-S",
-                                 "X<-P+Q", "X<-P+R", "X<-P+S", "X<-Q+R", "X<-Q+S", "X<-R+S",
-                                 "X<-P+Q+R", "X<-P+Q+S", "X<-P+R+S", "X<-Q+R+S", });
+    labeling_bbdt.init_conditions(grana_mask);
+    labeling_bbdt.init_actions({ "nothing", "x<-newlabel",
+                                 "x<-P", "x<-Q", "x<-R", "x<-S",
+                                 "x<-P+Q", "x<-P+R", "x<-P+S", "x<-Q+R", "x<-Q+S", "x<-R+S",
+                                 "x<-P+Q+R", "x<-P+Q+S", "x<-P+R+S", "x<-Q+R+S", });
 
-    /*  labeling_bbdt.generate_rules([](rule_set& rs, uint i) {
-            if (rs.get_condition("x", i) == 0) {
-                rs.set_action("nothing", i);
-                return;
+    labeling_bbdt.generate_rules([](rule_set& rs, uint i) {
+        rule_wrapper r(rs, i);
+
+        bool X = r["o"] || r["p"] || r["s"] || r["t"];
+        if (!X) {
+            r << "nothing";
+            return;
+        }
+
+        connectivity_mat<5> con({ "P", "Q", "R", "S", "x" });
+
+        con.set("x", "P", r["h"] && r["o"]);
+        con.set("x", "Q", (r["i"] || r["j"]) && (r["o"] || r["p"]));
+        con.set("x", "R", r["k"] && r["p"]);
+        con.set("x", "S", (r["n"] || r["r"]) && (r["o"] || r["s"]));
+
+        con.set("P", "Q", (r["b"] || r["h"]) && (r["c"] || r["i"]));
+        con.set("P", "S", (r["g"] || r["h"]) && (r["m"] || r["n"]));
+        con.set("Q", "R", (r["d"] || r["j"]) && (r["e"] || r["k"]));
+        con.set("Q", "S", r["i"] && r["n"]);
+
+        con.set("P", "R", con("P", "Q") && con("Q", "R"));
+        con.set("S", "R", (con("P", "R") && con("P", "S")) || (con("S", "Q") && con("Q", "R")));
+
+        MergeSet<5> ms(con);
+        ms.BuildMergeSet();
+
+        for (const auto& s : ms.mergesets_) {
+            string action = "x<-";
+            if (s.empty())
+                action += "newlabel";
+            else {
+                action += s[0];
+                for (size_t i = 1; i<s.size(); ++i)
+                    action += "+" + s[i];
             }
+            r << action;
+        }
+    });
 
-            if (rs.get_condition("p", i) == 1 && rs.get_condition("q", i) == 0 && rs.get_condition("r", i) == 1)
-                rs.set_action("x<-p+r", i);
-            if (rs.get_condition("s", i) == 1 && rs.get_condition("q", i) == 0 && rs.get_condition("r", i) == 1)
-                rs.set_action("x<-s+r", i);
-            if (rs.rules[i].actions != 0)
-                return;
-
-            if (rs.get_condition("p", i) == 1)
-                rs.set_action("x<-p", i);
-            if (rs.get_condition("q", i) == 1)
-                rs.set_action("x<-q", i);
-            if (rs.get_condition("r", i) == 1)
-                rs.set_action("x<-r", i);
-            if (rs.get_condition("s", i) == 1)
-                rs.set_action("x<-s", i);
-            if (rs.rules[i].actions != 0)
-                return;
-
-            rs.set_action("x<-newlabel", i);
-        });
-        */
-
-
-
-
-
-    labeling.print_rules(cout);
+    labeling_bbdt.print_rules(cout);
 
 
     auto& rs = labeling;
