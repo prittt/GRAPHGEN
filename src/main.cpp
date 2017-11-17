@@ -299,7 +299,7 @@ struct connectivity_mat {
 
 int main()
 {
-/*    tree_loader tl;
+    tree_loader tl;
     tl.load_tree(ifstream("../doc/t1.txt"));
     ltree t1 = tl.t;
 
@@ -312,7 +312,7 @@ int main()
     }
 
     t1.preorder(print_node);
-    return 0;*/
+    return 0;
 
     pixel_set rosenfeld_mask{
         { "p", -1, -1 }, { "q", 0, -1 }, { "r", +1, -1 },

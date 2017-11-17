@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 template<typename T>
 struct tree {
@@ -47,26 +48,26 @@ struct tree {
 
     // Recursive function to copy a tree. This is required by the copy constructor
     // It works for both trees and dags
-    node *MakeCopyRecursive(node *n) {
+    node *MakeCopyRecursive(node *n, std::unordered_map<node*, node*> &copies) {
         if (n == nullptr)
             return nullptr;
-        if (std::find_if(nodes.begin(), nodes.end(), [&](std::unique_ptr<node>& p) { return p.get() == n; }) == nodes.end())
-        {
+
+        if (!copies[n]) {
             node *nn = make_node();
             nn->data = n->data;
-            nn->left = MakeCopyRecursive(n->left);
-            nn->right = MakeCopyRecursive(n->right);
-            return nn;
+            nn->left = MakeCopyRecursive(n->left, copies);
+            nn->right = MakeCopyRecursive(n->right, copies);
+            copies[n] = nn;
         }
-        
-        return n;
+        return copies[n];
     }
 
     tree() {}
 
     // Copy constructor
     tree(const tree& t) {
-        root = MakeCopyRecursive(t.root);
+        std::unordered_map<node*, node*> copies;
+        root = MakeCopyRecursive(t.root, copies);
     }
     tree(tree&& t) {
         using std::swap;
