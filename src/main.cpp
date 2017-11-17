@@ -8,6 +8,7 @@
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
+#include <cassert>
 
 #include "condition_action.h"
 #include "hypercube.h"
@@ -216,9 +217,53 @@ void Tree2OptimalDag(ltree& t) {
 
 }
 
+
+struct rule_wrapper {
+    rule_set& rs_;
+    uint i_;
+    rule_wrapper(rule_set& rs, uint i) : rs_{ rs }, i_{ i } {}
+
+    uint operator[](const std::string& s) const {
+        return rs_.get_condition(s, i_);
+    }
+    void operator<<(const std::string& s) {
+        rs_.set_action(s, i_);
+    }
+    bool has_actions() {
+        return rs_.rules[i_].actions != 0;
+    }
+};
+
+template<uint N>
+struct connectivity_mat {
+    bool data_[N][N] = { 0 };
+    map<string,uint> pos_;
+
+    connectivity_mat(const vector<string> &names) {
+        assert(names.size() == N);
+        for (uint i = 0; i < N; ++i) {
+            data_[i][i] = 1;
+            pos_[names[i]] = i;
+        }
+    }
+
+    bool operator()(const string& row, const string& col) const {
+        uint r = pos_.at(row);
+        uint c = pos_.at(col);
+        return data_[r][c]; 
+    }
+
+    void set(const string& row, const string& col, bool b) {
+        uint r = pos_.at(row);
+        uint c = pos_.at(col);
+        data_[r][c] = data_[c][r] = b;
+    }
+
+};
+
 int main()
 {
-    tree_loader tl;
+/*    tree_loader tl;
     tl.load_tree(ifstream("../doc/t1.txt"));
     ltree t1 = tl.t;
 
@@ -242,7 +287,7 @@ int main()
         system("..\\tools\\dot\\dot -Tpdf dag.txt -o dag.pdf");
     }
 
-    return 0;
+    return 0;*/
 
     pixel_set rosenfeld_mask{
         { "p", -1, -1 }, { "q", 0, -1 }, { "r", +1, -1 },
@@ -253,38 +298,70 @@ int main()
     labeling.init_conditions(rosenfeld_mask);
     labeling.init_actions({ "nothing", "x<-newlabel", "x<-p", "x<-q", "x<-r", "x<-s", "x<-p+r", "x<-s+r", });
 
-    labeling.generate_rules([](rule_set& rs, uint i) {
-        if (rs.get_condition("x", i) == 0) {
-            rs.set_action("nothing", i);
+    /*labeling.generate_rules([](rule_set& rs, uint i) {
+        rule_wrapper r(rs, i);
+
+        bool X = r["x"];
+
+        if (!X) {
+            r << "nothing";
             return;
         }
 
-        if (rs.get_condition("p", i) == 1 && rs.get_condition("q", i) == 0 && rs.get_condition("r", i) == 1)
-            rs.set_action("x<-p+r", i);
-        if (rs.get_condition("s", i) == 1 && rs.get_condition("q", i) == 0 && rs.get_condition("r", i) == 1)
-            rs.set_action("x<-s+r", i);
-        if (rs.rules[i].actions != 0)
+        if (r["p"] && !r["q"] && r["r"])
+            r << "x<-p+r";
+        if (r["s"] && !r["q"] && r["r"])
+            r << "x<-s+r";
+        if (r.has_actions())
             return;
 
-        if (rs.get_condition("p", i) == 1)
-            rs.set_action("x<-p", i);
-        if (rs.get_condition("q", i) == 1)
-            rs.set_action("x<-q", i);
-        if (rs.get_condition("r", i) == 1)
-            rs.set_action("x<-r", i);
-        if (rs.get_condition("s", i) == 1)
-            rs.set_action("x<-s", i);
-        if (rs.rules[i].actions != 0)
+        if (r["p"])
+            r << "x<-p";
+        if (r["q"])
+            r << "x<-q";
+        if (r["r"])
+            r << "x<-r";
+        if (r["s"])
+            r << "x<-s";
+        if (r.has_actions())
             return;
 
-        rs.set_action("x<-newlabel", i);
+        r << "x<-newlabel";
+    });*/
+
+    labeling.generate_rules([](rule_set& rs, uint i) {
+        rule_wrapper r(rs, i);
+
+        bool X = r["x"];
+        if (!X) {
+            r << "nothing";
+            return;
+        }
+
+        connectivity_mat<5> con({ "p", "q", "r", "s", "x" });
+
+        con.set("x", "p", r["p"]);
+        con.set("x", "q", r["q"]);
+        con.set("x", "r", r["r"]);
+        con.set("x", "s", r["s"]);
+
+        con.set("p", "q", r["p"] && r["q"]);
+        con.set("p", "s", r["p"] && r["s"]);
+        con.set("q", "r", r["q"] && r["r"]);
+        con.set("q", "s", r["q"] && r["s"]);
+
+        con.set("p", "r", con("p", "q") && con("q", "r"));
+        con.set("s", "r", (con("p", "r") && con("p", "s")) || (con("s", "q") && con("q", "r")));
+
+
+
     });
 
     pixel_set grana_mask{
-        { "a", -1, -1 }, { "b", -1, -1 }, { "c",  0, -1 }, { "d",  0, -1 }, { "e", +1, -1 }, { "f", +1, -1 },
-        { "g", -1, -1 }, { "h", -1, -1 }, { "i",  0, -1 }, { "j",  0, -1 }, { "k", +1, -1 }, { "l", +1, -1 },
-        { "m", -1,  0 }, { "n", -1,  0 }, { "o",  0,  0 }, { "p",  0,  0 },
-        { "q", -1,  0 }, { "r", -1,  0 }, { "s",  0,  0 }, { "t",  0,  0 },
+        { "a", -2, -2 }, { "b", -1, -2 }, { "c", +0, -2 }, { "d", +1, -2 }, { "e", +2, -2 }, { "f", +3, -2 },
+        { "g", -2, -1 }, { "h", -1, -1 }, { "i", +0, -1 }, { "j", +1, -1 }, { "k", +2, -1 }, { "l", +3, -1 },
+        { "m", -2, +0 }, { "n", -1, +0 }, { "o", +0, +0 }, { "p", +1, +0 },
+        { "q", -2, +1 }, { "r", -1, +1 }, { "s", +0, +1 }, { "t", +1, +1 },
     };
 
     //pixel_set grana_mask{
@@ -299,7 +376,7 @@ int main()
                                  "X<-P+Q", "X<-P+R", "X<-P+S", "X<-Q+R", "X<-Q+S", "X<-R+S",
                                  "X<-P+Q+R", "X<-P+Q+S", "X<-P+R+S", "X<-Q+R+S", });
 
-    labeling_bbdt.generate_rules([](rule_set& rs, uint i) {
+/*  labeling_bbdt.generate_rules([](rule_set& rs, uint i) {
         if (rs.get_condition("x", i) == 0) {
             rs.set_action("nothing", i);
             return;
@@ -325,7 +402,7 @@ int main()
 
         rs.set_action("x<-newlabel", i);
     });
-
+    */
 
 
 
