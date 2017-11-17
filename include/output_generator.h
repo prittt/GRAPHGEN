@@ -9,6 +9,8 @@
 #include "condition_action.h"
 #include "tree.h"
 
+std::string output_path = "..\\output\\";
+
 void print_node(tree<conact>::node *n, int i)
 {
     std::cout << std::string(i, '\t');
@@ -93,68 +95,5 @@ void DrawDag(std::ostream& os, tree<conact>& t) {
     
     os << "}\n";
 }
-
-//void print_forest_rec(ostream& os, int treeid, const node* n, map<const node*, int>& m, nodeid &id, int tab = 1) {
-//    os << string(tab, '\t') << "tree" << treeid << "_node" << (m[n] & 0xffff);
-//    if (n->l == nullptr) {
-//        os << " [label = \"" << n->a << "," << next_tree[n->n] << "\", shape = box];\n";
-//
-//        stringstream ss;
-//        ss << "tree" << treeid << "_node" << (m[n] & 0xffff) << " -> tree" << next_tree[n->n] << "_node" << (m[trees[next_tree[n->n]]] & 0xffff) << " [style=dotted];\n";
-//        links.push_back(ss.str());
-//    }
-//    else {
-//        os << " [label = \"" << n->c << "\"];\n";
-//        tab++;
-//
-//        if (m.find(n->l) == m.end()) {
-//            // not found
-//            m[n->l] = (treeid << 16) | id.next();
-//            os << string(tab, '\t') << "tree" << treeid << "_node" << (m[n] & 0xffff) << " -> tree" << (m[n->l] >> 16) << "_node" << (m[n->l] & 0xffff) << " [label=\"0\"];\n";
-//            print_forest_rec(os, treeid, n->l, m, id, tab);
-//        }
-//        else {
-//            os << string(tab, '\t') << "tree" << treeid << "_node" << (m[n] & 0xffff) << " -> tree" << (m[n->l] >> 16) << "_node" << (m[n->l] & 0xffff) << " [label=\"0\"];\n";
-//        }
-//
-//        if (m.find(n->r) == m.end()) {
-//            // not found
-//            m[n->r] = (treeid << 16) | id.next();
-//            os << string(tab, '\t') << "tree" << treeid << "_node" << (m[n] & 0xffff) << " -> tree" << (m[n->r] >> 16) << "_node" << (m[n->r] & 0xffff) << " [label=\"1\"];\n";
-//            print_forest_rec(os, treeid, n->r, m, id, tab);
-//        }
-//        else {
-//            os << string(tab, '\t') << "tree" << treeid << "_node" << (m[n] & 0xffff) << " -> tree" << (m[n->r] >> 16) << "_node" << (m[n->r] & 0xffff) << " [label=\"1\"];\n";
-//        }
-//    }
-//}
-//void print_forest(ostream& os) {
-//    links.clear();
-//    os << "digraph forest {\n";
-//    os << "\tsubgraph cluster_start {\n";
-//
-//    nodeid id;
-//
-//    map<const node*, int> m;
-//    m.insert({ start_tree, ((last_next + 1) << 16) | id.next() });
-//    for (int i = 0; i <= last_next; ++i) {
-//        if (next_tree[i] == i) {
-//            m.insert({ trees[i], (i << 16) | id.next() });
-//        }
-//    }
-//
-//    print_forest_rec(os, last_next + 1, start_tree, m, id, 2);
-//    os << "\t}\n";
-//    for (int i = 0; i <= last_next; ++i) {
-//        if (next_tree[i] == i) {
-//            os << "\tsubgraph cluster" << i << " {\n";
-//            print_forest_rec(os, i, trees[i], m, id, 2);
-//            os << "\t}\n";
-//        }
-//    }
-//    for (const auto& x : links)
-//        os << "\t" << x;
-//    os << "}\n";
-//}
 
 #endif // !TREESGENERATOR_DOT_GENERATOR_H

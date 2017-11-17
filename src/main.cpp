@@ -164,7 +164,7 @@ struct tree_loader {
 
 void Tree2OptimalDagRec(ltree& t, ltree::node* n, vector<ltree>& trees) {
     ltree nt;
-    if (n->isleaf()) { 
+    if (n->isleaf()) {
         // leaf with multiple action
         vector<uint> actions_list = n->data.actions();
         if (actions_list.size() > 1) {
@@ -189,7 +189,7 @@ void Tree2OptimalDagRec(ltree& t, ltree::node* n, vector<ltree>& trees) {
 }
 
 void CountDagNodes(const ltree::node *n, vector<ltree::node*> &visited_nodes) {
-     
+
     if (n->isleaf()) {
         return;
     }
@@ -199,7 +199,7 @@ void CountDagNodes(const ltree::node *n, vector<ltree::node*> &visited_nodes) {
 
     if (std::find(visited_nodes.begin(), visited_nodes.end(), n) == visited_nodes.end()) {
         visited_nodes.push_back(const_cast<ltree::node*>(n));
-    }    
+    }
 }
 
 // Returns the "best" (with minimal number of nodes) DAG of a list of DAGs
@@ -213,7 +213,7 @@ void BestDagFromList(const vector<ltree>& dags, ltree &t)
         t = dags[0];
     }
     for (size_t i = 1; i < dags.size(); ++i) {
-        vector<ltree::node*> visited_node; 
+        vector<ltree::node*> visited_node;
         CountDagNodes(dags[i].root, visited_node);
         if (visited_node.size() < best) {
             best = visited_node.size();
@@ -227,7 +227,7 @@ void Tree2OptimalDag(ltree& t) {
     vector<ltree> trees;
     Tree2OptimalDagRec(t, t.root, trees);
 
-    for(size_t i = 0; i<trees.size(); ++i) {
+    for (size_t i = 0; i < trees.size(); ++i) {
         {
             string s_txt = "tree_" + to_string(i) + ".txt";
             string s_pdf = "tree_" + to_string(i) + ".pdf";
@@ -273,9 +273,10 @@ struct rule_wrapper {
 template<uint N>
 struct connectivity_mat {
     bool data_[N][N] = { 0 };
-    map<string,uint> pos_;
+    map<string, uint> pos_;
+    vector<string> names_;
 
-    connectivity_mat(const vector<string> &names) {
+    connectivity_mat(const vector<string> &names) : names_{ names } {
         assert(names.size() == N);
         for (uint i = 0; i < N; ++i) {
             data_[i][i] = 1;
@@ -286,8 +287,14 @@ struct connectivity_mat {
     bool operator()(const string& row, const string& col) const {
         uint r = pos_.at(row);
         uint c = pos_.at(col);
-        return data_[r][c]; 
+        return data_[r][c];
     }
+
+    //bool operator()(const string& row, const uint col) const {
+    //    uint r = pos_.at(row);
+    //    assert(col < N);
+    //    return data_[r][col];
+    //}
 
     void set(const string& row, const string& col, bool b) {
         uint r = pos_.at(row);
@@ -295,7 +302,76 @@ struct connectivity_mat {
         data_[r][c] = data_[c][r] = b;
     }
 
+    const string& GetHeader(uint i) {
+        assert(i < N);
+        return names_[i];
+    }
 };
+
+template <uint N>
+struct MergeSet {
+    vector<vector<string>> mergesets_;
+    connectivity_mat<N> &con_;
+
+    MergeSet(connectivity_mat<N> &con) : con_{ con } {}
+
+    void ReduceMergeSetRec(uint *id) {
+        auto &rms = mergsets_;
+        uint cur_id = *id;
+        for (size_t i = 0; i < rms[cur_id].size(); ++i) {
+            for (size_t j = i + 1; j < rms[cur_id].size(); ++j) {
+                if (con_(rms[cur_id][i], rms[cur_id][j])) {
+                    // two possible cases
+                    vector<string> new_m(rms[cur_id].size() - 1);
+                    for (size_t k = 0; k < rms[cur_id].size(); ++k) {
+                        if (k != j) {
+                            new_m[k] = rms[cur_id][k];
+                        }
+                    }
+                    //std::copy(rms[cur_id].begin(), rms[cur_id].begin() + j, new_m.end());
+                    //std::copy(rms[cur_id].begin() + j + 1, rms[cur_id].end(), new_m.end());
+                    rms.push_back(new_m);
+                    ReduceMergeSetRec(rms, &(++(*id)));
+                    new_m[i] = rms[cur_id][j];
+                    rms.push_back(new_m);
+                    ReduceMergeSetRec(rms, &(++(*id)));
+                }
+            }
+        }
+    }
+
+    void RemoveEquivalentSets(vector<vector<string>> &rms) {
+        //vector<vector<string>> correct_list;
+        //for (size_t i = 0; i < rms.size() ++i) {
+        //    for (size_t j = i + 1; j < rms.size() ++j) {
+        //        // Compare the vector i with the vector j
+        //        size_t k;
+        //        for (k = 0; k < rms[i].size(); ++k) {
+        //            if (find(rms[j].begin(), rms[j].end(), rms[i][k]) == rms[j].end()) {
+        //                break;
+        //            }
+        //        }
+        //    }
+        //}
+    }
+
+    void BuildMergeSet() {
+        mergesets_ = vector<vector<string>>(1);
+
+        for (size_t i = 0; i < N; ++i) {
+            string h = con_.GetHeader(i);
+            if (h != "x" && con_("x", h)) {
+                mergesets_[0].push_back(h);
+            }
+        }
+        uint id = 0;
+        ReduceMergeSetRec(&id);
+        RemoveEquivalentSets();
+    }
+
+};
+
+
 
 int main()
 {
@@ -378,7 +454,8 @@ int main()
         con.set("p", "r", con("p", "q") && con("q", "r"));
         con.set("s", "r", (con("p", "r") && con("p", "s")) || (con("s", "q") && con("q", "r")));
 
-
+        MergeSet<5> ms(con);
+        ms.BuildMergeSet();
 
     });
 
@@ -396,38 +473,38 @@ int main()
 
     rule_set labeling_bbdt;
     labeling_bbdt.init_conditions(rosenfeld_mask);
-    labeling_bbdt.init_actions({ "nothing", "X<-newlabel", 
-                                 "X<-P", "X<-Q", "X<-R", "X<-S", 
+    labeling_bbdt.init_actions({ "nothing", "X<-newlabel",
+                                 "X<-P", "X<-Q", "X<-R", "X<-S",
                                  "X<-P+Q", "X<-P+R", "X<-P+S", "X<-Q+R", "X<-Q+S", "X<-R+S",
                                  "X<-P+Q+R", "X<-P+Q+S", "X<-P+R+S", "X<-Q+R+S", });
 
-/*  labeling_bbdt.generate_rules([](rule_set& rs, uint i) {
-        if (rs.get_condition("x", i) == 0) {
-            rs.set_action("nothing", i);
-            return;
-        }
+    /*  labeling_bbdt.generate_rules([](rule_set& rs, uint i) {
+            if (rs.get_condition("x", i) == 0) {
+                rs.set_action("nothing", i);
+                return;
+            }
 
-        if (rs.get_condition("p", i) == 1 && rs.get_condition("q", i) == 0 && rs.get_condition("r", i) == 1)
-            rs.set_action("x<-p+r", i);
-        if (rs.get_condition("s", i) == 1 && rs.get_condition("q", i) == 0 && rs.get_condition("r", i) == 1)
-            rs.set_action("x<-s+r", i);
-        if (rs.rules[i].actions != 0)
-            return;
+            if (rs.get_condition("p", i) == 1 && rs.get_condition("q", i) == 0 && rs.get_condition("r", i) == 1)
+                rs.set_action("x<-p+r", i);
+            if (rs.get_condition("s", i) == 1 && rs.get_condition("q", i) == 0 && rs.get_condition("r", i) == 1)
+                rs.set_action("x<-s+r", i);
+            if (rs.rules[i].actions != 0)
+                return;
 
-        if (rs.get_condition("p", i) == 1)
-            rs.set_action("x<-p", i);
-        if (rs.get_condition("q", i) == 1)
-            rs.set_action("x<-q", i);
-        if (rs.get_condition("r", i) == 1)
-            rs.set_action("x<-r", i);
-        if (rs.get_condition("s", i) == 1)
-            rs.set_action("x<-s", i);
-        if (rs.rules[i].actions != 0)
-            return;
+            if (rs.get_condition("p", i) == 1)
+                rs.set_action("x<-p", i);
+            if (rs.get_condition("q", i) == 1)
+                rs.set_action("x<-q", i);
+            if (rs.get_condition("r", i) == 1)
+                rs.set_action("x<-r", i);
+            if (rs.get_condition("s", i) == 1)
+                rs.set_action("x<-s", i);
+            if (rs.rules[i].actions != 0)
+                return;
 
-        rs.set_action("x<-newlabel", i);
-    });
-    */
+            rs.set_action("x<-newlabel", i);
+        });
+        */
 
 
 
