@@ -1,8 +1,9 @@
 #ifndef TREESGENERATOR_TREE_H
 #define TREESGENERATOR_TREE_H
 
-#include <vector>
+#include <algorithm>
 #include <memory>
+#include <vector>
 
 template<typename T>
 struct tree {
@@ -33,7 +34,8 @@ struct tree {
     }
 
     // Recursive function to copy a tree. This is required by the copy constructor
-    node *make_copy_rec(node *n) {
+    // It works only for trees and not for dags
+    /*node *MakeCopyRecursive(node *n) {
         if (n == nullptr)
             return nullptr;
         node *nn = make_node();
@@ -41,17 +43,37 @@ struct tree {
         nn->left = make_copy_rec(n->left);
         nn->right = make_copy_rec(n->right);
         return nn;
+    }*/
+
+    // Recursive function to copy a tree. This is required by the copy constructor
+    // It works for both trees and dags
+    node *MakeCopyRecursive(node *n) {
+        if (n == nullptr)
+            return nullptr;
+        if (std::find_if(nodes.begin(), nodes.end(), [&](std::unique_ptr<node>& p) { return p.get() == n; }) == nodes.end())
+        {
+            node *nn = make_node();
+            nn->data = n->data;
+            nn->left = MakeCopyRecursive(n->left);
+            nn->right = MakeCopyRecursive(n->right);
+            return nn;
+        }
+        
+        return n;
     }
 
     tree() {}
 
     // Copy constructor
     tree(const tree& t) {
-        root = make_copy_rec(t.root);
+        root = MakeCopyRecursive(t.root);
     }
     tree(tree&& t) {
+        using std::swap;
         swap(root, t.root);
+        swap(nodes, t.nodes);
     }
+    // Copy assignment
     tree& operator=(tree t) {
         swap(*this, t);
         return *this;
