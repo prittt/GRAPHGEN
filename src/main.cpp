@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #include <iterator>
@@ -187,6 +188,40 @@ void Tree2OptimalDagRec(ltree& t, ltree::node* n, vector<ltree>& trees) {
     return;
 }
 
+void CountDagNodes(const ltree::node *n, vector<ltree::node*> &visited_nodes) {
+     
+    if (n->isleaf()) {
+        return;
+    }
+
+    CountDagNodes(n->left, visited_nodes);
+    CountDagNodes(n->right, visited_nodes);
+
+    if (std::find(visited_nodes.begin(), visited_nodes.end(), n) == visited_nodes.end()) {
+        visited_nodes.push_back(const_cast<ltree::node*>(n));
+    }    
+}
+
+// Returns the "best" (with minimal number of nodes) DAG of a list of DAGs
+void BestDagFromList(const vector<ltree>& dags, ltree &t)
+{
+    uint best;
+    {
+        vector<ltree::node*> visited_node;
+        CountDagNodes(dags[0].root, visited_node);
+        best = visited_node.size();
+        t = dags[0];
+    }
+    for (size_t i = 1; i < dags.size(); ++i) {
+        vector<ltree::node*> visited_node; 
+        CountDagNodes(dags[i].root, visited_node);
+        if (visited_node.size() < best) {
+            best = visited_node.size();
+            t = dags[i];
+        }
+    }
+}
+
 // Converts a tree into dag minimizing the number of nodes (Note: this is "necessary" when the leaves of a tree contain multiple actions)
 void Tree2OptimalDag(ltree& t) {
     vector<ltree> trees;
@@ -215,6 +250,7 @@ void Tree2OptimalDag(ltree& t) {
         }
     }
 
+    BestDagFromList(trees, t);
 }
 
 
@@ -268,25 +304,14 @@ int main()
     ltree t1 = tl.t;
 
     Tree2OptimalDag(t1);
-
-
     {
-        ofstream os("tree.txt");
+        ofstream os("optimal_dag.txt");
         DrawDag(os, t1);
         os.close();
-        system("..\\tools\\dot\\dot -Tpdf tree.txt -o tree.pdf");
+        system("..\\tools\\dot\\dot -Tpdf optimal_dag.txt -o optimal_dag.pdf");
     }
 
     t1.preorder(print_node);
-
-    convert_tree_to_dag(t1);
-    {
-        ofstream os("dag.txt");
-        DrawDag(os, t1);
-        os.close();
-        system("..\\tools\\dot\\dot -Tpdf dag.txt -o dag.pdf");
-    }
-
     return 0;*/
 
     pixel_set rosenfeld_mask{
