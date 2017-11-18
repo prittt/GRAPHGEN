@@ -502,7 +502,7 @@ int main()
         con.set("P", "Q", (r["b"] || r["h"]) && (r["c"] || r["i"]));
         con.set("P", "S", (r["g"] || r["h"]) && (r["m"] || r["n"]));
         con.set("Q", "R", (r["d"] || r["j"]) && (r["e"] || r["k"]));
-        con.set("Q", "S", r["i"] && r["n"]);
+        con.set("Q", "S", (r["i"] && r["n"]) || (con("P", "Q") && con("P", "S")));
 
         con.set("P", "R", con("P", "Q") && con("Q", "R"));
         con.set("S", "R", (con("P", "R") && con("P", "S")) || (con("S", "Q") && con("Q", "R")));
