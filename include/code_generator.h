@@ -1,33 +1,14 @@
-#ifndef TREESGENERATOR_OUTPUT_GENERATOR_H
-#define TREESGENERATOR_OUTPUT_GENERATOR_H
+#ifndef TREESGENERATOR_CODE_GENERATOR_H
+#define TREESGENERATOR_CODE_GENERATOR_H
 
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <string>
 #include <sstream>
 
 #include "condition_action.h"
 #include "tree.h"
-
-std::string output_path = "..\\output\\";
-
-void print_node(tree<conact>::node *n, int i)
-{
-    std::cout << std::string(i, '\t');
-    if (n->data.t == conact::type::CONDITION) {
-        std::cout << n->data.condition;
-    }
-    else {
-        std::cout << ". ";
-        auto v = n->data.actions();
-
-        std::cout << v[0];
-        for (size_t i = 1; i < v.size(); ++i) {
-            std::cout << "," << v[i];
-        }
-    }
-    std::cout << "\n";
-}
 
 struct nodeid {
     int _id = 0;
@@ -37,7 +18,14 @@ struct nodeid {
 
 using namespace std;
 
-void DrawDagRec(std::ostream& os, tree<conact>::node *n, std::map<tree<conact>::node*, int>& printed_node, std::vector<std::string>& links, nodeid &id, int tab=1) {
+void GenerateCodeRec(std::ostream& os, tree<conact>::node *n, std::map<tree<conact>::node*, int>& printed_node, std::vector<std::string>& links, nodeid &id, int tab=1) {
+    if (n->isleaf()) {
+        
+        os << "ACTION_" << n->data.action << ";\n";
+        if (add_gotos)
+            os << string(tab, '\t') << "goto " << prefix << "tree_" << next_tree[n->n] << ";\n";
+    }
+    
     os << std::string(tab, '\t') << "node" << id.get();
     if (n->isleaf()) {
         // print leaf
@@ -80,9 +68,9 @@ void DrawDagRec(std::ostream& os, tree<conact>::node *n, std::map<tree<conact>::
 }
 
 // All nodes must have both sons! 
-void DrawDag(std::ostream& os, tree<conact>& t) {
-    os << "digraph dag{\n";
-    os << "\tsubgraph tree{\n";
+void GenerateCode(std::ostream& os, tree<conact>& t) {
+    //os << "digraph dag{\n";
+    //os << "\tsubgraph tree{\n";
     
     std::map<tree<conact>::node*, int> printed_node = { { t.root, 0 } };;
     std::vector<std::string> links;
@@ -96,4 +84,4 @@ void DrawDag(std::ostream& os, tree<conact>& t) {
     os << "}\n";
 }
 
-#endif // !TREESGENERATOR_OUTPUT_GENERATOR_H
+#endif // !TREESGENERATOR_CODE_GENERATOR_H
