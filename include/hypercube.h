@@ -2,6 +2,7 @@
 
 #include "rule_set.h"
 #include <iostream>
+#include "cassert"
 
 typedef unsigned char byte;
 
@@ -85,12 +86,28 @@ struct VNode {
 };
 #pragma pack(8)
 
+template <typename T>
+std::istream& rawread(std::istream& is, T& val, size_t n = sizeof(val)) {
+    return is.read(reinterpret_cast<char*>(&val), n);
+}
+template <typename T>
+std::ostream& rawwrite(std::ostream& os, const T& val, size_t n = sizeof(val)) {
+    return os.write(reinterpret_cast<const char*>(&val), n);
+}
+
 struct VHyperCube {
 	size_t m_iDim;
 	std::vector<VNode> m_arrIndex;
 
 	VHyperCube(size_t iDim) : m_iDim(iDim), m_arrIndex(unsigned(pow(3.0, iDim))) {
 	}
+
+    std::istream& read(std::istream& is) {
+        return rawread(is, m_arrIndex[0], m_arrIndex.size() * sizeof(VNode));
+    }
+    std::ostream& write(std::ostream& os) {
+        return rawwrite(os, m_arrIndex[0], m_arrIndex.size() * sizeof(VNode));
+    }
 
 	VNode& operator[](const VIndex &idx) {
 		return m_arrIndex[idx.GetIndex()];
@@ -102,9 +119,13 @@ struct VHyperCube {
 	void initialize_rules(const rule_set& rs) {
 		auto nvars = rs.conditions.size();
 		auto nrules = rs.rules.size();
+        
+        assert(nvars == m_iDim);
 
 		for (size_t i = 0; i < nrules; ++i) {
-			VIndex idx(binary(i, nvars));
+            std::string s = binary(i, nvars);
+            std::reverse(begin(s), end(s));
+			VIndex idx(s);
 			m_arrIndex[idx.GetIndex()].uiProb = rs.rules[i].frequency;
 			m_arrIndex[idx.GetIndex()].uiAction = rs.rules[i].actions;
 		}

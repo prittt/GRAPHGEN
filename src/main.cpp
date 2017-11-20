@@ -27,7 +27,7 @@ void CreateTree_rec(tree<conact>& t, tree<conact>::node *n, const rule_set& rs, 
     VNode node = hcube[idx];
     if (node.uiAction == 0) {
         n->data.t = conact::type::CONDITION;
-        n->data.condition = rs.conditions[rs.conditions.size() - 1 - node.uiMaxGainIndex];
+        n->data.condition = rs.conditions[node.uiMaxGainIndex];
 
         // Estraggo i due (n-1)-cubi
         string sChild0(idx.GetIndexString());
@@ -523,27 +523,71 @@ int main()
         }
     });
 
-    labeling_bbdt.print_rules(cout);
-
-
-    auto& rs = labeling;
+    //labeling_bbdt.print_rules(cout);
+    
+    auto& rs = labeling_bbdt;
     auto nvars = rs.conditions.size();
     auto nrules = rs.rules.size();
+
 
     LOG("Allocating hypercube",
         VHyperCube hcube(nvars);
     );
 
-    LOG("Initializing rules",
-        hcube.initialize_rules(labeling);
+    ifstream is("hypercube.bin", ios::binary);
+    if (!is) {
+        LOG("Initializing rules",
+            hcube.initialize_rules(rs);
+        );
+
+        LOG("Optimizing rules",
+            hcube.optimize(false);
+        );
+
+        ofstream os("hypercube.bin", ios::binary);
+        LOG("Writing to file",
+            hcube.write(os);
+        );
+    }
+    else {
+        LOG("Reading from file",
+            hcube.read(is);
+        );
+    }
+    
+    LOG("Creating tree", 
+        auto t = CreateTree(rs, hcube);
     );
 
-    LOG("Optimizing rules",
-        hcube.optimize(true);
+    vector<ltree::node*> visited_nodes;
+    CountDagNodes(t.root, visited_nodes);
+    cout << "Nodes = " << visited_nodes.size() << "\n";
+
+
+    LOG("Saving tree",
+    {
+        ofstream os("bbdt_tree.txt");
+        DrawDag(os, t);
+        os.close();
+        system("..\\tools\\dot\\dot -Tpdf bbdt_tree.txt -o bbdt_tree.pdf");
+        _unlink("bbdt_tree.txt");
+    }
     );
 
+    LOG("Creating DRAG",
+        convert_tree_to_dag(t);
+    );
+    LOG("Saving DRAG",
+    {
+        ofstream os("bbdt_dag.txt");
+        DrawDag(os, t);
+        os.close();
+        system("..\\tools\\dot\\dot -Tpdf bbdt_dag.txt -o bbdt_dag.pdf");
+        _unlink("bbdt_dag.txt");
+    }
+    );
 
-    auto t = CreateTree(rs, hcube);
-
-    t.preorder(print_node);
+    visited_nodes.clear();
+    CountDagNodes(t.root, visited_nodes);
+    cout << "Nodes = " << visited_nodes.size() << "\n";
 }
