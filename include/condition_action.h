@@ -30,7 +30,22 @@ struct conact {
         return a;
     }
 
+    // To check if two conact are equal (exactly the same)
     bool operator==(const conact& other) const {
+        if (t != other.t)
+            return false;
+        if (t == type::CONDITION)
+            return condition == other.condition;
+        else
+            return ((action == other.action) && (next == other.next));
+    }
+    // To check if two conact are not equal
+    bool operator!=(const conact& other) const {
+        return !(*this == other);
+    }
+
+    // To check if two conact are equivalent (the leaves actions has non empty intersection)
+    bool eq(const conact& other) const {
         if (t != other.t)
             return false;
         if (t == type::CONDITION)
@@ -38,8 +53,9 @@ struct conact {
         else
             return (action & other.action) && next == other.next;
     }
-    bool operator!=(const conact& other) const {
-        return !(*this == other);
+    // To check if two conact are not equivalent (the leaves actions has empty intersection)
+    bool neq(const conact& other) const {
+        return !((*this).eq(other));
     }
 };
 

@@ -8,8 +8,7 @@
 
 #include "condition_action.h"
 #include "tree.h"
-
-std::string output_path = "..\\output\\";
+#include "utilities.h"
 
 void print_node(tree<conact>::node *n, int i)
 {
@@ -28,12 +27,6 @@ void print_node(tree<conact>::node *n, int i)
     }
     std::cout << "\n";
 }
-
-struct nodeid {
-    int _id = 0;
-    int next() { return ++_id; }
-    int get() { return _id; }
-};
 
 using namespace std;
 

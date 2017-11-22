@@ -13,9 +13,11 @@
 #include <cassert>
 
 #include "condition_action.h"
+#include "code_generator.h"
 #include "hypercube.h"
 #include "output_generator.h"
 #include "tree.h"
+#include "utilities.h"
 
 using namespace std;
 
@@ -53,9 +55,9 @@ tree<conact> CreateTree(const rule_set& rs, const VHyperCube &hcube) {
 }
 
 
-// Checks if two subtrees 'n1' and 'n2' are equal or not 
+// Checks if two subtrees 'n1' and 'n2' are equivalent or not 
 bool equivalent_trees(const tree<conact>::node* n1, const tree<conact>::node* n2) {
-    if (n1->data != n2->data)
+    if (n1->data.neq(n2->data))
         return false;
 
     if (n1->isleaf())
@@ -74,7 +76,7 @@ void intersect_leaves(tree<conact>::node* n1, tree<conact>::node* n2) {
     }
 }
 
-void find_and_link(tree<conact>::node* n1, tree<conact>::node* n2) {
+void FindAndLinkEquivalencesRec(tree<conact>::node* n1, tree<conact>::node* n2) {
     if (n2->isleaf() || n1 == n2)
         return;
 
@@ -88,25 +90,65 @@ void find_and_link(tree<conact>::node* n1, tree<conact>::node* n2) {
         n2->right = n1;
     }
 
-    find_and_link(n1, n2->left);
-    find_and_link(n1, n2->right);
+    FindAndLinkEquivalencesRec(n1, n2->left);
+    FindAndLinkEquivalencesRec(n1, n2->right);
 }
 
 
 // Recursive auxiliary function for the conversion of a tree into DAG
-void convert_tree_to_dag_rec(tree<conact>::node *n, tree<conact>& t) {
-    find_and_link(n, t.root);
+void Tree2DagUsingEquivalencesRec(tree<conact>::node *n, tree<conact>& t) {
+    FindAndLinkEquivalencesRec(n, t.root);
 
     if (!n->isleaf()) {
-        convert_tree_to_dag_rec(n->left, t);
-        convert_tree_to_dag_rec(n->right, t);
+        Tree2DagUsingEquivalencesRec(n->left, t);
+        Tree2DagUsingEquivalencesRec(n->right, t);
     }
 }
 
-// Transform a tree 't' into a DAG
-template <typename T>
-void convert_tree_to_dag(tree<T>& t) {
-    convert_tree_to_dag_rec(t.root, t);
+// Converts a tree into dag considering equivalences between subtrees
+void Tree2DagUsingEquivalences(ltree& t) {
+    Tree2DagUsingEquivalencesRec(t.root, t);
+}
+
+// Checks if two (sub)trees 'n1' and 'n2' are equal
+bool EqualTrees(const ltree::node* n1, const ltree::node* n2) {
+    if (n1->data != n2->data)
+        return false;
+
+    if (n1->isleaf())
+        return true;
+    else
+        return EqualTrees(n1->left, n2->left) && EqualTrees(n1->right, n2->right);
+}
+
+void FindAndLinkIdentiesRec(tree<conact>::node* n1, tree<conact>::node* n2) {
+    if (n2->isleaf() || n1 == n2)
+        return;
+
+    if (n1 != n2->left && EqualTrees(n1, n2->left)) {
+        n2->left = n1;
+    }
+
+    if (n1 != n2->right && EqualTrees(n1, n2->right)) {
+        n2->right = n1;
+    }
+
+    FindAndLinkIdentiesRec(n1, n2->left);
+    FindAndLinkIdentiesRec(n1, n2->right);
+}
+
+void Tree2DagUsingIdentitiesRec(ltree::node *n, ltree& t) {
+    FindAndLinkIdentiesRec(n, t.root);
+
+    if (!n->isleaf()) {
+        Tree2DagUsingIdentitiesRec(n->left, t);
+        Tree2DagUsingIdentitiesRec(n->right, t);
+    }
+}
+
+// Converts a tree into dag considering only equal subtrees
+void Tree2DagUsingIdentities(ltree& t) {
+    Tree2DagUsingIdentitiesRec(t.root, t);
 }
 
 // To load a tree from a txt file with the following structure:
@@ -163,6 +205,7 @@ struct tree_loader {
     }
 };
 
+// Give a tree with multiple actions on leaves generate all possible subtree with only one action per leaf
 void Tree2OptimalDagRec(ltree& t, ltree::node* n, vector<ltree>& trees) {
     ltree nt;
     if (n->isleaf()) {
@@ -240,7 +283,7 @@ void Tree2OptimalDag(ltree& t) {
         }
 
         {
-            convert_tree_to_dag(trees[i]);
+            Tree2DagUsingEquivalences(trees[i]);
             string s_txt = "dag_" + to_string(i) + ".txt";
             string s_pdf = "dag_" + to_string(i) + ".pdf";
             ofstream os(s_txt);
@@ -363,25 +406,69 @@ struct MergeSet {
 
 };
 
+// "output_file": output file name without extension 
+// "t": tree<conact> to draw
+// "verbose": to print messages on the standard output
+// return true if the process ends correctly, false otherwise
+bool DrawDagOnFile(const string& output_file, ltree &t, bool verbose = false) {
 
+    if (verbose) {
+        std::cout << "Drawing DAG: " << output_file << ".. ";
+    }
+    string output_path_lowercase = output_file;
+    std::transform(output_path_lowercase.begin(), output_path_lowercase.end(), output_path_lowercase.begin(), ::tolower);
+    output_path_lowercase = global_output_path + output_path_lowercase;
+    string code_path = output_path_lowercase + "_dotcode.txt";
+    string pdf_path = output_path_lowercase + ".pdf";
+    ofstream os(code_path);
+    if (!os) {
+        if (verbose) {
+            std::cout << "Unable to generate " << code_path << ", stopped\n";
+        }
+        return false;
+    }
+    DrawDag(os, t);
+    os.close();
+    if (0 != system(string("..\\tools\\dot\\dot -Tpdf " + code_path + " -o " + pdf_path).c_str())) {
+        if (verbose) {
+            std::cout << "Unable to generate " + pdf_path + ", stopped\n";
+        }
+        return false;
+        _unlink(code_path.c_str());
+    }
+    if (verbose) {
+        std::cout << "done\n";
+    }
+    return true;
+}
 
 int main()
 {
-/*  tree_loader tl;
-    tl.load_tree(ifstream("../doc/t1.txt"));
-    ltree t1 = tl.t;
+    //tree_loader tl;
+    //tl.load_tree(ifstream("../doc/t1.txt"));
+    //ltree t1 = tl.t;
 
-    Tree2OptimalDag(t1);
-    {
-        ofstream os("optimal_dag.txt");
-        DrawDag(os, t1);
-        os.close();
-        system("..\\tools\\dot\\dot -Tpdf optimal_dag.txt -o optimal_dag.pdf");
-    }
+    //{
+    //    ofstream os("original_tree.txt");
+    //    DrawDag(os, t1);
+    //    os.close();
+    //    system("..\\tools\\dot\\dot -Tpdf original_tree.txt -o original_tree.pdf");
+    //}
 
-    t1.preorder(print_node);
-    return 0;
-    */
+    //Tree2OptimalDag(t1);
+    //{
+    //    ofstream os("optimal_dag.txt");
+    //    DrawDag(os, t1);
+    //    os.close();
+    //    system("..\\tools\\dot\\dot -Tpdf optimal_dag.txt -o optimal_dag.pdf");
+    //}
+
+    //ofstream os("prova_codice.txt");
+    //GenerateCode(os, t1);
+
+    ////t1.preorder(print_node);
+    //return 0;
+
     pixel_set rosenfeld_mask{
         { "p", -1, -1 }, { "q", 0, -1 }, { "r", +1, -1 },
         { "s", -1,  0 }, { "x", 0, 0 },
@@ -389,13 +476,13 @@ int main()
 
     rule_set labeling;
     labeling.init_conditions(rosenfeld_mask);
-    labeling.init_actions({ 
-        "nothing", 
-        "x<-newlabel", 
-        "x<-p", "x<-q", "x<-r", "x<-s", 
+    labeling.init_actions({
+        "nothing",
+        "x<-newlabel",
+        "x<-p", "x<-q", "x<-r", "x<-s",
         "x<-p+q", "x<-p+r", "x<-p+s", "x<-q+r", "x<-q+s", "x<-r+s",
-        "x<-p+q+r", "x<-p+q+s", "x<-p+r+s", "x<-q+r+s", 
-        "x<-p+q+r+s", 
+        "x<-p+q+r", "x<-p+q+s", "x<-p+r+s", "x<-q+r+s",
+        "x<-p+q+r+s",
     });
 
     /*labeling.generate_rules([](rule_set& rs, uint i) {
@@ -462,18 +549,19 @@ int main()
                 action += "newlabel";
             else {
                 action += s[0];
-                for (size_t i=1;i<s.size();++i)
+                for (size_t i = 1; i < s.size(); ++i)
                     action += "+" + s[i];
             }
             r << action;
         }
     });
 
+    /****************    BBDT    ****************/
     pixel_set grana_mask{
         /*{ "a", -2, -2 },*/ { "b", -1, -2 }, { "c", +0, -2 }, { "d", +1, -2 }, { "e", +2, -2 }, /*{ "f", +3, -2 },*/
           { "g", -2, -1 },   { "h", -1, -1 }, { "i", +0, -1 }, { "j", +1, -1 }, { "k", +2, -1 }, /*{ "l", +3, -1 },*/
           { "m", -2, +0 },   { "n", -1, +0 }, { "o", +0, +0 }, { "p", +1, +0 },
-        /*{ "q", -2, +1 },*/ { "r", -1, +1 }, { "s", +0, +1 }, { "t", +1, +1 },
+          /*{ "q", -2, +1 },*/ { "r", -1, +1 }, { "s", +0, +1 }, { "t", +1, +1 },
     };
 
     rule_set labeling_bbdt;
@@ -516,19 +604,16 @@ int main()
                 action += "newlabel";
             else {
                 action += s[0];
-                for (size_t i = 1; i<s.size(); ++i)
+                for (size_t i = 1; i < s.size(); ++i)
                     action += "+" + s[i];
             }
             r << action;
         }
     });
 
-    //labeling_bbdt.print_rules(cout);
-    
     auto& rs = labeling_bbdt;
     auto nvars = rs.conditions.size();
     auto nrules = rs.rules.size();
-
 
     LOG("Allocating hypercube",
         VHyperCube hcube(nvars);
@@ -554,8 +639,59 @@ int main()
             hcube.read(is);
         );
     }
-    
-    LOG("Creating tree", 
+
+    LOG("Creating tree",
+        auto t = CreateTree(rs, hcube);
+    );
+
+    vector<ltree::node*> visited_nodes;
+    CountDagNodes(t.root, visited_nodes);
+    cout << "Nodes = " << visited_nodes.size() << "\n";
+
+    DrawDagOnFile("bbdt_tree", t, true);
+
+    LOG("Creating DRAG using identites",
+        Tree2DagUsingIdentities(t);
+    );
+
+    DrawDagOnFile("bbdt_dag_identites", t, true);
+
+    visited_nodes.clear();
+    CountDagNodes(t.root, visited_nodes);
+    cout << "Nodes = " << visited_nodes.size() << "\n";
+
+    /****************    SAUF    ****************/
+    /*
+    auto& rs = labeling;
+    auto nvars = rs.conditions.size();
+    auto nrules = rs.rules.size();
+
+    LOG("Allocating hypercube",
+        VHyperCube hcube(nvars);
+    );
+
+    ifstream is("hypercube.bin", ios::binary);
+    if (!is) {
+        LOG("Initializing rules",
+            hcube.initialize_rules(rs);
+        );
+
+        LOG("Optimizing rules",
+            hcube.optimize(false);
+        );
+
+        ofstream os("hypercube.bin", ios::binary);
+        LOG("Writing to file",
+            hcube.write(os);
+        );
+    }
+    else {
+        LOG("Reading from file",
+            hcube.read(is);
+        );
+    }
+
+    LOG("Creating tree",
         auto t = CreateTree(rs, hcube);
     );
 
@@ -566,11 +702,11 @@ int main()
 
     LOG("Saving tree",
     {
-        ofstream os("bbdt_tree.txt");
-        DrawDag(os, t);
-        os.close();
-        system("..\\tools\\dot\\dot -Tpdf bbdt_tree.txt -o bbdt_tree.pdf");
-        _unlink("bbdt_tree.txt");
+    ofstream os("sauf_tree.txt");
+    DrawDag(os, t);
+    os.close();
+    system("..\\tools\\dot\\dot -Tpdf sauf_tree.txt -o sauf_tree.pdf");
+    _unlink("sauf_tree.txt");
     }
     );
 
@@ -579,15 +715,23 @@ int main()
     );
     LOG("Saving DRAG",
     {
-        ofstream os("bbdt_dag.txt");
-        DrawDag(os, t);
-        os.close();
-        system("..\\tools\\dot\\dot -Tpdf bbdt_dag.txt -o bbdt_dag.pdf");
-        _unlink("bbdt_dag.txt");
+    ofstream os("sauf_dag.txt");
+    DrawDag(os, t);
+    os.close();
+    system("..\\tools\\dot\\dot -Tpdf sauf_dag.txt -o sauf_dag.pdf");
+    _unlink("sauf_dag.txt");
     }
     );
 
     visited_nodes.clear();
     CountDagNodes(t.root, visited_nodes);
     cout << "Nodes = " << visited_nodes.size() << "\n";
+    */
+
+    LOG("Writing DRAG code",
+    {
+        ofstream os("bbdt_drag_code.txt");
+        GenerateCode(os, t);
+    }
+    );
 }
