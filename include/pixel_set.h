@@ -11,8 +11,13 @@ struct pixel {
 };
 struct pixel_set {
 	std::vector<pixel> pixels;
+    uint8_t shift_ = 1;
 
-	pixel_set(std::initializer_list<pixel> il) : pixels{ il } {}
+    pixel_set(std::initializer_list<pixel> il) : pixels{ il }{}
+
+    void SetShift(uint8_t shift) {
+        shift_ = shift;
+    };
 
 	void add(std::string name, int dx, int dy) { pixels.emplace_back(name, dx, dy); }
 };

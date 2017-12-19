@@ -106,18 +106,18 @@ endif()
 # OpenCV 
 # --------------------
 
-#set(OpenCV_REQUIRED_PACKAGES "core;imgcodecs;imgproc" CACHE STRING "OpenCV packages required by YACCLAB are already set")
-#FIND_PACKAGE(OpenCV REQUIRED ${OpenCV_REQUIRED_PACKAGES})
-#include_directories( ${OpenCV_INCLUDE_DIRS} )
-#
-#if(MSVC)
-#	if("${OpenCV_STATIC}" STREQUAL "ON")
-#		message(STATUS "Setting static runtime for MSVC")
-#		foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO) 
-#			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-#		endforeach(flag_var)
-#	endif()
-#endif()
+set(OpenCV_REQUIRED_PACKAGES "core;imgcodecs;imgproc" CACHE STRING "OpenCV packages required by YACCLAB are already set")
+FIND_PACKAGE(OpenCV REQUIRED ${OpenCV_REQUIRED_PACKAGES})
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+
+if(MSVC)
+	if("${OpenCV_STATIC}" STREQUAL "ON")
+		message(STATUS "Setting static runtime for MSVC")
+		foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO) 
+			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+		endforeach(flag_var)
+	endif()
+endif()
 
 # --------------------
 # Project
@@ -143,4 +143,4 @@ source_group("Source Files" FILES ${SRCFILES})
 set (addExe ${SRCFILES} ${HFILES} ${INCFILES})
 add_executable(${ProjectName} ${addExe})
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set YACCLAB as startup group instead of ALL_BUILD
-#target_link_libraries (${ProjectName}  ${OpenCV_LIBS})
+target_link_libraries (${ProjectName}  ${OpenCV_LIBS})

@@ -77,8 +77,8 @@ struct VIndex {
 #pragma pack(1)
 struct VNode {
 	unsigned uiAction;
-	unsigned uiProb;
-	unsigned uiGain;
+	/*unsigned*/ unsigned long long uiProb;
+    /*unsigned*/ unsigned long long uiGain;
 	byte uiMaxGainIndex;
 
 	VNode() : uiAction(0), uiProb(0), uiGain(0), uiMaxGainIndex(0) {
@@ -162,8 +162,8 @@ struct VHyperCube {
 				iPos++;
 			}
 
-			std::vector<unsigned> arrProb(iNumIndifference);
-			std::vector<unsigned> arrGain(iNumIndifference);
+			std::vector</*unsigned*/unsigned long long> arrProb(iNumIndifference);
+			std::vector</*unsigned*/unsigned long long> arrGain(iNumIndifference);
 
 			// Faccio tutte le combinazioni
 			do {
@@ -196,8 +196,8 @@ struct VHyperCube {
 							arrGain[i] += arrProb[i];
 						}
 					}
-					unsigned uiMaxGain(0);
-					unsigned uiMaxGainProb(0);
+					/*unsigned*/unsigned long long uiMaxGain(0);
+                    /*unsigned*/unsigned long long uiMaxGainProb(0);
 					unsigned uiMaxGainIndex(0);
 					for (size_t i = 0; i<iNumIndifference; i++) {
 						if (uiMaxGain <= arrGain[i]) {

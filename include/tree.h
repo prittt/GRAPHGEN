@@ -70,9 +70,12 @@ struct tree {
         root = MakeCopyRecursive(t.root, copies);
     }
     tree(tree&& t) {
+        swap(*this, t);
+        /*
         using std::swap;
         swap(root, t.root);
         swap(nodes, t.nodes);
+        */
     }
     // Copy assignment
     tree& operator=(tree t) {

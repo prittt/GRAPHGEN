@@ -9,7 +9,7 @@ using uint = uint32_t;
 std::string binary(uint u, uint nbits);
 
 struct rule {
-	uint frequency = 1;
+	/*uint*/ unsigned long long frequency = 1;
 	uint actions; // bitmapped
 };
 struct rule_set {
@@ -35,6 +35,10 @@ struct rule_set {
 			actions_pos[actions[i]] = i + 1;
 	}
 
+    uint GetNumberOfRules() {
+        return 1 << conditions.size();
+    };
+
 	template<typename T>
 	void generate_rules(T fn) {
 		uint nrules = 1 << conditions.size();
@@ -49,8 +53,14 @@ struct rule_set {
 	uint get_condition(const std::string& s, uint rule) const {
 		return (rule >> conditions_pos.at(s)) & 1;
 	}
+
 	void set_action(const std::string& s, uint rule) {
 		rules[rule].actions |= 1 << (actions_pos.at(s) - 1);
 	}
+    void SetFrequency(uint rule, uint frequency) { 
+        // Da migliorare: chi assicura che vi sia corrispondenza nella rappresentazione
+        // delle regole usata all'esterno e quelle implementata dal rule_set?
+        rules[rule].frequency = frequency;
+    }
 };
 
