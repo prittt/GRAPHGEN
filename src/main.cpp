@@ -538,6 +538,28 @@ struct connectivity_mat {
         assert(i < N);
         return names_[i];
     }
+
+	void DisplayCondNames(ostream & os = std::cout) {
+		for (uint c = 0; c < names_.size(); ++c) { 
+			cout << names_[c];
+		}
+		cout << endl;
+	}
+
+	void DisplayMap(ostream & os = std::cout) {
+		for (uint c = 0; c < N; ++c) {
+			os << "\t" << names_[c];
+		}
+		os << std::endl;
+		
+		for(uint r = 0; r < N; ++r){
+			os << names_[r];
+			for (uint c = 0; c < N; ++c){
+				os << "\t" << data_[pos_.at(GetHeader(r))][pos_.at(GetHeader(c))];
+			}
+			os << std::endl;
+		}
+	}
 };
 
 template <uint N>
@@ -940,7 +962,7 @@ int main()
     });*/
 
     labeling.generate_rules([](rule_set& rs, uint i) {
-        rule_wrapper r(rs, i);
+		rule_wrapper r(rs, i);
 
         bool X = r["x"];
         if (!X) {
@@ -962,6 +984,11 @@ int main()
 
         con.set("p", "r", con("p", "q") && con("q", "r"));
         con.set("s", "r", (con("p", "r") && con("p", "s")) || (con("s", "q") && con("q", "r")));
+
+		con.DisplayCondNames();
+		std::cout << std::bitset<5>(i) << std::endl;
+		con.DisplayMap();
+		cout << endl;
 
         MergeSet<5> ms(con);
         ms.BuildMergeSet();
