@@ -9,9 +9,10 @@ using uint = uint32_t;
 std::string binary(uint u, uint nbits);
 
 struct rule {
-	/*uint*/ unsigned long long frequency = 1;
+	unsigned long long frequency = 1;
 	uint actions; // bitmapped
 };
+
 struct rule_set {
 	std::vector<std::string> conditions;
 	std::unordered_map<std::string, uint> conditions_pos;
@@ -32,7 +33,7 @@ struct rule_set {
 		actions = std::move(actions_);
 		actions_pos.clear();
 		for (uint i = 0; i < actions.size(); ++i)
-			actions_pos[actions[i]] = i + 1;
+			actions_pos[actions[i]] = i + 1; // Action 0 doesn't exist
 	}
 
     uint GetNumberOfRules() {
