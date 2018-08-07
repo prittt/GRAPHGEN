@@ -1,0 +1,49 @@
+begin_conditions
+0	p
+1	q
+2	r
+3	s
+4	x
+end_conditions
+
+begin_actions
+0	nothing
+1	x<-newlabel
+2	x<-p
+3	x<-q
+4	x<-r
+5	x<-s
+6	x<-p+q
+7	x<-p+r
+8	x<-p+s
+9	x<-q+r
+10	x<-q+s
+11	x<-r+s
+12	x<-p+q+r
+13	x<-p+q+s
+14	x<-p+r+s
+15	x<-q+r+s
+16	x<-p+q+r+s
+end_actions
+
+begin_rules
+	# no pixel -> do nothing
+	!x : 0
+	!x : return
+	
+	# merge required?
+        p !q r : 7
+	s !q r : 11
+
+	p !q r : return
+	s !q r : return
+
+	# assignments
+	p : 2
+	q : 3
+	r : 4
+	s : 5
+	
+	# new label
+	!p !q !r !s: 1
+end_rules

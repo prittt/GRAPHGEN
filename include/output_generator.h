@@ -117,7 +117,6 @@ bool DrawDagOnFile(const string& output_file, tree<conact> &t, bool verbose = fa
             std::cout << "Unable to generate " + pdf_path + ", stopped\n";
         }
         return false;
-        _unlink(code_path.c_str());
     }
     if (verbose) {
         std::cout << "done\n";

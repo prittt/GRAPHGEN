@@ -1,0 +1,187 @@
+    //cv::Mat1b test(4, 4);
+    //test << 255, 0, 255, 0,
+    //        0, 255, 0, 255,
+    //        255, 0, 255, 0,
+    //        0, 255, 0, 255;
+
+    //imwrite("test.png", test);
+    //return 0;
+
+    //tree_loader tl;
+    //tl.load_tree(ifstream("../doc/t1.txt"));
+    //ltree t1 = tl.t;
+
+    //DrawDagOnFile("original_tree", t1, true);
+
+    //Tree2DagUsingIdentities(t1);
+    //DrawDagOnFile("dag_with_eq", t1, true);
+
+    //Tree2OptimalDag(t1);
+    //DrawDagOnFile("optimal_dag", t1, true);
+
+    //
+    ///*ofstream os("prova_codice.txt");
+    //GenerateCode(os, t1);*/
+
+    ////t1.preorder(print_node);
+    //return 0;
+
+
+
+    /****************    BBDT    ****************/
+    pixel_set grana_mask{
+        /*{ "a", -2, -2 },*/ { "b", -1, -2 }, { "c", +0, -2 }, { "d", +1, -2 }, { "e", +2, -2 }, /*{ "f", +3, -2 },*/
+          { "g", -2, -1 },   { "h", -1, -1 }, { "i", +0, -1 }, { "j", +1, -1 }, { "k", +2, -1 }, /*{ "l", +3, -1 },*/
+          { "m", -2, +0 },   { "n", -1, +0 }, { "o", +0, +0 }, { "p", +1, +0 },
+          /*{ "q", -2, +1 },*/ { "r", -1, +1 }, { "s", +0, +1 }, { "t", +1, +1 },
+    };
+    grana_mask.SetShift(2);
+
+    rule_set labeling_bbdt;
+    labeling_bbdt.init_conditions(grana_mask);
+    labeling_bbdt.init_actions({ "nothing", "x<-newlabel",
+                                 "x<-P", "x<-Q", "x<-R", "x<-S",
+                                 "x<-P+Q", "x<-P+R", "x<-P+S", "x<-Q+R", "x<-Q+S", "x<-R+S",
+                                 "x<-P+Q+R", "x<-P+Q+S", "x<-P+R+S", "x<-Q+R+S", });
+
+    labeling_bbdt.generate_rules([](rule_set& rs, uint i) {
+        rule_wrapper r(rs, i);
+
+        bool X = r["o"] || r["p"] || r["s"] || r["t"];
+        if (!X) {
+            r << "nothing";
+            return;
+        }
+
+        connectivity_mat<5> con({ "P", "Q", "R", "S", "x" });
+
+        con.set("x", "P", r["h"] && r["o"]);
+        con.set("x", "Q", (r["i"] || r["j"]) && (r["o"] || r["p"]));
+        con.set("x", "R", r["k"] && r["p"]);
+        con.set("x", "S", (r["n"] || r["r"]) && (r["o"] || r["s"]));
+
+        con.set("P", "Q", (r["b"] || r["h"]) && (r["c"] || r["i"]));
+        con.set("P", "S", (r["g"] || r["h"]) && (r["m"] || r["n"]));
+        con.set("Q", "R", (r["d"] || r["j"]) && (r["e"] || r["k"]));
+        con.set("Q", "S", (r["i"] && r["n"]) || (con("P", "Q") && con("P", "S")));
+
+        con.set("P", "R", con("P", "Q") && con("Q", "R"));
+        con.set("S", "R", (con("P", "R") && con("P", "S")) || (con("S", "Q") && con("Q", "R")));
+
+        MergeSet<5> ms(con);
+        ms.BuildMergeSet();
+
+        for (const auto& s : ms.mergesets_) {
+            string action = "x<-";
+            if (s.empty())
+                action += "newlabel";
+            else {
+                action += s[0];
+                for (size_t i = 1; i < s.size(); ++i)
+                    action += "+" + s[i];
+            }
+            r << action;
+        }
+    });
+
+
+	auto& rs = labeling_bbdt;
+    auto nvars = rs.conditions.size();
+    auto nrules = rs.rules.size();
+
+
+    vector<string> dataset_paths = { "." };
+    //string base_path = "C://Users//Federico Bolelli//Desktop//YACCLAB//bin//input//";
+    //vector<string> dataset_paths = { base_path + "3dpes", base_path + "fingerprints", base_path + "hamlet", base_path + "medical", base_path + "mirflickr", base_path + "random//classical", base_path + "tobacco800", base_path + "xdocs"};
+
+    // Set to true to use freq file, otherwise all freq will be considered equal to 1
+    if (false) {
+        string freq_file = "freqs.txt";
+        if (!LoadFrequenciesFromFile(freq_file, labeling_bbdt)) {
+            cout << "Calculate frequencies..." << endl;
+            CalculateRulesFrequencies(grana_mask, dataset_paths, labeling_bbdt);
+            cout << "Calculate frequencies...DONE" << endl;
+            StoreFrequenciesOnFile(freq_file, labeling_bbdt);
+        }
+    }
+
+
+
+    LOG("Allocating hypercube",
+        VHyperCube hcube(nvars);
+    );
+
+    ifstream is("hypercube.bin", ios::binary);
+    if (!is) {
+        LOG("Initializing rules",
+            hcube.initialize_rules(rs);
+        );
+
+        LOG("Optimizing rules",
+            hcube.optimize(false);
+        );
+
+        ofstream os("hypercube.bin", ios::binary);
+        LOG("Writing to file",
+            hcube.write(os);
+        );
+    }
+    else {
+        LOG("Reading from file",
+            hcube.read(is);
+        );
+    }
+
+    std::string s(hcube.m_iDim, '-');
+    cout << hcube[VIndex{ s }].neq << '\n';
+    return 0;
+
+    LOG("Creating tree",
+        auto t = CreateTree(rs, hcube);
+    );
+
+    set<const ltree::node*> visited_nodes, visited_leaves;
+    CountDagNodes(t.root, visited_nodes, visited_leaves);
+    cout << "Nodes = " << visited_nodes.size() << "\n";
+    cout << "Leaves = " << visited_leaves.size() << "\n";
+
+    DrawDagOnFile("bbdt_tree", t, true);
+
+    TreePathFreq tpf;
+    tpf.Generate(t,labeling_bbdt);
+
+    ofstream os("verifica.txt");
+    for (uint i = 0; i < tpf.paths_freq.size(); ++i) {
+        bitset<16> bs(i);
+        os << i << ", " << bs << ", " << tpf.paths_freq[i] << "\n";
+    }
+    os.close();
+
+    LOG("Creating DRAG using identites",
+        Tree2DagUsingIdentities(t);
+    );
+
+    DrawDagOnFile("bbdt_dag_identites", t, true);
+
+    visited_nodes.clear();
+    visited_leaves.clear();
+    CountDagNodes(t.root, visited_nodes, visited_leaves);
+    cout << "Nodes = " << visited_nodes.size() << "\n";
+    cout << "Leaves = " << visited_leaves.size() << "\n";
+
+    //Tree2OptimalDag(t);
+    Tree2OptimalDagFreq(t, tpf);
+    DrawDagOnFile("optimal_dag", t, true);
+
+    visited_nodes.clear();
+    visited_leaves.clear();
+    CountDagNodes(t.root, visited_nodes, visited_leaves);
+    cout << "Nodes = " << visited_nodes.size() << "\n";
+    cout << "Leaves = " << visited_leaves.size() << "\n";
+
+    LOG("Writing DRAG code",
+    {
+        ofstream os("bbdt_drag_code.txt");
+        GenerateCode(os, t);
+    }
+    );
