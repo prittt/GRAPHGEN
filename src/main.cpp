@@ -1042,12 +1042,14 @@ int main()
     //string base_path = "C://Users//Federico Bolelli//Desktop//YACCLAB//bin//input//";
     //vector<string> dataset_paths = { base_path + "3dpes", base_path + "fingerprints", base_path + "hamlet", base_path + "medical", base_path + "mirflickr", base_path + "random//classical", base_path + "tobacco800", base_path + "xdocs"};
 
-    string freq_file = "freqs.txt";
-    if (!LoadFrequenciesFromFile(freq_file, labeling_bbdt)) {
-        cout << "Calculate frequencies..." << endl;
-        CalculateRulesFrequencies(grana_mask, dataset_paths, labeling_bbdt);
-        cout << "Calculate frequencies...DONE" << endl;
-        StoreFrequenciesOnFile(freq_file, labeling_bbdt);
+    if (false) {
+        string freq_file = "freqs.txt";
+        if (!LoadFrequenciesFromFile(freq_file, labeling_bbdt)) {
+            cout << "Calculate frequencies..." << endl;
+            CalculateRulesFrequencies(grana_mask, dataset_paths, labeling_bbdt);
+            cout << "Calculate frequencies...DONE" << endl;
+            StoreFrequenciesOnFile(freq_file, labeling_bbdt);
+        }
     }
 
     LOG("Allocating hypercube",
@@ -1074,6 +1076,10 @@ int main()
             hcube.read(is);
         );
     }
+
+    std::string s(hcube.m_iDim, '-');
+    cout << hcube[VIndex{ s }].neq << '\n';
+    return 0;
 
     LOG("Creating tree",
         auto t = CreateTree(rs, hcube);

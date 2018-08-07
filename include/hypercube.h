@@ -2,7 +2,8 @@
 
 #include "rule_set.h"
 #include <iostream>
-#include "cassert"
+#include <cassert>
+#include <algorithm>
 
 typedef unsigned char byte;
 
@@ -80,6 +81,7 @@ struct VNode {
 	/*unsigned*/ unsigned long long uiProb;
     /*unsigned*/ unsigned long long uiGain;
 	byte uiMaxGainIndex;
+    unsigned neq = 1;
 
 	VNode() : uiAction(0), uiProb(0), uiGain(0), uiMaxGainIndex(0) {
 	}
@@ -164,6 +166,7 @@ struct VHyperCube {
 
 			std::vector</*unsigned*/unsigned long long> arrProb(iNumIndifference);
 			std::vector</*unsigned*/unsigned long long> arrGain(iNumIndifference);
+            std::vector<unsigned> arrNEq(iNumIndifference);
 
 			// Faccio tutte le combinazioni
 			do {
@@ -191,16 +194,23 @@ struct VHyperCube {
 						m_arrIndex[idx.GetIndex()].uiAction = uiIntersezione;
 						arrProb[i] = node0.uiProb + node1.uiProb;
 						arrGain[i] = node0.uiGain + node1.uiGain;
+                        arrNEq[i] = node0.neq * node1.neq;
 
 						if (uiIntersezione>0) {
 							arrGain[i] += arrProb[i];
+                            arrNEq[i] = 0;
 						}
 					}
 					/*unsigned*/unsigned long long uiMaxGain(0);
                     /*unsigned*/unsigned long long uiMaxGainProb(0);
 					unsigned uiMaxGainIndex(0);
+                    unsigned uiNEq(0);
 					for (size_t i = 0; i<iNumIndifference; i++) {
 						if (uiMaxGain <= arrGain[i]) {
+                            if (uiMaxGain < arrGain[i])
+                                uiNEq = arrNEq[i];
+                            else
+                                uiNEq += arrNEq[i];
 							uiMaxGain = arrGain[i];
 							uiMaxGainProb = arrProb[i];
 							uiMaxGainIndex = arrPosIndifference[i];
@@ -209,6 +219,7 @@ struct VHyperCube {
 					m_arrIndex[idx.GetIndex()].uiGain = uiMaxGain;
 					m_arrIndex[idx.GetIndex()].uiProb = uiMaxGainProb;
 					m_arrIndex[idx.GetIndex()].uiMaxGainIndex = uiMaxGainIndex;
+                    m_arrIndex[idx.GetIndex()].neq = std::max(uiNEq, 1u);
 
 					if (bVerbose) {
 						std::cout << idx.GetIndexString() << "\t" << m_arrIndex[idx.GetIndex()].uiProb << "\t";
@@ -228,7 +239,8 @@ struct VHyperCube {
 								std::cout << "#";
 							std::cout << "\t";
 						}
-						std::cout << "\n";
+                        
+						std::cout << m_arrIndex[idx.GetIndex()].neq << "\n";
 					}
 				} while (idx.MoveNext());
 				if (bVerbose)
