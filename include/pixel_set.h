@@ -1,7 +1,9 @@
-#pragma once
+#ifndef GRAPHSGEN_PIXEL_SET_H_
+#define GRAPHSGEN_PIXEL_SET_H_
 
 #include <string>
 #include <vector>
+#include <fstream>
 
 struct pixel {
 	std::string name;
@@ -15,9 +17,22 @@ struct pixel_set {
 
     pixel_set(std::initializer_list<pixel> il) : pixels{ il }{}
 
+	// Creates a pixel set reading the mask from file
+	pixel_set(const char* filename) {
+		std::ifstream is(filename);
+		if (!is.is_open()) {
+			// TODO, error handling?
+			return;
+		}
+
+
+	}
+
     void SetShift(uint8_t shift) {
         shift_ = shift;
     };
 
 	void add(std::string name, int dx, int dy) { pixels.emplace_back(name, dx, dy); }
 };
+
+#endif //GRAPHSGEN_PIXEL_SET_H_

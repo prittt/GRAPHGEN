@@ -538,6 +538,28 @@ struct connectivity_mat {
         assert(i < N);
         return names_[i];
     }
+
+	void DisplayCondNames(ostream & os = std::cout) {
+		for (uint c = 0; c < names_.size(); ++c) { 
+			cout << names_[c];
+		}
+		cout << endl;
+	}
+
+	void DisplayMap(ostream & os = std::cout) {
+		for (uint c = 0; c < N; ++c) {
+			os << "\t" << names_[c];
+		}
+		os << std::endl;
+		
+		for(uint r = 0; r < N; ++r){
+			os << names_[r];
+			for (uint c = 0; c < N; ++c){
+				os << "\t" << data_[pos_.at(GetHeader(r))][pos_.at(GetHeader(c))];
+			}
+			os << std::endl;
+		}
+	}
 };
 
 template <uint N>
@@ -963,6 +985,11 @@ int main()
         con.set("p", "r", con("p", "q") && con("q", "r"));
         con.set("s", "r", (con("p", "r") && con("p", "s")) || (con("s", "q") && con("q", "r")));
 
+		con.DisplayCondNames();
+		std::cout << std::bitset<5>(i) << std::endl;
+		con.DisplayMap();
+		cout << endl;
+
         MergeSet<5> ms(con);
         ms.BuildMergeSet();
 
@@ -1042,6 +1069,7 @@ int main()
     //string base_path = "C://Users//Federico Bolelli//Desktop//YACCLAB//bin//input//";
     //vector<string> dataset_paths = { base_path + "3dpes", base_path + "fingerprints", base_path + "hamlet", base_path + "medical", base_path + "mirflickr", base_path + "random//classical", base_path + "tobacco800", base_path + "xdocs"};
 
+    // Set to true to use freq file, otherwise all freq will be considered equal to 1
     if (false) {
         string freq_file = "freqs.txt";
         if (!LoadFrequenciesFromFile(freq_file, labeling_bbdt)) {
