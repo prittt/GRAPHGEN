@@ -24,6 +24,8 @@
 #include "tree.h"
 #include "utilities.h"
 
+#include "merge_set.h"
+
 using namespace std;
 
 #define LOG(message, instructions) cout << (message) << "... "; instructions cout << "done.\n"
@@ -486,136 +488,6 @@ void Tree2OptimalDag(ltree& t) {
     BestDagFromList(trees, t);*/
 }
 
-struct rule_wrapper {
-    rule_set& rs_;
-    uint i_;
-    rule_wrapper(rule_set& rs, uint i) : rs_{ rs }, i_{ i } {}
-
-    bool operator[](const std::string& s) const {
-        return rs_.get_condition(s, i_) != 0;
-    }
-    void operator<<(const std::string& s) {
-        rs_.set_action(s, i_);
-    }
-    bool has_actions() {
-        return rs_.rules[i_].actions != 0;
-    }
-};
-
-template<uint N>
-struct connectivity_mat {
-    bool data_[N][N] = { 0 };
-    map<string, uint> pos_;
-    vector<string> names_;
-
-    connectivity_mat(const vector<string> &names) : names_{ names } {
-        assert(names.size() == N);
-        for (uint i = 0; i < N; ++i) {
-            data_[i][i] = 1;
-            pos_[names[i]] = i;
-        }
-    }
-
-    bool operator()(const string& row, const string& col) const {
-        uint r = pos_.at(row);
-        uint c = pos_.at(col);
-        return data_[r][c];
-    }
-
-    //bool operator()(const string& row, const uint col) const {
-    //    uint r = pos_.at(row);
-    //    assert(col < N);
-    //    return data_[r][col];
-    //}
-
-    void set(const string& row, const string& col, bool b) {
-        uint r = pos_.at(row);
-        uint c = pos_.at(col);
-        data_[r][c] = data_[c][r] = b;
-    }
-
-    const string& GetHeader(uint i) {
-        assert(i < N);
-        return names_[i];
-    }
-
-	void DisplayCondNames(ostream & os = std::cout) {
-		for (uint c = 0; c < names_.size(); ++c) { 
-			cout << names_[c];
-		}
-		cout << endl;
-	}
-
-	void DisplayMap(ostream & os = std::cout) {
-		for (uint c = 0; c < N; ++c) {
-			os << "\t" << names_[c];
-		}
-		os << std::endl;
-		
-		for(uint r = 0; r < N; ++r){
-			os << names_[r];
-			for (uint c = 0; c < N; ++c){
-				os << "\t" << data_[pos_.at(GetHeader(r))][pos_.at(GetHeader(c))];
-			}
-			os << std::endl;
-		}
-	}
-};
-
-template <uint N>
-struct MergeSet {
-    set<vector<string>> mergesets_;
-    connectivity_mat<N> &con_;
-
-    MergeSet(connectivity_mat<N> &con) : con_{ con } {}
-
-    void ReduceMergeSet(vector<string>& ms) {
-        for (size_t i = 0; i < ms.size(); ++i) {
-            for (size_t j = i + 1; j < ms.size(); ) {
-                if (con_(ms[i], ms[j])) {
-                    // remove j-th element
-                    ms.erase(begin(ms) + j);
-                }
-                else {
-                    // move next
-                    ++j;
-                }
-            }
-        }
-    }
-
-    void ExpandAllEquivalences(vector<string> ms, size_t pos) {
-        if (pos >= ms.size()) {
-            sort(begin(ms), end(ms));
-            mergesets_.emplace(ms);
-        }
-        else {
-            string cur = ms[pos];
-            for (size_t i = 0; i < N; ++i) {
-                string h = con_.GetHeader(i);
-                if (h != "x" && con_(cur, h)) {
-                    ms[pos] = h;
-                    ExpandAllEquivalences(ms, pos + 1);
-                }
-            }
-        }
-    }
-
-    void BuildMergeSet() {
-        vector<string> ms;
-        // Create initial merge set
-        for (size_t i = 0; i < N; ++i) {
-            string h = con_.GetHeader(i);
-            if (h != "x" && con_("x", h)) {
-                ms.push_back(h);
-            }
-        }
-        ReduceMergeSet(ms);
-        ExpandAllEquivalences(ms, 0);
-    }
-
-};
-
 struct mask {
     cv::Mat1b mask_;
     int top_ = 0, bottom_ = 0, left_ = 0, right_ = 0;
@@ -930,36 +802,6 @@ int main()
         "x<-p+q+r+s",
     });
 
-    /*labeling.generate_rules([](rule_set& rs, uint i) {
-        rule_wrapper r(rs, i);
-
-        bool X = r["x"];
-
-        if (!X) {
-            r << "nothing";
-            return;
-        }
-
-        if (r["p"] && !r["q"] && r["r"])
-            r << "x<-p+r";
-        if (r["s"] && !r["q"] && r["r"])
-            r << "x<-s+r";
-        if (r.has_actions())
-            return;
-
-        if (r["p"])
-            r << "x<-p";
-        if (r["q"])
-            r << "x<-q";
-        if (r["r"])
-            r << "x<-r";
-        if (r["s"])
-            r << "x<-s";
-        if (r.has_actions())
-            return;
-
-        r << "x<-newlabel";
-    });*/
 
     labeling.generate_rules([](rule_set& rs, uint i) {
         rule_wrapper r(rs, i);
