@@ -75,3 +75,35 @@ bool WriteConactTree(const ltree& t, const string& filename)
     return true;
 }
 
+// Checks if two subtrees 'n1' and 'n2' are equivalent or not 
+bool equivalent_trees(const ltree::node* n1, const ltree::node* n2) {
+    if (n1->data.neq(n2->data))
+        return false;
+
+    if (n1->isleaf())
+        return true;
+    else
+        return equivalent_trees(n1->left, n2->left) && equivalent_trees(n1->right, n2->right);
+}
+
+void intersect_leaves(ltree::node* n1, ltree::node* n2) {
+    if (n1->isleaf()) {
+        n2->data.action = n1->data.action &= n2->data.action;
+    }
+    else {
+        intersect_leaves(n1->left, n2->left);
+        intersect_leaves(n1->right, n2->right);
+    }
+}
+
+// Checks if two (sub)trees 'n1' and 'n2' are equal
+bool EqualTrees(const ltree::node* n1, const ltree::node* n2) {
+    if (n1->data != n2->data)
+        return false;
+
+    if (n1->isleaf())
+        return true;
+    else
+        return EqualTrees(n1->left, n2->left) && EqualTrees(n1->right, n2->right);
+}
+

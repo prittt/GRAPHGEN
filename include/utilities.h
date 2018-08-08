@@ -31,6 +31,8 @@
 #include <algorithm>
 #include <string>
 
+#include "performance_evaluator.h"
+
 extern std::string global_output_path;
 
 struct nodeid {
@@ -46,6 +48,9 @@ static inline void RemoveCharacter(std::string& s, const char c) {
 // Function to automatically print a message before and after each operation
 // No braces around instruction, so you can log also variable definitions without scoping them
 #define LOG(message, instructions) std::cout << (message) << "... "; instructions std::cout << "done.\n"
+
+static PerformanceEvaluator tlog_pe;
+#define TLOG(message, instructions) std::cout << (message) << "... "; tlog_pe.start(); instructions std::cout << "done. " << tlog_pe.stop() << " ms.\n";
 
 #endif // !GRAPHSGEN_UTILITIES_H_
 

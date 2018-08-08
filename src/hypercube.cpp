@@ -171,11 +171,11 @@ ltree VHyperCube::optimize(bool bVerbose)
 }
 
 ltree GenerateOdt(const rule_set& rs) {
-    LOG("Allocating hypercube",
+    TLOG("Allocating hypercube",
         VHyperCube hcube(rs);
     );
 
-    LOG("Optimizing rules",
+    TLOG("Optimizing rules",
         auto t = hcube.optimize(false);
     );
 

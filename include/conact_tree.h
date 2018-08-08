@@ -55,6 +55,13 @@ bool LoadConactTree(ltree& t, const std::string& filename);
 // Write a tree into a txt file structured as in the example above
 bool WriteConactTree(const ltree& t, const std::string& filename);
 
+bool equivalent_trees(const ltree::node* n1, const ltree::node* n2);
+void intersect_leaves(ltree::node* n1, ltree::node* n2);
+
+// Checks if two (sub)trees 'n1' and 'n2' are equal
+bool EqualTrees(const ltree::node* n1, const ltree::node* n2);
+
+
 #endif // !GRAPHSGEN_CONACT_TREE_H_
 
 

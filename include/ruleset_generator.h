@@ -32,5 +32,6 @@
 #include "rule_set.h"
 
 rule_set GenerateRosenfeld();
+rule_set GenerateBBDT();
 
 #endif // !GRAPHSGEN_RULESET_GENERATOR_H_
