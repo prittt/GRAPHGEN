@@ -13,57 +13,24 @@
 #include <unordered_set>
 #include <cassert>
 
-#include <opencv2\core.hpp>
-#include <opencv2\imgcodecs.hpp>
-#include <opencv2\imgproc.hpp>
+//#include <opencv2\core.hpp>
+//#include <opencv2\imgcodecs.hpp>
+//#include <opencv2\imgproc.hpp>
 
 #include "condition_action.h"
 #include "code_generator.h"
 #include "hypercube.h"
 #include "output_generator.h"
+#include "ruleset_generator.h"
 #include "tree.h"
 #include "utilities.h"
 
-#include "merge_set.h"
-
 using namespace std;
-
-#define LOG(message, instructions) cout << (message) << "... "; instructions cout << "done.\n"
 
 using ltree = tree<conact>;
 
-void CreateTree_rec(tree<conact>& t, tree<conact>::node *n, const rule_set& rs, const VHyperCube &hcube, const VIndex &idx) {
-    VNode node = hcube[idx];
-    if (node.uiAction == 0) {
-        n->data.t = conact::type::CONDITION;
-        n->data.condition = rs.conditions[node.uiMaxGainIndex];
-
-        // Estraggo i due (n-1)-cubi
-        string sChild0(idx.GetIndexString());
-        string sChild1(sChild0);
-        sChild0[node.uiMaxGainIndex] = '0';
-        sChild1[node.uiMaxGainIndex] = '1';
-        VIndex idx0(sChild0), idx1(sChild1);
-
-        CreateTree_rec(t, n->left = t.make_node(), rs, hcube, idx0);
-        CreateTree_rec(t, n->right = t.make_node(), rs, hcube, idx1);
-    }
-    else {
-        n->data.t = conact::type::ACTION;
-        n->data.action = node.uiAction;
-    }
-}
-
-// Creates a tree from the optimized HyperCube rules
-tree<conact> CreateTree(const rule_set& rs, const VHyperCube &hcube) {
-    tree<conact> t;
-    CreateTree_rec(t, t.make_root(), rs, hcube, string(hcube.m_iDim, '-'));
-    return t;
-}
-
-
 // Checks if two subtrees 'n1' and 'n2' are equivalent or not 
-bool equivalent_trees(const tree<conact>::node* n1, const tree<conact>::node* n2) {
+bool equivalent_trees(const ltree::node* n1, const ltree::node* n2) {
     if (n1->data.neq(n2->data))
         return false;
 
@@ -73,7 +40,7 @@ bool equivalent_trees(const tree<conact>::node* n1, const tree<conact>::node* n2
         return equivalent_trees(n1->left, n2->left) && equivalent_trees(n1->right, n2->right);
 }
 
-void intersect_leaves(tree<conact>::node* n1, tree<conact>::node* n2) {
+void intersect_leaves(ltree::node* n1, ltree::node* n2) {
     if (n1->isleaf()) {
         n2->data.action = n1->data.action &= n2->data.action;
     }
@@ -83,7 +50,7 @@ void intersect_leaves(tree<conact>::node* n1, tree<conact>::node* n2) {
     }
 }
 
-void FindAndLinkEquivalencesRec(tree<conact>::node* n1, tree<conact>::node* n2) {
+void FindAndLinkEquivalencesRec(ltree::node* n1, ltree::node* n2) {
     if (n2->isleaf() || n1 == n2)
         return;
 
@@ -103,7 +70,7 @@ void FindAndLinkEquivalencesRec(tree<conact>::node* n1, tree<conact>::node* n2) 
 
 
 // Recursive auxiliary function for the conversion of a tree into DAG
-void Tree2DagUsingEquivalencesRec(tree<conact>::node *n, tree<conact>& t) {
+void Tree2DagUsingEquivalencesRec(ltree::node *n, ltree& t) {
     FindAndLinkEquivalencesRec(n, t.root);
 
     if (!n->isleaf()) {
@@ -128,7 +95,7 @@ bool EqualTrees(const ltree::node* n1, const ltree::node* n2) {
         return EqualTrees(n1->left, n2->left) && EqualTrees(n1->right, n2->right);
 }
 
-void FindAndLinkIdentiesRec(tree<conact>::node* n1, tree<conact>::node* n2) {
+void FindAndLinkIdentiesRec(ltree::node* n1, ltree::node* n2) {
     if (n2->isleaf() || n1 == n2)
         return;
 
@@ -158,7 +125,7 @@ void Tree2DagUsingIdentities(ltree& t) {
     Tree2DagUsingIdentitiesRec(t.root, t);
 }
 
-void FindAndLinkIdentiesDagRec(tree<conact>::node* n1, tree<conact>::node* n2, std::map<ltree::node*, bool> &visited_fl) {
+void FindAndLinkIdentiesDagRec(ltree::node* n1, ltree::node* n2, std::map<ltree::node*, bool> &visited_fl) {
     if (n2->isleaf() || n1 == n2 || visited_fl[n2])
         return;
     visited_fl[n2] = true;
@@ -176,7 +143,7 @@ void FindAndLinkIdentiesDagRec(tree<conact>::node* n1, tree<conact>::node* n2, s
 }
 
 // Recursive auxiliary function for the conversion of a DAG into DAG with no equivalent subgraphs
-void Dag2DagUsingIdentiesRec(tree<conact>::node *n, tree<conact>& t, std::map<ltree::node*, bool> &visited_n) {
+void Dag2DagUsingIdentiesRec(ltree::node *n, ltree& t, std::map<ltree::node*, bool> &visited_n) {
     std::map<ltree::node*, bool> visited_fl;
     FindAndLinkIdentiesDagRec(n, t.root, visited_fl);
     visited_n[n] = true;
@@ -208,7 +175,7 @@ void Dag2DagUsingIdenties(ltree& t) {
 //  			. 3
 //  		. 4
 struct tree_loader {
-    tree<conact> t;
+    ltree t;
 
     void load_tree(istream& is)
     {
@@ -216,7 +183,7 @@ struct tree_loader {
         t.root = load_tree_rec(is);
     }
 
-    tree<conact>::node* load_tree_rec(istream& is)
+    ltree::node* load_tree_rec(istream& is)
     {
         string s;
         while (is >> s) {
@@ -226,7 +193,7 @@ struct tree_loader {
                 break;
         }
 
-        tree<conact>::node* n = new tree<conact>::node;
+        ltree::node* n = new ltree::node;
         if (s == ".") {
             // leaf
             n->data.t = conact::type::ACTION;
@@ -488,162 +455,6 @@ void Tree2OptimalDag(ltree& t) {
     BestDagFromList(trees, t);*/
 }
 
-struct mask {
-    cv::Mat1b mask_;
-    int top_ = 0, bottom_ = 0, left_ = 0, right_ = 0;
-    int border_ = 0;
-    int exp_;
-    int increment_ = 0;
-
-    mask(const pixel_set &ps) {
-        increment_ = ps.shift_;
-        exp_ = ps.pixels.size();
-        for (int i = 0; i < exp_; ++i) {
-            border_ = std::max(border_, std::max(std::abs(ps.pixels[i].dx), std::abs(ps.pixels[i].dy)));
-            top_ = std::min(top_, ps.pixels[i].dy);
-            right_ = std::max(right_, ps.pixels[i].dx);
-            left_ = std::min(left_, ps.pixels[i].dx);
-            bottom_ = std::max(bottom_, ps.pixels[i].dy);
-        }
-
-        left_ = std::abs(left_);
-        top_ = std::abs(top_);
-
-        mask_ = cv::Mat1b(top_ + bottom_ + 1, left_ + right_ + 1, uchar(0));
-        for (int i = 0; i < exp_; ++i) {
-            mask_(ps.pixels[i].dy + top_, ps.pixels[i].dx + left_) = 1;
-        }
-    }
-
-    size_t MaskToLinearMask(const cv::Mat1b r_img) const {
-        size_t linearMask = 0;
-
-        for (int r = 0; r < r_img.rows; ++r) {
-            for (int c = 0; c < r_img.cols; ++c) {
-                linearMask <<= (1 & mask_(r, c));
-                linearMask |= (r_img(r, c) & mask_(r, c));
-            }
-        }
-        return linearMask;
-    }
-};
-
-// This function extracts all the configurations of a given mask (msk) in a give image (img) and store the occourences (frequencies) in the rRules vector
-void CalculateConfigurationsFrequencyOnImage(const cv::Mat1b& img, const mask &msk, rule_set &rs) {
-
-    cv::Mat1b clone;
-    copyMakeBorder(img, clone, msk.border_, msk.border_, msk.border_, msk.border_, cv::BORDER_CONSTANT, 0);
-    const int h = clone.rows, w = clone.cols;
-
-    for (int r = msk.border_; r < h - msk.border_; r += msk.increment_) {
-        for (int c = msk.border_; c < w - msk.border_; c += msk.increment_) {
-            cv::Mat1b read_pixels = clone(cv::Rect(cv::Point(c - msk.left_, r - msk.top_), cv::Point(c + 1 + msk.right_, r + 1 + msk.bottom_))).clone();
-            bitwise_and(msk.mask_, read_pixels, read_pixels);
-            size_t rule = msk.MaskToLinearMask(read_pixels);
-            rs.rules[rule].frequency++;
-            if (rs.rules[rule].frequency == numeric_limits</*uint*/ unsigned long long>::max()) {
-                cout << "OVERFLOW freq" << endl;
-            }
-        }
-    }
-}
-
-bool GetBinaryImage(const string &FileName, cv::Mat1b& binary) {
-
-    // Image load
-    cv::Mat image;
-    image = cv::imread(FileName, cv::IMREAD_GRAYSCALE);   // Read the file
-
-                                                         // Check if image exist
-    if (image.empty())
-        return false;
-
-    //// Convert the image to grayscale
-    //Mat grayscaleMat;
-    //cvtColor(image, grayscaleMat, CV_RGB2GRAY);
-
-    // Adjust the threshold to actually make it binary
-    cv::threshold(image, binary, 100, 1, cv::THRESH_BINARY);
-
-    return true;
-}
-
-
-void RemoveCharacter(string& s, const char c)
-{
-    s.erase(std::remove(s.begin(), s.end(), c), s.end());
-}
-
-bool LoadFileList(vector<pair<string, bool>>& filenames, const string& files_path)
-{
-    // Open files_path (files.txt)
-    ifstream is(files_path);
-    if (!is.is_open()) {
-        return false;
-    }
-
-    string cur_filename;
-    while (getline(is, cur_filename)) {
-        // To delete possible carriage return in the file name
-        // (especially designed for windows file newline format)
-        RemoveCharacter(cur_filename, '\r');
-        filenames.push_back(make_pair(cur_filename, true));
-    }
-
-    is.close();
-    return true;
-}
-
-void CalculateRulesFrequencies(const pixel_set &ps, const vector<string> &paths, rule_set &rs) {
-    mask msk(ps);
-
-    cv::Mat1b img;
-
-    for (uint i = 0; i < paths.size(); ++i) {
-        vector<pair<string, bool>> files_list;
-        if (!LoadFileList(files_list, paths[i] + "//files.txt")) {
-            cout << "Unable to find 'files.txt' of " << paths[i] << ", dataset skipped";
-            continue;
-        }
-
-        for (uint d = 0; d < files_list.size(); ++d) {
-            GetBinaryImage(paths[i] + "//" + files_list[d].first, img);
-            if (img.empty()) {
-                cout << "Unable to find '" << files_list[d].first << "' image in '" << paths[i] << "' dataset, image skipped\n";
-                continue;
-            }
-            CalculateConfigurationsFrequencyOnImage(img, msk, rs);
-        }
-    }
-}
-
-void StoreFrequenciesOnFile(const string &output_file, const rule_set& rs) {
-    ofstream os(output_file);
-    if (!os.is_open()) {
-        return;
-    }
-
-    for (size_t i = 0; i < rs.rules.size(); ++i) {
-        os << rs.rules[i].frequency << endl;
-    }
-}
-
-bool LoadFrequenciesFromFile(const string &file_path, rule_set& rs) {
-    ifstream is(file_path);
-    if (!is.is_open()) {
-        return false;
-    }
-
-    int i = 0;
-    unsigned long long freq;
-    while (is >> freq) {
-        rs.rules[i].frequency = freq;
-        ++i;
-    }
-
-    return true;
-}
-
 // This function counts the number of nodes in a dag
 void CalculateDagWeight(const ltree::node *n, unsigned long long& weight, set<const ltree::node*> &visited_nodes, const TreePathFreq& tpf, uint cur_path = 0)
 {
@@ -756,105 +567,13 @@ void Tree2OptimalDagFreq(ltree& t, const TreePathFreq& tpf) {
     BestDagFromList(trees, t);*/
 }
 
+
+
 int main()
 {
-    pixel_set rosenfeld_mask{
-        { "p", -1, -1 }, { "q", 0, -1 }, { "r", +1, -1 },
-        { "s", -1,  0 }, { "x", 0, 0 },
-    };
+    auto rs = GenerateRosenfeld();
 
-    rule_set labeling;
-    labeling.init_conditions(rosenfeld_mask);
-    labeling.init_actions({
-        "nothing",
-        "x<-newlabel",
-        "x<-p", "x<-q", "x<-r", "x<-s",
-        "x<-p+q", "x<-p+r", "x<-p+s", "x<-q+r", "x<-q+s", "x<-r+s",
-        "x<-p+q+r", "x<-p+q+s", "x<-p+r+s", "x<-q+r+s",
-        "x<-p+q+r+s",
-    });
-
-
-    labeling.generate_rules([](rule_set& rs, uint i) {
-        rule_wrapper r(rs, i);
-
-        bool X = r["x"];
-        if (!X) {
-            r << "nothing";
-            return;
-        }
-
-        connectivity_mat<5> con({ "p", "q", "r", "s", "x" });
-
-        con.set("x", "p", r["p"]);
-        con.set("x", "q", r["q"]);
-        con.set("x", "r", r["r"]);
-        con.set("x", "s", r["s"]);
-
-        con.set("p", "q", r["p"] && r["q"]);
-        con.set("p", "s", r["p"] && r["s"]);
-        con.set("q", "r", r["q"] && r["r"]);
-        con.set("q", "s", r["q"] && r["s"]);
-
-        con.set("p", "r", con("p", "q") && con("q", "r"));
-        con.set("s", "r", (con("p", "r") && con("p", "s")) || (con("s", "q") && con("q", "r")));
-
-		con.DisplayCondNames();
-        string bits = std::bitset<5>(i).to_string();
-        reverse(begin(bits), end(bits));
-		std::cout << bits << std::endl;
-		con.DisplayMap();
-		cout << endl;
-
-        MergeSet<5> ms(con);
-        ms.BuildMergeSet();
-
-        for (const auto& s : ms.mergesets_) {
-            string action = "x<-";
-            if (s.empty())
-                action += "newlabel";
-            else {
-                action += s[0];
-                for (size_t i = 1; i < s.size(); ++i)
-                    action += "+" + s[i];
-            }
-            r << action;
-        }
-    });
-
-    /****************    SAUF    ****************/
-    auto& rs = labeling;
-    auto nvars = rs.conditions.size();
-    auto nrules = rs.rules.size();
-
-    LOG("Allocating hypercube",
-        VHyperCube hcube(nvars);
-    );
-
-    ifstream is("hypercube.bin", ios::binary);
-    if (!is) {
-        LOG("Initializing rules",
-            hcube.initialize_rules(rs);
-        );
-
-        LOG("Optimizing rules",
-            hcube.optimize(false);
-        );
-
-        ofstream os("hypercube.bin", ios::binary);
-        LOG("Writing to file",
-            hcube.write(os);
-        );
-    }
-    else {
-        LOG("Reading from file",
-            hcube.read(is);
-        );
-    }
-
-    LOG("Creating tree",
-        auto t = CreateTree(rs, hcube);
-    );
+    auto t = GenerateOdt(rs);
 
     set<const ltree::node*> visited_nodes;
     set<const ltree::node*> visited_leaves;

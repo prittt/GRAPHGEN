@@ -2,7 +2,7 @@
 
 #include "pixel_set.h"
 #include <unordered_map>
-#include <ostream>
+#include <fstream>
 
 using uint = uint32_t;
 
@@ -62,6 +62,33 @@ struct rule_set {
         // Da migliorare: chi assicura che vi sia corrispondenza nella rappresentazione
         // delle regole usata all'esterno e quelle implementata dal rule_set?
         rules[rule].frequency = frequency;
+    }
+
+    void StoreFrequenciesOnFile(const std::string &output_file) const {
+        std::ofstream os(output_file);
+        if (!os.is_open()) {
+            return;
+        }
+
+        for (size_t i = 0; i < rules.size(); ++i) {
+            os << rules[i].frequency << "\n";
+        }
+    }
+
+    bool LoadFrequenciesFromFile(const std::string &file_path) {
+        std::ifstream is(file_path);
+        if (!is.is_open()) {
+            return false;
+        }
+
+        int i = 0;
+        unsigned long long freq;
+        while (is >> freq) {
+            rules[i].frequency = freq;
+            ++i;
+        }
+
+        return true;
     }
 };
 

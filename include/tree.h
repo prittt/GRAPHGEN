@@ -3,11 +3,14 @@
 
 #include <algorithm>
 #include <memory>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
+// BDRAG - This data structure allows to manage a Binary Directed Rooted Acyclic Graph,
+// that can be both a standard tree or a DAG, with the sole limitation that every node
+// shall have two children. In our case exactly two or zero.
 template<typename T>
-struct tree {
+struct tree { 
     struct node {
         T data;
         node *left = nullptr, *right = nullptr;
@@ -17,7 +20,7 @@ struct tree {
         }
     };
 
-    // List of unique pointers to tree nodes. This is useful to free memory when the tree is converted to DAG 
+    // Vector of unique pointers to tree nodes. This is useful to free memory when the tree is converted to DAG 
     std::vector<std::unique_ptr<node>> nodes;
 
     // Creates and returns new node updating the nodes vector
@@ -33,18 +36,6 @@ struct tree {
         swap(t1.root, t2.root);
         swap(t1.nodes, t2.nodes);
     }
-
-    // Recursive function to copy a tree. This is required by the copy constructor
-    // It works only for trees and not for dags
-    /*node *MakeCopyRecursive(node *n) {
-        if (n == nullptr)
-            return nullptr;
-        node *nn = make_node();
-        nn->data = n->data;
-        nn->left = make_copy_rec(n->left);
-        nn->right = make_copy_rec(n->right);
-        return nn;
-    }*/
 
     // Recursive function to copy a tree. This is required by the copy constructor
     // It works for both trees and dags
@@ -71,11 +62,6 @@ struct tree {
     }
     tree(tree&& t) {
         swap(*this, t);
-        /*
-        using std::swap;
-        swap(root, t.root);
-        swap(nodes, t.nodes);
-        */
     }
     // Copy assignment
     tree& operator=(tree t) {
