@@ -162,59 +162,6 @@ void Dag2DagUsingIdenties(ltree& t) {
     Dag2DagUsingIdentiesRec(t.root, t, visited_n);
 }
 
-// To load a tree from a txt file with the following structure:
-//  x
-//  	a (left son of x) 
-//  		c 
-//  			. 2
-//  			. 3
-//  		. 1,3,4 (list of actions)
-//  	b (right son of x)
-//  		c
-//  			. 2
-//  			. 3
-//  		. 4
-struct tree_loader {
-    ltree t;
-
-    void load_tree(istream& is)
-    {
-        t.clear();
-        t.root = load_tree_rec(is);
-    }
-
-    ltree::node* load_tree_rec(istream& is)
-    {
-        string s;
-        while (is >> s) {
-            if (s[0] == '#')
-                getline(is, s);
-            else
-                break;
-        }
-
-        ltree::node* n = new ltree::node;
-        if (s == ".") {
-            // leaf
-            n->data.t = conact::type::ACTION;
-            do {
-                int action;
-                is >> action >> ws;
-                n->data.action |= 1 << (action - 1);
-            } while (is.peek() == ',' && is.get());
-        }
-        else {
-            // real node with branches
-            n->data.t = conact::type::CONDITION;
-            n->data.condition = s;
-
-            n->left = load_tree_rec(is);
-            n->right = load_tree_rec(is);
-        }
-
-        return n;
-    }
-};
 
 //// Given a tree with multiple actions on leaves this function generate all possible subtree with only one action per leaf
 //void Tree2OptimalDagRec(ltree& t, ltree::node* n, vector<ltree>& trees) {

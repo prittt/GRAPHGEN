@@ -1,4 +1,4 @@
-# Copyright(c) 2017 Federico Bolelli, Costantino Grana
+# Copyright(c) 2018 Federico Bolelli, Costantino Grana
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -11,7 +11,7 @@
 # this list of conditions and the following disclaimer in the documentation
 # and / or other materials provided with the distribution.
 #
-# * Neither the name of YACCLAB nor the names of its
+# * Neither the name of GRAPHSGEN nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
@@ -28,7 +28,7 @@
 
 cmake_minimum_required(VERSION 3.0.0)
 
-set (ProjectName "TreesGenerator")
+set (ProjectName "GRAPHSGEN")
 project (${ProjectName})
 
 #Suppress creation of ZERO_CHECK

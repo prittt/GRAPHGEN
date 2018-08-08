@@ -26,11 +26,43 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_RULESET_GENERATOR_H_
-#define GRAPHSGEN_RULESET_GENERATOR_H_
+#ifndef GRAPHSGEN_CONACT_TREE_H_
+#define GRAPHSGEN_CONACT_TREE_H_
 
-#include "rule_set.h"
+#include <fstream>
 
-rule_set GenerateRosenfeld();
+#include "condition_action.h"
+#include "tree.h"
 
-#endif // !GRAPHSGEN_RULESET_GENERATOR_H_
+using ltree = tree<conact>;
+
+// Example of conact tree
+//  x
+//  	a (left son of x) 
+//  		c 
+//  			. 2
+//  			. 3
+//  		. 1,3,4 (list of actions)
+//  	b (right son of x)
+//  		c
+//  			. 2
+//  			. 3
+//  		. 4
+
+
+// Loads a tree from a txt file structured as in the example above
+ltree LoadConactTree(const char *filename);
+
+// Auxiliary recursive function of the LoadConactTree
+ltree::node* LoadConactTreeRec(std::ifstream& is);
+
+// Write a tree into a txt file structured as in the example above
+bool WriteConactTree(const ltree& t, const char *filename);
+
+// Auxiliary recursive function of the WriteConactTree
+bool WriteConactTreeRec(std::ofstream& os);
+
+#endif // !GRAPHSGEN_CONACT_TREE_H_
+
+
+

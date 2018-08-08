@@ -13,7 +13,7 @@ struct pixel {
 };
 
 /*
-* Mask configuration file
+* Mask configuration file (NOT USED)
 The mask configuration file is line oriented. Every token is separated by spaces or tabs.
 A line starting with # is a comment and is skipped.
 
