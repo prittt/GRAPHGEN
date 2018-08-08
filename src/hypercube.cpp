@@ -170,22 +170,21 @@ ltree VHyperCube::optimize(bool bVerbose)
 	return t;
 }
 
-ltree GenerateOdt(const rule_set& rs, const char *filename) {
-	LOG("Allocating hypercube",
-		VHyperCube hcube(rs);
-	);
+ltree GenerateOdt(const rule_set& rs) {
+    LOG("Allocating hypercube",
+        VHyperCube hcube(rs);
+    );
 
-	LOG("Optimizing rules",
-		auto t = hcube.optimize(false);
-	);
+    LOG("Optimizing rules",
+        auto t = hcube.optimize(false);
+    );
 
-	ofstream os;
-	if (filename) {
-		os.open(filename);
-		if (os.is_open()) {
-			WriteConactTree(t, filename);
-		}
-	}
+    return t;
+}
 
+ltree GenerateOdt(const rule_set& rs, const string& filename) 
+{
+    auto t = GenerateOdt(rs);
+	WriteConactTree(t, filename);
 	return t;
 }

@@ -167,6 +167,7 @@ struct VHyperCube {
 
 // Generates an Optimal Decision Tree from the given rule_set,
 // and store it in the filename when specified.
-ltree GenerateOdt(const rule_set& rs, const char *filename = NULL);
+ltree GenerateOdt(const rule_set& rs);
+ltree GenerateOdt(const rule_set& rs, const std::string& filename);
 
 #endif // !GRAPHSGEN_CONACT_TREE_H_

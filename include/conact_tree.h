@@ -49,18 +49,11 @@ using ltree = tree<conact>;
 //  			. 3
 //  		. 4
 
-
 // Loads a tree from a txt file structured as in the example above
-ltree LoadConactTree(const char *filename);
-
-// Auxiliary recursive function of the LoadConactTree
-ltree::node* LoadConactTreeRec(std::ifstream& is);
+bool LoadConactTree(ltree& t, const std::string& filename);
 
 // Write a tree into a txt file structured as in the example above
-bool WriteConactTree(const ltree& t, const char *filename);
-
-// Auxiliary recursive function of the WriteConactTree
-bool WriteConactTreeRec(std::ofstream& os);
+bool WriteConactTree(const ltree& t, const std::string& filename);
 
 #endif // !GRAPHSGEN_CONACT_TREE_H_
 

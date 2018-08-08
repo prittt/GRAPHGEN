@@ -24,10 +24,9 @@
 #include "ruleset_generator.h"
 #include "tree.h"
 #include "utilities.h"
+#include "conact_tree.h"
 
 using namespace std;
-
-using ltree = tree<conact>;
 
 // Checks if two subtrees 'n1' and 'n2' are equivalent or not 
 bool equivalent_trees(const ltree::node* n1, const ltree::node* n2) {
@@ -518,16 +517,20 @@ void Tree2OptimalDagFreq(ltree& t, const TreePathFreq& tpf) {
 
 int main()
 {
+    string odt_filename = global_output_path + "rosenfeld_odt.txt";
     auto rs = GenerateRosenfeld();
 
-    auto t = GenerateOdt(rs);
+    ltree t;
+    if (!LoadConactTree(t, odt_filename)) {
+        t = GenerateOdt(rs, odt_filename);
+    }
 
     set<const ltree::node*> visited_nodes;
     set<const ltree::node*> visited_leaves;
     CountDagNodes(t.root, visited_nodes, visited_leaves);
     cout << "Nodes = " << visited_nodes.size() << "\n";
     
-    LOG("Saving tree",
+    LOG("Saving tree image",
         DrawDagOnFile("sauf_tree", t, true);
     );
 
@@ -535,7 +538,7 @@ int main()
         Tree2DagUsingIdentities(t);
     );
 
-    LOG("Saving DRAG",
+    LOG("Saving DRAG image",
         DrawDagOnFile("sauf_dag", t, true);
     );
 
@@ -544,5 +547,4 @@ int main()
     CountDagNodes(t.root, visited_nodes, visited_leaves);
     cout << "Nodes = " << visited_nodes.size() << "\n";
     cout << "Leaves = " << visited_leaves.size() << "\n";
-
 }

@@ -1,20 +1,10 @@
 #include "conact_tree.h"
 
+#include <cassert>
+
 using namespace std;
 
-ltree LoadConactTree(const char *filename) {
-	ltree n;
-
-	ifstream is(filename);
-	if (!is.is_open()) {
-		return n;
-	}
-
-	n.root = LoadConactTreeRec(is);
-	return n;
-}
-
-ltree::node* LoadConactTreeRec(ifstream& is)
+static ltree::node* LoadConactTreeRec(ltree& t, ifstream& is)
 {
 	string s;
 	while (is >> s) {
@@ -24,7 +14,7 @@ ltree::node* LoadConactTreeRec(ifstream& is)
 			break;
 	}
 
-	ltree::node* n = new ltree::node;
+	ltree::node* n = t.make_node();
 	if (s == ".") {
 		// leaf
 		n->data.t = conact::type::ACTION;
@@ -39,19 +29,49 @@ ltree::node* LoadConactTreeRec(ifstream& is)
 		n->data.t = conact::type::CONDITION;
 		n->data.condition = s;
 
-		n->left = LoadConactTreeRec(is);
-		n->right = LoadConactTreeRec(is);
+		n->left = LoadConactTreeRec(t, is);
+		n->right = LoadConactTreeRec(t, is);
 	}
 
 	return n;
 }
 
-bool WriteConactTree(const ltree& t, const char *filename) {
+bool LoadConactTree(ltree& t, const string& filename)
+{
+    ifstream is(filename);
+    if (!is) {
+        return false;
+    }
 
-	return true;
+    t.root = LoadConactTreeRec(t, is);
+    return true;
 }
 
-bool WriteConactTreeRec(ofstream& os) {
-
-	return true;
+static void WriteConactTreeRec(const ltree::node* n, ofstream& os, size_t tab = 0)
+{
+    os << string(tab, '\t');
+    if (n->isleaf()) {
+        assert(n->data.t == conact::type::ACTION);
+        auto a = n->data.actions();
+        os << ". " << a[0];
+        for (size_t i = 1; i < a.size(); ++i)
+            os << "," << a[i];
+        os << "\n";
+    }
+    else {
+        assert(n->data.t == conact::type::CONDITION);
+        os << n->data.condition << "\n";
+        WriteConactTreeRec(n->left, os, tab + 1);
+        WriteConactTreeRec(n->right, os, tab + 1);
+    }
 }
+
+bool WriteConactTree(const ltree& t, const string& filename)
+{
+    ofstream os(filename);
+    if (!os)
+        return false;
+    WriteConactTreeRec(t.root, os);
+    return true;
+}
+
