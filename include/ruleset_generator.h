@@ -31,7 +31,22 @@
 
 #include "rule_set.h"
 
-rule_set GenerateRosenfeld();
-rule_set GenerateBBDT();
+#define RSG_ALGO RSG(rosenfeld) RSG(bbdt)
+
+#define RSG(a) rule_set generate_##a();
+RSG_ALGO
+#undef RSG
+
+#define RSG(a) a, 
+enum class ruleset_generator_type { RSG_ALGO };
+#undef RSG
+
+#define RSG(a) #a, 
+static std::string ruleset_generator_names[] = { RSG_ALGO };
+#undef RSG
+
+#define RSG(a) generate_##a, 
+static rule_set(*ruleset_generator_functions[])(void) = { RSG_ALGO };
+#undef RSG
 
 #endif // !GRAPHSGEN_RULESET_GENERATOR_H_

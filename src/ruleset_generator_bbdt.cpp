@@ -8,7 +8,7 @@
 using namespace std;
 
 
-rule_set GenerateBBDT() 
+rule_set generate_bbdt()
 {
     pixel_set grana_mask{
         /*{ "a", -2, -2 },*/{ "b", -1, -2 },{ "c", +0, -2 },{ "d", +1, -2 },{ "e", +2, -2 }, /*{ "f", +3, -2 },*/

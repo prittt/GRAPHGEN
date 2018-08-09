@@ -9,7 +9,7 @@ using namespace std;
 
 static bool g_debug_log = false;
 
-rule_set GenerateRosenfeld() 
+rule_set generate_rosenfeld()
 {
     pixel_set rosenfeld_mask {
         { "p", -1, -1 }, { "q", 0, -1 }, { "r", +1, -1 },

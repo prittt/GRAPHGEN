@@ -45,7 +45,7 @@ void Dag2DagUsingIdenties(ltree& t) {
 
 // Given a dag with multiple actions on leaves this function generate all possible dags with only one action per leaf
 // VERSIONE CHE CONTA I NODI E LE FOGLIE PER DECIDERE QUAL E' L'ALBERO MIGLIORE
-void Tree2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_nodes, uint &best_leaves, std::map<const ltree::node*, bool> &visited_n, uint &counter) {
+void Dag2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_nodes, uint &best_leaves, std::map<const ltree::node*, bool> &visited_n, uint &counter) {
     ltree nt;
     if (n->isleaf()) {
         // leaf with multiple action
@@ -55,7 +55,7 @@ void Tree2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_n
                 std::map<const ltree::node*, bool> visited_node_cur;
                 n->data.action = 1 << (actions_list[i] - 1);
                 nt = t;
-                Tree2OptimalDagRec(nt, nt.root, best_tree, best_nodes, best_leaves, visited_node_cur, counter);
+                Dag2OptimalDagRec(nt, nt.root, best_tree, best_nodes, best_leaves, visited_node_cur, counter);
             }
             n->data.action = 1 << (actions_list[actions_list.size() - 1] - 1);
         }
@@ -65,13 +65,13 @@ void Tree2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_n
     if (!visited_n[n->left]) {
         // left node not already visited
         visited_n[n->left] = true;
-        Tree2OptimalDagRec(t, n->left, best_tree, best_nodes, best_leaves, visited_n, counter);
+        Dag2OptimalDagRec(t, n->left, best_tree, best_nodes, best_leaves, visited_n, counter);
     }
 
     if (!visited_n[n->right]) {
         // right node not already visited
         visited_n[n->right] = true;
-        Tree2OptimalDagRec(t, n->right, best_tree, best_nodes, best_leaves, visited_n, counter);
+        Dag2OptimalDagRec(t, n->right, best_tree, best_nodes, best_leaves, visited_n, counter);
     }
 
     if (t.root == n) {
@@ -100,14 +100,14 @@ void Tree2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_n
 
 // Converts a tree into dag minimizing the number of nodes (Note: this is "necessary" when the leaves of a tree contain multiple actions)
 // UTILIZZA IL NUMERO DI NODI PER SCEGLIERE IL DAG OTTIMO
-void Tree2OptimalDag(ltree& t) {
+void Dag2OptimalDag(ltree& t) {
     std::vector<ltree> trees;
     ltree best_tree;
     std::map<const ltree::node*, bool> visited_nodes;
     uint counter = 0;
     uint best_nodes = std::numeric_limits<uint>::max();
     uint best_leaves = std::numeric_limits<uint>::max();
-    Tree2OptimalDagRec(t, t.root, best_tree, best_nodes, best_leaves, visited_nodes, counter);
+    Dag2OptimalDagRec(t, t.root, best_tree, best_nodes, best_leaves, visited_nodes, counter);
     std::cout << "** Vector size:" << counter << " **\n";
     std::cout << "** Counter:" << counter << " **\n";
 
