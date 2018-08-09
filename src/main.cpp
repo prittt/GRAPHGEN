@@ -36,18 +36,69 @@ void print_stats(const ltree& t) {
     cout << "Leaves = " << ds.leaves() << "\n";
 }
 
+// Instead of defining a novel format to save DRAGS, we save them as trees, then link
+// identical sub-trees. Since the order of traversal is the same, the result should be the same.
+// Should...
+bool LoadConactDrag(ltree& t, const string& filename)
+{
+    if (!LoadConactTree(t, filename))
+        return false;
+
+    Dag2DagUsingIdenties(t);
+    
+    return true;
+}
+bool WriteConactDrag(ltree& t, const string& filename)
+{
+    return WriteConactTree(t, filename);
+}
+
+void PerformOptimalDragGeneration(ltree& t, const string& algorithm_name)
+{
+    LOG("Creating DRAG using identites",
+        Tree2DagUsingIdentities(t);
+    );
+    string drag_filename = global_output_path + algorithm_name + "_drag_identities";
+    DrawDagOnFile(drag_filename, t, true);
+    print_stats(t);
+
+    string odrag_filename = global_output_path + algorithm_name + "_optimal_drag.txt";
+    if (!LoadConactDrag(t, odrag_filename)) {
+        TLOG("Computing optimal DRAG\n",
+            Dag2OptimalDag(t);
+        );
+        WriteConactDrag(t, odrag_filename);
+    }
+    string optimal_drag_filename = global_output_path + algorithm_name + "_optimal_drag";
+    DrawDagOnFile(optimal_drag_filename, t, true);
+    print_stats(t);
+
+    LOG("Writing DRAG code",
+        {
+            string code_filename = global_output_path + algorithm_name + "_drag_code.txt";
+            ofstream os(code_filename);
+            GenerateCode(os, t);
+        }
+    );
+}
+
+#include "forest.h"
+
+template <typename T>
+string zerostr(const T& val, size_t n) {
+    stringstream ss;
+    ss << setw(n) << setfill('0') << val;
+    return ss.str();
+}
+
 int main()
 {
-    enum class algorithm_type { rosenfeld, bbdt };
-    string algorithm_names[] = { "rosenfeld", "bbdt" };
-    rule_set (*algorithm_functions[])(void) = { GenerateRosenfeld, GenerateBBDT };
+    auto at = ruleset_generator_type::bbdt;
 
-    auto at = algorithm_type::bbdt;
+    auto algorithm_name = ruleset_generator_names[static_cast<int>(at)];
+    auto ruleset_generator = ruleset_generator_functions[static_cast<int>(at)];
 
-    auto algorithm_name = algorithm_names[static_cast<int>(at)];
-    auto algorithm_function = algorithm_functions[static_cast<int>(at)];
-
-    auto rs = algorithm_function();
+    auto rs = ruleset_generator();
 
     string odt_filename = global_output_path + algorithm_name + "_odt.txt";
     ltree t;
@@ -58,24 +109,11 @@ int main()
     DrawDagOnFile(tree_filename, t, true);
     print_stats(t);
 
-    LOG("Creating DRAG using identites",
-        Tree2DagUsingIdentities(t);
-    );
-    string drag_filename = global_output_path + algorithm_name + "_drag_identities";
-    DrawDagOnFile(drag_filename, t, true);
-    print_stats(t);
+    //PerformOptimalDragGeneration(t, algorithm_name);
 
-    TLOG("Computing optimal DRAG\n",
-        Tree2OptimalDag(t);
-    );
-    string optimal_drag_filename = global_output_path + algorithm_name + "_optimal_drag";
-    DrawDagOnFile(optimal_drag_filename, t, true);
-    print_stats(t);
+    Forest f(t, rs.ps_);
 
-    LOG("Writing DRAG code",
-        {
-            ofstream os("bbdt_drag_code.txt");
-            GenerateCode(os, t);
-        }
-    );
+    for (size_t i = 0; i < f.trees_.size(); ++i) {
+        DrawDagOnFile("tree" + zerostr(i, 4), f.trees_[i]);
+    }
 }
