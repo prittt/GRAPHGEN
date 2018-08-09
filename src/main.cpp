@@ -19,17 +19,22 @@
 
 #include "condition_action.h"
 #include "code_generator.h"
+#include "drag_statistics.h"
+#include "drag2optimal.h"
 #include "hypercube.h"
 #include "output_generator.h"
 #include "ruleset_generator.h"
 #include "tree.h"
 #include "tree2dag_identities.h"
 #include "utilities.h"
-#include "drag_statistics.h"
 
 using namespace std;
 
-//#include "main.h"
+void print_stats(const ltree& t) {
+    DragStatistics ds(t);
+    cout << "Nodes = " << ds.nodes() << "\n";
+    cout << "Leaves = " << ds.leaves() << "\n";
+}
 
 int main()
 {
@@ -49,22 +54,21 @@ int main()
     if (!LoadConactTree(t, odt_filename)) {
         t = GenerateOdt(rs, odt_filename);
     }
-
-    DragStatistics ds(t);
-    cout << "Nodes = " << ds.nodes() << "\n";
-    cout << "Leaves = " << ds.leaves() << "\n";
-
     string tree_filename = global_output_path + algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, t, true);
+    print_stats(t);
 
     LOG("Creating DRAG using identites",
         Tree2DagUsingIdentities(t);
     );
-
-    string drag_filename = global_output_path + algorithm_name + "_drag";
+    string drag_filename = global_output_path + algorithm_name + "_drag_identities";
     DrawDagOnFile(drag_filename, t, true);
+    print_stats(t);
 
-    ds = DragStatistics(t);
-    cout << "Nodes = " << ds.nodes() << "\n";
-    cout << "Leaves = " << ds.leaves() << "\n";
+    TLOG("Computing optimal DRAG\n",
+        Tree2OptimalDag(t);
+    );
+    string optimal_drag_filename = global_output_path + algorithm_name + "_optimal_drag";
+    DrawDagOnFile(optimal_drag_filename, t, true);
+    print_stats(t);
 }

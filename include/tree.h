@@ -53,7 +53,7 @@ struct tree {
 
     // Creates and returns new node updating the nodes vector
     node* make_node() {
-        nodes.emplace_back(make_unique<node>());
+        nodes.emplace_back(std::make_unique<node>());
         return nodes.back().get();
     }
 
