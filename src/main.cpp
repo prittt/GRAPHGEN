@@ -71,4 +71,11 @@ int main()
     string optimal_drag_filename = global_output_path + algorithm_name + "_optimal_drag";
     DrawDagOnFile(optimal_drag_filename, t, true);
     print_stats(t);
+
+    LOG("Writing DRAG code",
+        {
+            ofstream os("bbdt_drag_code.txt");
+            GenerateCode(os, t);
+        }
+    );
 }
