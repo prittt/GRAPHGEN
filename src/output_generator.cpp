@@ -111,5 +111,6 @@ bool DrawDagOnFile(const string& output_file, tree<conact> &t, bool verbose) {
     if (verbose) {
         std::cout << "done\n";
     }
+    remove(code_path.c_str());
     return true;
 }

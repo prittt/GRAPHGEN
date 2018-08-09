@@ -43,6 +43,10 @@ struct tree {
         T data;
         node *left = nullptr, *right = nullptr;
 
+        node() {}
+        node(T d) : data(move(d)) {}
+        node(T d, node* l, node* r) : data(move(d)), left(l), right(r) {}
+
         bool isleaf() const {
             return left == nullptr && right == nullptr;
         }
@@ -52,8 +56,9 @@ struct tree {
     std::vector<std::unique_ptr<node>> nodes;
 
     // Creates and returns new node updating the nodes vector
-    node* make_node() {
-        nodes.emplace_back(std::make_unique<node>());
+    template<typename... Args>
+    node* make_node(Args&&... args) {
+        nodes.emplace_back(std::make_unique<node>(std::forward<Args>(args)...));
         return nodes.back().get();
     }
 

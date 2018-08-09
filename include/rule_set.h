@@ -48,13 +48,15 @@ struct rule_set {
 	std::vector<std::string> actions;
 	std::unordered_map<std::string, uint> actions_pos;
 	std::vector<rule> rules;
+    pixel_set ps_;
 
 	void init_conditions(const pixel_set& ps) {
+        ps_ = ps;
 		conditions.clear();
 		conditions_pos.clear();
-		for (uint i = 0; i < ps.pixels.size(); ++i) {
-			conditions.push_back(ps.pixels[i].name);
-			conditions_pos[ps.pixels[i].name] = i;
+		for (uint i = 0; i < ps.pixels_.size(); ++i) {
+			conditions.push_back(ps.pixels_[i].name);
+			conditions_pos[ps.pixels_[i].name] = i;
 		}
 	}
 

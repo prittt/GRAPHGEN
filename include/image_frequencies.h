@@ -44,13 +44,13 @@ struct mask {
 
     mask(const pixel_set &ps) {
         increment_ = ps.shift_;
-        exp_ = ps.pixels.size();
+        exp_ = ps.pixels_.size();
         for (int i = 0; i < exp_; ++i) {
-            border_ = std::max(border_, std::max(std::abs(ps.pixels[i].dx), std::abs(ps.pixels[i].dy)));
-            top_ = std::min(top_, ps.pixels[i].dy);
-            right_ = std::max(right_, ps.pixels[i].dx);
-            left_ = std::min(left_, ps.pixels[i].dx);
-            bottom_ = std::max(bottom_, ps.pixels[i].dy);
+            border_ = std::max(border_, std::max(std::abs(ps.pixels_[i].dx), std::abs(ps.pixels_[i].dy)));
+            top_ = std::min(top_, ps.pixels_[i].dy);
+            right_ = std::max(right_, ps.pixels_[i].dx);
+            left_ = std::min(left_, ps.pixels_[i].dx);
+            bottom_ = std::max(bottom_, ps.pixels_[i].dy);
         }
 
         left_ = std::abs(left_);
@@ -58,7 +58,7 @@ struct mask {
 
         mask_ = cv::Mat1b(top_ + bottom_ + 1, left_ + right_ + 1, uchar(0));
         for (int i = 0; i < exp_; ++i) {
-            mask_(ps.pixels[i].dy + top_, ps.pixels[i].dx + left_) = 1;
+            mask_(ps.pixels_[i].dy + top_, ps.pixels_[i].dx + left_) = 1;
         }
     }
 

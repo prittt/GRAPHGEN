@@ -45,6 +45,10 @@ struct conact {
     uint action = 0; // List of actions (bitmapped)
     uint next = 0;
 
+    conact() {}
+    conact(std::string c) : t(type::CONDITION), condition(std::move(c)) {}
+    conact(uint a, uint n) : t(type::ACTION), action(a), next(n) {}
+
     std::vector<uint> actions() const {
         std::vector<uint> a;
         uint uAction = action;
