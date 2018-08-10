@@ -32,13 +32,13 @@
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <string>
 #include <sstream>
+#include <string>
 
 #include "condition_action.h"
+#include "forest.h"
 #include "tree.h"
 #include "utilities.h"
-#include "forest.h"
 
 void print_node(tree<conact>::node *n, int i);
 

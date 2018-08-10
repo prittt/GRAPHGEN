@@ -29,8 +29,8 @@
 #ifndef GRAPHSGEN_CONDITION_ACTION_H_
 #define GRAPHSGEN_CONDITION_ACTION_H_
 
-#include <vector>
 #include <string>
+#include <vector>
 
 using uint = uint32_t;
 

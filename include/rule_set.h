@@ -29,11 +29,11 @@
 #ifndef GRAPHSGEN_RULE_SET_H_
 #define GRAPHSGEN_RULE_SET_H_
 
-#include "pixel_set.h"
 #include <unordered_map>
 #include <fstream>
 
-using uint = uint32_t;
+#include "pixel_set.h"
+#include "utilities.h"
 
 std::string binary(uint u, uint nbits);
 

@@ -31,8 +31,8 @@
 
 
 #include <algorithm>
-#include <numeric>
 #include <map>
+#include <numeric>
 
 #include "conact_tree.h"
 #include "pixel_set.h"

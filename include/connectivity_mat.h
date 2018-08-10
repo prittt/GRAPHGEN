@@ -30,13 +30,12 @@
 #define GRAPHSGEN_CONNECTIVITY_MAT_H_
 
 #include <algorithm>
+#include <cassert>
 #include <iostream>
 #include <iterator>
 #include <map>
 #include <string>
 #include <vector>
-
-#include <cassert>
 
 /*
 connectivity_mat stores a matrix which tells if two pixels/blocks are connected, as an intermediate

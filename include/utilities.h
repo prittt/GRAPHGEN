@@ -36,6 +36,8 @@
 
 extern std::string global_output_path;
 
+using uint = uint32_t;
+
 struct nodeid {
     int _id = 0;
     int next() { return ++_id; }

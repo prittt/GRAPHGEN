@@ -29,9 +29,9 @@
 #ifndef GRAPHSGEN_PIXEL_SET_H_
 #define GRAPHSGEN_PIXEL_SET_H_
 
+#include <fstream>
 #include <string>
 #include <vector>
-#include <fstream>
 
 struct pixel {
 	std::string name;
