@@ -1,5 +1,6 @@
 #include "tree2dag_identities.h"
 
+// Search in tree n2 there is a subtree equal to n1, which is not n1
 void FindAndLinkIdentiesRec(ltree::node* n1, ltree::node* n2) {
     if (n2->isleaf() || n1 == n2)
         return;

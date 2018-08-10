@@ -3,6 +3,7 @@
 #include <set>
 #include <iostream>
 #include <fstream>
+#include <unordered_map>
 #include <iterator>
 #include <iomanip>
 #include <string>
@@ -106,14 +107,88 @@ int main()
         t = GenerateOdt(rs, odt_filename);
     }
     string tree_filename = global_output_path + algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, true);
+    DrawDagOnFile(tree_filename, t, false, true);
     print_stats(t);
 
     //PerformOptimalDragGeneration(t, algorithm_name);
 
     Forest f(t, rs.ps_);
-
+    /*
     for (size_t i = 0; i < f.trees_.size(); ++i) {
-        DrawDagOnFile("tree" + zerostr(i, 4), f.trees_[i]);
+        DrawDagOnFile("tree" + zerostr(i, 4), f.trees_[i], true);
+    }*/
+
+    struct t2d {
+        unordered_map<ltree::node*, string> ps_;
+        unordered_map<string, ltree::node*> sp_;
+        Forest& f_;
+
+        string Tree2String(ltree::node* n) {
+            auto it = ps_.find(n);
+            if (it != end(ps_))
+                return it->second;
+
+            string s;
+            if (n->isleaf()) 
+                s = to_string(n->data.action) + to_string(n->data.next);
+            else
+                s = n->data.condition + Tree2String(n->left) + Tree2String(n->right);
+            
+            ps_[n] = s;
+            return s;
+        }
+
+        void FindAndLink(ltree::node* n) {
+            if (!n->isleaf()) {
+                auto s = Tree2String(n->left);
+
+                auto it = sp_.find(s);
+                if (it == end(sp_)) {
+                    sp_[s] = n->left;
+                    FindAndLink(n->left);
+                }
+                else {
+                    n->left = it->second;
+                }
+
+                s = Tree2String(n->right);
+
+                it = sp_.find(s);
+                if (it == end(sp_)) {
+                    sp_[s] = n->right;
+                    FindAndLink(n->right);
+                }
+                else {
+                    n->right = it->second;
+                }
+            }
+        }
+
+        t2d(Forest& f) : f_(f) {
+            for (auto& t : f_.trees_)
+                FindAndLink(t.root);
+        }
+    };
+
+    t2d x(f);
+
+    /*
+    for (size_t i = 0; i < f.trees_.size(); ++i) {
+        DrawDagOnFile("drag" + zerostr(i, 4), f.trees_[i], true);
     }
+    */
+    DrawForestOnFile("forest", f, true);
+
+        
+    /*
+    Tree2DagUsingIdentities(f.trees_[2]); 
+    DrawDagOnFile("prova", f.trees_[2]);
+    */
+    /*
+    for (size_t i = 0; i < f.trees_.size(); ++i) {
+        Tree2DagUsingIdentities(f.trees_[i]);
+        Dag2OptimalDag(f.trees_[i]);
+        DrawDagOnFile("odrag" + zerostr(i, 4), f.trees_[i]);
+    }
+    */
 }
