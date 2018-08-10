@@ -26,32 +26,29 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <algorithm>
-#include <bitset>
-#include <set>
-#include <iostream>
+//#include <set>
+//#include <iostream>
 #include <fstream>
-#include <unordered_map>
-#include <iterator>
-#include <iomanip>
+//#include <unordered_map>
+//#include <iterator>
+//#include <iomanip>
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <map>
-#include <unordered_map>
-#include <unordered_set>
-#include <cassert>
+//#include <map>
+//#include <unordered_map>
+//#include <unordered_set>
 
 #include "condition_action.h"
 #include "code_generator.h"
+#include "forest2dag.h"
 #include "drag_statistics.h"
 #include "drag2optimal.h"
 #include "hypercube.h"
 #include "output_generator.h"
 #include "ruleset_generator.h"
-#include "tree.h"
 #include "tree2dag_identities.h"
-#include "utilities.h"
+//#include "utilities.h"
 
 using namespace std;
 
@@ -107,8 +104,6 @@ void PerformOptimalDragGeneration(ltree& t, const string& algorithm_name)
     );
 }
 
-#include "forest.h"
-
 template <typename T>
 string zerostr(const T& val, size_t n) {
     stringstream ss;
@@ -142,59 +137,8 @@ int main()
         DrawDagOnFile("tree" + zerostr(i, 4), f.trees_[i], true);
     }*/
 
-    struct t2d {
-        unordered_map<ltree::node*, string> ps_;
-        unordered_map<string, ltree::node*> sp_;
-        Forest& f_;
 
-        string Tree2String(ltree::node* n) {
-            auto it = ps_.find(n);
-            if (it != end(ps_))
-                return it->second;
-
-            string s;
-            if (n->isleaf()) 
-                s = to_string(n->data.action) + to_string(n->data.next);
-            else
-                s = n->data.condition + Tree2String(n->left) + Tree2String(n->right);
-            
-            ps_[n] = s;
-            return s;
-        }
-
-        void FindAndLink(ltree::node* n) {
-            if (!n->isleaf()) {
-                auto s = Tree2String(n->left);
-
-                auto it = sp_.find(s);
-                if (it == end(sp_)) {
-                    sp_[s] = n->left;
-                    FindAndLink(n->left);
-                }
-                else {
-                    n->left = it->second;
-                }
-
-                s = Tree2String(n->right);
-
-                it = sp_.find(s);
-                if (it == end(sp_)) {
-                    sp_[s] = n->right;
-                    FindAndLink(n->right);
-                }
-                else {
-                    n->right = it->second;
-                }
-            }
-        }
-
-        t2d(Forest& f) : f_(f) {
-            for (auto& t : f_.trees_)
-                FindAndLink(t.root);
-        }
-    };
-
-    t2d x(f);
+    Forest2Dag x(f);
 
     /*
     for (size_t i = 0; i < f.trees_.size(); ++i) {
