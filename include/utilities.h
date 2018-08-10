@@ -28,6 +28,7 @@
 
 #ifndef GRAPHSGEN_UTILITIES_H_
 #define GRAPHSGEN_UTILITIES_H_
+
 #include <algorithm>
 #include <string>
 
