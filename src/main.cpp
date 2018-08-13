@@ -149,7 +149,7 @@ int main()
 
 	string foret_code = global_output_path + algorithm_name + "_forestidentities_code.txt";
 	ofstream os(foret_code);
-	GenerateForestCode(os, f);
+	//GenerateForestCode(os, f);
 
     struct STree {
         struct STreeProp {
