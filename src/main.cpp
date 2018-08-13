@@ -147,18 +147,182 @@ int main()
     */
     //DrawForestOnFile("forest", f, true);
 
+
 	ofstream os("code_test.txt");
 	GenerateForestCode(os, f);
 
-    /*
-    Tree2DagUsingIdentities(f.trees_[2]); 
-    DrawDagOnFile("prova", f.trees_[2]);
-    */
-    /*
-    for (size_t i = 0; i < f.trees_.size(); ++i) {
-        Tree2DagUsingIdentities(f.trees_[i]);
-        Dag2OptimalDag(f.trees_[i]);
-        DrawDagOnFile("odrag" + zerostr(i, 4), f.trees_[i]);
-    }
-    */
+    struct STree {
+        struct STreeProp {
+            string conditions;
+            vector<uint> actions;
+            vector<uint> nexts;
+            ltree::node* n_;
+
+            STreeProp& operator+=(const STreeProp& rhs) {
+                conditions += rhs.conditions;
+                copy(begin(rhs.actions), end(rhs.actions), back_inserter(actions));
+                copy(begin(rhs.nexts), end(rhs.nexts), back_inserter(nexts));
+                return *this;
+            }
+
+            bool operator<(const STreeProp& rhs) {
+                if (conditions.size() > rhs.conditions.size())
+                    return true;
+                else if (conditions.size() < rhs.conditions.size())
+                    return false;
+                else if (conditions < rhs.conditions)
+                    return true;
+                else
+                    return false;
+            }
+
+            bool equivalent(const STreeProp& rhs) {
+                if (conditions != rhs.conditions)
+                    return false;
+                for (size_t i = 0; i < nexts.size(); ++i)
+                    if (nexts[i] != rhs.nexts[i])
+                        return false;
+                for (size_t i = 0; i < actions.size(); ++i)
+                    if ((actions[i] & rhs.actions[i]) == 0)
+                        return false;
+                return true;
+            }
+        };
+        unordered_map<ltree::node*, STreeProp> np_;
+        Forest& f_;
+
+        STreeProp CollectStatsRec(ltree::node * n) {
+            auto it = np_.find(n);
+            if (it != end(np_))
+                return it->second;
+
+            STreeProp sp;
+            sp.n_ = n;
+            if (n->isleaf()) {
+                sp.actions.push_back(n->data.action);
+                sp.nexts.push_back(n->data.next);
+            }
+            else {
+                sp.conditions = n->data.condition;
+                sp += CollectStatsRec(n->left);
+                sp += CollectStatsRec(n->right);
+            }
+
+            np_[n] = sp;
+            return sp;
+        }
+
+        // Works only with equivalent trees
+        static void Intersect(ltree::node* n1, ltree::node* n2) {
+            if (n1->isleaf()) {
+                n1->data.action &= n2->data.action;
+                n2->data.action = n1->data.action;
+            }
+            else {
+                Intersect(n1->left, n2->left);
+                Intersect(n1->right, n2->right);
+            }
+        }
+        // tbr to be replaced
+        // rw replace with
+        static void FindAndReplace(ltree::node* n, ltree::node* tbr, ltree::node* rw) {
+            if (!n->isleaf()) {
+                if (n->left == tbr) {
+                    n->left = rw;
+                }
+                else if (n->right == tbr) {
+                    n->right = rw;
+                }
+                else {
+                    FindAndReplace(n->left, tbr, rw);
+                    FindAndReplace(n->right, tbr, rw);
+                }
+            }
+        }
+
+        bool LetsDoIt() {
+            np_.clear();
+
+            for (size_t i = 0; i < f_.trees_.size(); ++i) {
+                const auto& t = f_.trees_[i];
+                CollectStatsRec(t.root);
+            }
+
+            vector<STreeProp> vec;
+            for (const auto& x : np_)
+                vec.emplace_back(x.second);
+            sort(begin(vec), end(vec));
+
+            size_t i = 0;
+            for (; i < vec.size();) {
+                if (vec[i].conditions.size() == 0)
+                    break;
+                size_t j = i + 1;
+                for (; j < vec.size(); ++j) {
+                    if (vec[i].conditions != vec[j].conditions)
+                        break;
+                }
+                if (j == i + 1) {
+                    vec.erase(begin(vec) + i);
+                }
+                else {
+                    // from i to j-1 the subtrees have the same conditions.
+                    // Let's check if they have any equivalent subtree
+                    map<int, bool> keep;
+                    for (size_t k = i; k < j; ++k)
+                        keep[k] = false;
+                    for (size_t k = i; k < j; ++k) {
+                        for (size_t h = k + 1; h < j; ++h) {
+                            if (vec[k].equivalent(vec[h])) {
+                                keep[k] = true;
+                                keep[h] = true;
+                            }
+                        }
+                        if (!keep[k])
+                            vec[k].conditions = ""; // Mark for erase
+                    }
+                    for (size_t k = i; k < j;) {
+                        if (vec[k].conditions == "") {
+                            vec.erase(begin(vec) + k);
+                            --j;
+                        }
+                        else
+                            ++k;
+                    }
+
+                    i = j;
+                }
+            }
+
+            // Accrocchio temporaneo
+            {
+                size_t i = 0, j;
+                for (; i < vec.size(); ++i) {
+                    j = i + 1;
+                    for (; j < vec.size(); ++j) {
+                        if (vec[i].equivalent(vec[j]))
+                            goto out;
+                    }
+                }
+                out:
+                if (i < vec.size()) {
+                    Intersect(vec[i].n_, vec[j].n_);
+                    for (size_t k = 0; k < f_.trees_.size(); ++k) {
+                        const auto& t = f_.trees_[k];
+                        FindAndReplace(t.root, vec[i].n_, vec[j].n_);
+                    }
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        STree(Forest& f) : f_(f) {
+            while (LetsDoIt());
+        }
+    };
+
+    STree st(f);
+
+    DrawForestOnFile("forest_reduced", f, true);
 }
