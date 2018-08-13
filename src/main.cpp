@@ -147,8 +147,8 @@ int main()
     */
     //DrawForestOnFile("forest", f, true);
 
-
-	ofstream os("code_test.txt");
+	string foret_code = global_output_path + algorithm_name + "_forest_code.txt";
+	ofstream os(foret_code);
 	GenerateForestCode(os, f);
 
     struct STree {
