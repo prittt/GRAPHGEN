@@ -32,8 +32,12 @@
 #include <ostream>
 
 #include "conact_tree.h"
+#include "forest.h"
 
 // All nodes must have both sons! 
 void GenerateCode(std::ostream& os, ltree& t);
+
+// TODO: check this!!
+void GenerateForestCode(std::ostream& os, const Forest& f);
 
 #endif // !GRAPHSGEN_CODE_GENERATOR_H_

@@ -145,9 +145,11 @@ int main()
         DrawDagOnFile("drag" + zerostr(i, 4), f.trees_[i], true);
     }
     */
-    DrawForestOnFile("forest", f, true);
+    //DrawForestOnFile("forest", f, true);
 
-        
+	ofstream os("code_test.txt");
+	GenerateForestCode(os, f);
+
     /*
     Tree2DagUsingIdentities(f.trees_[2]); 
     DrawDagOnFile("prova", f.trees_[2]);

@@ -138,3 +138,32 @@ void GenerateCode(std::ostream& os, ltree& t) {
 
     GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, nodeid(), 2);
 }
+
+// TODO: check
+void GenerateForestCode(std::ostream& os, const Forest& f) {
+	
+	std::map<ltree::node*, int> printed_node;
+	std::map<ltree::node*, pair<int, bool>> nodes_requiring_labels;
+	nodeid id;
+	for (size_t i = 0; i < f.trees_.size(); ++i) {
+		const auto& t = f.trees_[i];
+		printed_node[t.root] = id.next();
+		CheckNodesTraversalRec(t.root, nodes_requiring_labels, id);
+	}
+
+	nodeid id2;
+	// Initial tree
+	//TODO
+
+	// Internal trees
+	for (size_t i = 0; i < f.trees_.size(); ++i) {
+		const auto& t = f.trees_[i];
+		os << "tree_" << i << ": " << "finish_condition(" << i << "); \n"; // "finish_condition(n)" sarà da sostituire con "if (++c >= COLS - 1) goto break_n" quando inseriremo gli alberi di fine riga;
+		GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, id2, 2);
+	}
+
+	// Finale trees
+	// TODO
+}
+
+
