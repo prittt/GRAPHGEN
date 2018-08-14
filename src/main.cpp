@@ -31,7 +31,7 @@
 #include <fstream>
 //#include <unordered_map>
 //#include <iterator>
-//#include <iomanip>
+#include <iomanip>
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -51,6 +51,39 @@
 //#include "utilities.h"
 
 using namespace std;
+
+class ForestStatistics {
+    std::set<const ltree::node*> visited_nodes;
+    std::set<const ltree::node*> visited_leaves;
+
+    void PerformStatistics(const ltree::node *n) {
+        if (n->isleaf()) {
+            visited_leaves.insert(n);
+            return;
+        }
+
+        if (visited_nodes.insert(n).second) {
+            PerformStatistics(n->left);
+            PerformStatistics(n->right);
+        }
+    }
+
+public:
+    ForestStatistics(const Forest& f) {
+        for (const auto& t : f.trees_)
+            PerformStatistics(t.root);
+    }
+
+    auto nodes() const { return visited_nodes.size(); }
+    auto leaves() const { return visited_leaves.size(); }
+};
+
+
+void print_stats(const Forest& f) {
+    ForestStatistics fs(f);
+    cout << "Nodes = " << fs.nodes() << "\n";
+    cout << "Leaves = " << fs.leaves() << "\n";
+}
 
 void print_stats(const ltree& t) {
     DragStatistics ds(t);
@@ -131,24 +164,25 @@ int main()
 
     //PerformOptimalDragGeneration(t, algorithm_name);
 
-    Forest f(t, rs.ps_);
-    /*
-    for (size_t i = 0; i < f.trees_.size(); ++i) {
-        DrawDagOnFile("tree" + zerostr(i, 4), f.trees_[i], true);
-    }*/
+    LOG("Making forest",
+        Forest f(t, rs.ps_);
+        for (size_t i = 0; i < f.trees_.size(); ++i) {
+            DrawDagOnFile("tree" + zerostr(i, 4), f.trees_[i], true);
+        }
+    );
+    print_stats(f);
 
-
-    Forest2Dag x(f);
-
-    /*
-    for (size_t i = 0; i < f.trees_.size(); ++i) {
-        DrawDagOnFile("drag" + zerostr(i, 4), f.trees_[i], true);
-    }
-    */
+    LOG("Converting forest to dag",
+        Forest2Dag x(f);
+        for (size_t i = 0; i < f.trees_.size(); ++i) {
+            DrawDagOnFile("drag" + zerostr(i, 4), f.trees_[i], true);
+        }
+    );
+    print_stats(f);
     //DrawForestOnFile("forest", f, true);
 
-	string foret_code = global_output_path + algorithm_name + "_forestidentities_code.txt";
-	ofstream os(foret_code);
+	string forest_code = global_output_path + algorithm_name + "_forestidentities_code.txt";
+	ofstream os(forest_code);
 	//GenerateForestCode(os, f);
 
     struct STree {
@@ -318,11 +352,15 @@ int main()
         }
 
         STree(Forest& f) : f_(f) {
-            while (LetsDoIt());
+            while (LetsDoIt())
+                f_.RemoveUselessConditions();
         }
     };
 
-    STree st(f);
+    LOG("Reducing forest",
+        STree st(f);
+    );
+    print_stats(f);
 
     DrawForestOnFile("forest_reduced", f, true);
 }

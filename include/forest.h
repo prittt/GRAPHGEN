@@ -73,7 +73,7 @@ struct Forest {
     std::vector<int> next_tree_;
     std::vector<ltree> trees_;
 
-    Forest(ltree t, Equivalences eq);
+    Forest(ltree t, const pixel_set& ps);
 
     void RemoveUselessConditions();
 

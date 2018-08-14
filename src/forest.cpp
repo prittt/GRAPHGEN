@@ -30,8 +30,22 @@
 
 using namespace std;
 
-Forest::Forest(ltree t, Equivalences eq) : t_(std::move(t)), eq_(std::move(eq)) {
+Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
     InitNext(t_);
+
+    // Create start tree constraints
+    {
+        constraints start_constr;
+        using namespace std;
+        for (const auto& p : ps) {
+            if (p.dx < 0)
+                start_constr[p.name] = 0;
+        }
+        ltree t;
+        t.root = Reduce(t_.root, t, start_constr);
+        trees_.emplace_back(t);
+    }
+
     CreateReducedTrees(t_);
     while (RemoveEqualTrees()) {
         RemoveUselessConditions();
