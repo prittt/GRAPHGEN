@@ -35,12 +35,14 @@
 using namespace std;
 
 // If leaves have multiple actions only the first one will be considered
-void GenerateCodeRec(std::ostream& os, ltree::node *n, std::map<ltree::node*, int>& visited_nodes, std::map<ltree::node*, pair<int, bool>>& nodes_requiring_labels, nodeid &id, int tab = 1) {
+void GenerateCodeRec(std::ostream& os, ltree::node *n, std::map<ltree::node*, int>& visited_nodes, std::map<ltree::node*, pair<int, bool>>& nodes_requiring_labels, nodeid &id, int tab, bool add_gotos) {
     auto& m = visited_nodes;
     auto& ml = nodes_requiring_labels;
     if (n->isleaf()) {
         vector<uint> actions = n->data.actions();
         os << string(tab, '\t') << "ACTION_" << actions[0] << "\n";
+        if (add_gotos)
+            os << string(tab, '\t') << "goto tree_" << n->data.next << ";\n";
     }
     else {
         if (ml[n].second) {
@@ -55,7 +57,7 @@ void GenerateCodeRec(std::ostream& os, ltree::node *n, std::map<ltree::node*, in
                 m[n->right] = id.next();
             }
             os << " {\n";
-            GenerateCodeRec(os, n->right, m, ml, id, tab + 1);
+            GenerateCodeRec(os, n->right, m, ml, id, tab + 1, add_gotos);
             os << string(tab, '\t') << "}\n";
         }
         else {
@@ -72,7 +74,7 @@ void GenerateCodeRec(std::ostream& os, ltree::node *n, std::map<ltree::node*, in
                 m[n->left] = id.next();
             }
             os << " {\n";
-            GenerateCodeRec(os, n->left, m, ml, id, tab + 1);
+            GenerateCodeRec(os, n->left, m, ml, id, tab + 1, add_gotos);
             os << string(tab, '\t') << "}\n";
         }
         else {
@@ -136,7 +138,7 @@ void GenerateCode(std::ostream& os, ltree& t) {
     std::map<ltree::node*, pair<int, bool>> nodes_requiring_labels;
     CheckNodesTraversalRec(t.root, nodes_requiring_labels, nodeid());
 
-    GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, nodeid(), 2);
+    GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, nodeid(), 2, false);
 }
 
 // TODO: check
@@ -151,15 +153,12 @@ void GenerateForestCode(std::ostream& os, const Forest& f) {
 		CheckNodesTraversalRec(t.root, nodes_requiring_labels, id);
 	}
 
-	nodeid id2;
-	// Initial tree
-	//TODO
-
-	// Internal trees
-	for (size_t i = 0; i < f.trees_.size(); ++i) {
+	// Initial and internal trees (tree 0 is always the start tree)
+    nodeid id2;
+    for (size_t i = 0; i < f.trees_.size(); ++i) {
 		const auto& t = f.trees_[i];
 		os << "tree_" << i << ": " << "finish_condition(" << i << "); \n"; // "finish_condition(n)" sarà da sostituire con "if (++c >= COLS - 1) goto break_n" quando inseriremo gli alberi di fine riga;
-		GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, id2, 2);
+		GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, id2, 2, true);
 	}
 
 	// Finale trees
