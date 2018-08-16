@@ -31,9 +31,10 @@
 using namespace std;
 
 Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
+    next_tree_.push_back(0); // Setup next_tree_ for holding a reference to the start tree in first position
     InitNext(t_);
 
-    // Create start tree constraints
+    // Create start tree constraints and add start tree in position 0 of the tree_ array
     {
         constraints start_constr;
         using namespace std;
