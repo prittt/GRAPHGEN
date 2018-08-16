@@ -171,9 +171,16 @@ bool DrawForestOnFile(const string& output_file, Forest& f, bool verbose)
     std::vector<std::string> links;
     for (size_t i = 0; i < f.trees_.size(); ++i) {
         const auto& t = f.trees_[i];
-        t.root->data.condition = "ROOT " + to_string(i) + ": " + t.root->data.condition;
+        // In order to easily print "ROOT #: " in front of every root we change the condition string
+        string tmp = t.root->data.condition; 
+        if (i==0)
+            t.root->data.condition = "START: " + tmp;
+        else
+            t.root->data.condition = "ROOT " + to_string(i) + ": " + tmp;
         printed_node[t.root] = id.next();
         GenerateDotCodeForDagRec(os, t.root, printed_node, links, id, true, 2);
+        // Turn the condition back to its original value
+        t.root->data.condition = tmp;
     }
 
     os << "\t}\n";
@@ -193,6 +200,6 @@ bool DrawForestOnFile(const string& output_file, Forest& f, bool verbose)
     if (verbose) {
         std::cout << "done\n";
     }
-    //remove(code_path.c_str());
+    remove(code_path.c_str());
     return true;
 }
