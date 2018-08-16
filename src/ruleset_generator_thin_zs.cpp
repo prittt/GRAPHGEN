@@ -26,27 +26,63 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_RULESET_GENERATOR_H_
-#define GRAPHSGEN_RULESET_GENERATOR_H_
+#include "ruleset_generator.h"
 
-#include "rule_set.h"
+#include <string>
 
-#define RSG_ALGO RSG(rosenfeld) RSG(bbdt) RSG(thin_zs1)
+using namespace std;
 
-#define RSG(a) rule_set generate_##a();
-RSG_ALGO
-#undef RSG
+// First subiteration
+rule_set generate_thin_zs1()
+{
+    pixel_set zs_mask {
+        { "P9", -1, -1 }, { "P2", 0, -1 }, { "P3", +1, -1 },
+        { "P8", -1,  0 }, { "P1", 0,  0 }, { "P4", +1,  0 },
+        { "P7", -1, +1 }, { "P6", 0, +1 }, { "P5", +1, +1 },
+    };
 
-#define RSG(a) a, 
-enum class ruleset_generator_type { RSG_ALGO };
-#undef RSG
+    rule_set thinning;
+    thinning.init_conditions(zs_mask);
+    thinning.init_actions({
+        "nothing",
+        "remove",
+        });
 
-#define RSG(a) #a, 
-static std::string ruleset_generator_names[] = { RSG_ALGO };
-#undef RSG
 
-#define RSG(a) generate_##a, 
-static rule_set(*ruleset_generator_functions[])(void) = { RSG_ALGO };
-#undef RSG
+    thinning.generate_rules([](rule_set& rs, uint i) {
+        rule_wrapper r(rs, i);
 
-#endif // !GRAPHSGEN_RULESET_GENERATOR_H_
+        int P1 = r["P1"];
+        int P2 = r["P2"];
+        int P3 = r["P3"];
+        int P4 = r["P4"];
+        int P5 = r["P5"];
+        int P6 = r["P6"];
+        int P7 = r["P7"];
+        int P8 = r["P8"];
+        int P9 = r["P9"];
+        if (!P1) {
+            r << "nothing";
+            return;
+        }
+
+        int A = (P2 == 0 && P3 == 1) + (P3 == 0 && P4 == 1) +
+            (P4 == 0 && P5 == 1) + (P5 == 0 && P6 == 1) +
+            (P6 == 0 && P7 == 1) + (P7 == 0 && P8 == 1) +
+            (P8 == 0 && P9 == 1) + (P9 == 0 && P2 == 1);
+
+        int B = P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9;
+
+        if (
+            /*(a)*/ (2 <= B && B <= 6) &&
+            /*(b)*/ A == 1 &&
+            /*(c)*/ P2*P4*P6 == 0 &&
+            /*(d)*/ P4*P6*P8 == 0
+            )
+            r << "remove";
+        else
+            r << "nothing";
+    });
+
+    return thinning;
+}

@@ -146,7 +146,7 @@ string zerostr(const T& val, size_t n) {
 
 int main()
 {
-    auto at = ruleset_generator_type::bbdt;
+    auto at = ruleset_generator_type::thin_zs1;
 
     auto algorithm_name = ruleset_generator_names[static_cast<int>(at)];
     auto ruleset_generator = ruleset_generator_functions[static_cast<int>(at)];
@@ -339,10 +339,10 @@ int main()
                             }
                         }
                         if (!keep[k])
-                            vec[k].conditions = "remove"; // Mark for erase
+                            vec[k].conditions = "Mark for erase"; 
                     }
                     for (size_t k = i; k < j;) {
-                        if (vec[k].conditions == "remove") {
+                        if (vec[k].conditions == "Mark for erase") {
                             vec.erase(begin(vec) + k);
                             --j;
                         }
