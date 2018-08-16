@@ -210,17 +210,31 @@ int main()
                     return true;
                 else if (conditions > rhs.conditions)
                     return false;
-                else if (n_ != nullptr)
-                    return n_ < rhs.n_;
-                else if (actions.size() > rhs.actions.size())
+
+                else if (nexts.size() > rhs.nexts.size())
+                    return true;
+                else if (nexts.size() < rhs.nexts.size())
+                    return false;
+                else {
+                    for (size_t i = 0; i < nexts.size(); ++i)
+                        if (nexts[i] < rhs.nexts[i])
+                            return true;
+                        else if (nexts[i] > rhs.nexts[i])
+                            return false;
+                }
+
+                if (actions.size() > rhs.actions.size())
                     return true;
                 else if (actions.size() < rhs.actions.size())
                     return false;
                 else {
-                    for (size_t i = 0; i < actions.size(); ++i)
-                        if (actions[i] > rhs.actions[i])
-                            return true;
-                    return false;
+                    int diff = 0;
+                    for (size_t i = 0; i < actions.size(); ++i) {
+                        diff += __popcnt(actions[i]);
+                        diff -= __popcnt(rhs.actions[i]);
+                    }
+
+                    return diff > 0;
                 }
             }
 
@@ -247,6 +261,7 @@ int main()
             STreeProp sp;
             sp.n_ = n;
             if (n->isleaf()) {
+                sp.conditions = ".";
                 sp.actions.push_back(n->data.action);
                 sp.nexts.push_back(n->data.next);
             }
@@ -301,11 +316,7 @@ int main()
                 vec.emplace_back(x.second);
             sort(begin(vec), end(vec));
 
-            size_t i = 0;
-            for (; i < vec.size();) {
-                if (vec[i].conditions.size() == 0)
-                    int test = 0;
-                    //break;
+            for (size_t i = 0; i < vec.size(); /*empty*/) {
                 size_t j = i + 1;
                 for (; j < vec.size(); ++j) {
                     if (vec[i].conditions != vec[j].conditions)
@@ -344,26 +355,22 @@ int main()
             }
 
             // Accrocchio temporaneo
-            {
-                size_t i = 0, j;
-                for (; i < vec.size(); ++i) {
-                    j = i + 1;
-                    for (; j < vec.size(); ++j) {
-                        if (vec[i].equivalent(vec[j]))
-                            goto out;
-                    }
-                }
-                out:
-                if (i < vec.size()) {
-                    Intersect(vec[i].n_, vec[j].n_);
-                    for (size_t k = 0; k < f_.trees_.size(); ++k) {
-                        const auto& t = f_.trees_[k];
-                        FindAndReplace(t.root, vec[i].n_, vec[j].n_);
-                    }
-                    return true;
-                }
+            if (vec.empty())
                 return false;
+
+            size_t j = 1;
+            for (; j < vec.size(); ++j) {
+                if (vec[0].equivalent(vec[j]))
+                    break;
             }
+            assert(j < vec.size());
+
+            Intersect(vec[0].n_, vec[j].n_);
+            for (size_t k = 0; k < f_.trees_.size(); ++k) {
+                const auto& t = f_.trees_[k];
+                FindAndReplace(t.root, vec[0].n_, vec[j].n_);
+            }
+            return true;
         }
 
         STree(Forest& f) : f_(f) {
