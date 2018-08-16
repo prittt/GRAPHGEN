@@ -167,7 +167,7 @@ int main()
     LOG("Making forest",
         Forest f(t, rs.ps_);
         for (size_t i = 0; i < f.trees_.size(); ++i) {
-            DrawDagOnFile("tree" + zerostr(i, 4), f.trees_[i], true);
+            DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
         }
     );
     print_stats(f);
@@ -175,15 +175,17 @@ int main()
     LOG("Converting forest to dag",
         Forest2Dag x(f);
         for (size_t i = 0; i < f.trees_.size(); ++i) {
-            DrawDagOnFile("drag" + zerostr(i, 4), f.trees_[i], true);
+            DrawDagOnFile(algorithm_name + "drag" + zerostr(i, 4), f.trees_[i], true);
         }
     );
     print_stats(f);
-    //DrawForestOnFile("forest", f, true);
+    DrawForestOnFile(algorithm_name + "forest", f, true);
 
 	string forest_code = global_output_path + algorithm_name + "_forestidentities_code.txt";
-	ofstream os(forest_code);
-	//GenerateForestCode(os, f);
+    {
+	    ofstream os(forest_code);
+	    GenerateForestCode(os, f);
+    }
 
     struct STree {
         struct STreeProp {
@@ -206,8 +208,20 @@ int main()
                     return false;
                 else if (conditions < rhs.conditions)
                     return true;
-                else
+                else if (conditions > rhs.conditions)
                     return false;
+                else if (n_ != nullptr)
+                    return n_ < rhs.n_;
+                else if (actions.size() > rhs.actions.size())
+                    return true;
+                else if (actions.size() < rhs.actions.size())
+                    return false;
+                else {
+                    for (size_t i = 0; i < actions.size(); ++i)
+                        if (actions[i] > rhs.actions[i])
+                            return true;
+                    return false;
+                }
             }
 
             bool equivalent(const STreeProp& rhs) {
@@ -290,7 +304,8 @@ int main()
             size_t i = 0;
             for (; i < vec.size();) {
                 if (vec[i].conditions.size() == 0)
-                    break;
+                    int test = 0;
+                    //break;
                 size_t j = i + 1;
                 for (; j < vec.size(); ++j) {
                     if (vec[i].conditions != vec[j].conditions)
@@ -313,10 +328,10 @@ int main()
                             }
                         }
                         if (!keep[k])
-                            vec[k].conditions = ""; // Mark for erase
+                            vec[k].conditions = "remove"; // Mark for erase
                     }
                     for (size_t k = i; k < j;) {
-                        if (vec[k].conditions == "") {
+                        if (vec[k].conditions == "remove") {
                             vec.erase(begin(vec) + k);
                             --j;
                         }
@@ -362,5 +377,11 @@ int main()
     );
     print_stats(f);
 
-    DrawForestOnFile("forest_reduced", f, true);
+    DrawForestOnFile(algorithm_name + "forest_reduced", f, true);
+
+    string forest_reduced_code = global_output_path + algorithm_name + "_forest_reduced_code.txt";
+    {
+        ofstream os(forest_reduced_code);
+        GenerateForestCode(os, f);
+    }
 }
