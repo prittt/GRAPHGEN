@@ -73,6 +73,9 @@ struct Forest {
     std::vector<int> next_tree_;
     std::vector<ltree> trees_;
 
+    std::vector<std::vector<ltree>> end_trees_;
+
+
     Forest(ltree t, const pixel_set& ps);
 
     void RemoveUselessConditions();

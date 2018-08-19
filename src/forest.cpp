@@ -51,6 +51,27 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
     while (RemoveEqualTrees()) {
         RemoveUselessConditions();
     }
+
+    // For each tree create end trees with end line constraints
+    {
+        for (int out_offset = 1;; ++out_offset) {
+            constraints end_constr;
+            for (const auto& p : ps) {
+                if (p.dx >= out_offset)
+                    end_constr[p.name] = 0;
+            }
+            if (end_constr.empty())
+                break;
+
+            end_trees_.emplace_back(vector<ltree>());
+
+            for (const auto& t : trees_) {
+                ltree tr;
+                tr.root = Reduce(t.root, tr, end_constr);
+                end_trees_.back().emplace_back(tr);
+            }
+        }
+    }
 }
 
 void RemoveUselessConditionsRec(ltree::node* n) {

@@ -146,7 +146,7 @@ string zerostr(const T& val, size_t n) {
 
 int main()
 {
-    auto at = ruleset_generator_type::thin_zs1;
+    auto at = ruleset_generator_type::bbdt;
 
     auto algorithm_name = ruleset_generator_names[static_cast<int>(at)];
     auto ruleset_generator = ruleset_generator_functions[static_cast<int>(at)];
@@ -171,6 +171,12 @@ int main()
         }
     );
     print_stats(f);
+
+    for (size_t i = 0; i < f.end_trees_.size(); ++i) {
+        for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
+            DrawDagOnFile(algorithm_name + "end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], true);
+        }
+    }
 
     LOG("Converting forest to dag",
         Forest2Dag x(f);
