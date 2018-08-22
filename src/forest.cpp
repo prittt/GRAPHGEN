@@ -52,7 +52,42 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
         RemoveUselessConditions();
     }
 
-    // For each tree create end trees with end line constraints
+    // For each tree creates end trees with end line constraints
+	// BBDT example (borderline cases): 
+	//              -4  -3  -2  -1 | w
+	//				    		   |
+    //     +-------+-------+-------+
+	//	   | a   b | c   d | e   f |
+	//	   | g   h | i   j | k   l |
+	// A:  +-------+-------+-------+				c = w - 4 (NO PROBLEM)
+	//	   | m   n | o   p |       |
+	//	   | q   r | s   t |       |
+	//	   +-------+-------+       |
+	//                             |
+	//         +-------+-------+---|---+
+	//	       | a   b | c   d | e | f |
+	//	       | g   h | i   j | k | l |
+	// B:      +-------+-------+---|---+			c = w - 3 (NO PROBLEM)
+	//	       | m   n | o   p |   |
+	//	       | q   r | s   t |   |
+	//	       +-------+-------+   |
+	//                             |
+	//             +-------+-------+-------+
+	//	           | a   b | c   d | e   f |
+	//	           | g   h | i   j | k   l |
+	// C:          +-------+-------+-------+		c = w - 2
+	//	           | m   n | o   p |   
+	//	           | q   r | s   t |   
+	//	           +-------+-------+   
+	//                             |
+	//                 +-------+---|---+-------+
+	//	               | a   b | c | d | e   f |
+	//	               | g   h | i | j | k   l |
+	// D:              +-------+---|---+-------+	c = w - 1
+	//	               | m   n | o | p |   
+	//	               | q   r | s | t |   
+	//	               +-------+---|---+   
+	//                             |
     {
         for (int out_offset = 1;; ++out_offset) {
             constraints end_constr;
@@ -74,6 +109,7 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
     }
 }
 
+// See RemoveUselessConditions
 void RemoveUselessConditionsRec(ltree::node* n) {
     if (!n->isleaf()) {
         if (EqualTrees(n->left, n->right)) {
@@ -86,6 +122,19 @@ void RemoveUselessConditionsRec(ltree::node* n) {
         }
     }
 }
+
+// Removes useless conditions inside the forest.
+// That means that the subtree:
+//			a
+//       0/  \1
+//       c    ...
+//    0/   \1
+//    5     5
+// will be transformed into:
+//			a
+//       0/  \1
+//       5    ...
+// these useless condition may appears after the execution of CreateReducedTrees.
 void Forest::RemoveUselessConditions() {
     for (auto& t : trees_) {
         RemoveUselessConditionsRec(t.root);
@@ -101,6 +150,8 @@ void Forest::UpdateNext(ltree::node* n) {
         UpdateNext(n->right);
     }
 }
+
+// Removes duplicate trees inside the forest
 bool Forest::RemoveEqualTrees() {
     // Find which trees are identical and mark them in next_tree
     bool found = false;
@@ -151,6 +202,7 @@ bool Forest::RemoveEqualTrees() {
     return true;
 }
 
+// See InitNext
 void Forest::InitNextRec(ltree::node* n) {
     if (n->isleaf()) {
         // Set the next tree to be used for each leaf
@@ -163,10 +215,13 @@ void Forest::InitNextRec(ltree::node* n) {
         InitNextRec(n->right);
     }
 }
+
+// Initializes leave's next trees with sequential values
 void Forest::InitNext(ltree& t) {
     InitNextRec(t_.root);
 }
 
+// Perform tree pruning by removing useless nodes. Useless nodes are identified looking at given constraints 
 ltree::node* Forest::Reduce(const ltree::node* n, ltree& t, const constraints& constr) {
     if (n->isleaf()) {
         return t.make_node(n->data);
@@ -185,6 +240,7 @@ ltree::node* Forest::Reduce(const ltree::node* n, ltree& t, const constraints& c
     }
 }
 
+// See CreateReducedTrees 
 void Forest::CreateReducedTreesRec(const ltree::node* n, const constraints& constr) {
     if (n->isleaf()) {
         // Create a reduced version of the tree based on what we learned on the path to this leaf        
@@ -204,6 +260,10 @@ void Forest::CreateReducedTreesRec(const ltree::node* n, const constraints& cons
     }
 }
 
+// Creates forest of trees pruning original tree. The pruning is performed as follow: the original 
+// tree is recursively explored and constraints (different on each branch) are defined using equivalences 
+// between pixels (i.e. pixels which remain in the mask when it moves). When a leaf is reached the 
+// original tree is reduced using current branch's constraints. 
 void Forest::CreateReducedTrees(const ltree& t) {
     CreateReducedTreesRec(t_.root);
 }

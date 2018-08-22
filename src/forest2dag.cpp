@@ -30,6 +30,7 @@
 
 using namespace std;
 
+// Converts a tree into unique string exploiting memoization 
 string Forest2Dag::Tree2String(ltree::node* n) {
 	auto it = ps_.find(n);
 	if (it != end(ps_))
