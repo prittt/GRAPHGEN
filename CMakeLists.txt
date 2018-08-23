@@ -38,7 +38,7 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Configs" FORCE)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Install prefix" FORCE)
 
 #Set GRAPHSGEN variables
-set(GRAPHSGEN_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/output" CACHE PATH "'output' results path")
+set(GRAPHSGEN_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/outputs" CACHE PATH "'output' results path")
 
 #Set project variables
 
