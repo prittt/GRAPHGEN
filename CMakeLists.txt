@@ -37,6 +37,9 @@ set(CMAKE_SUPPRESS_REGENERATION true)
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Configs" FORCE)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Install prefix" FORCE)
 
+#Set GRAPHSGEN variables
+set(GRAPHSGEN_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/outputs" CACHE PATH "'output' results path")
+
 #Set project variables
 
 if(MSVC)
@@ -144,3 +147,8 @@ set (addExe ${SRCFILES} ${HFILES} ${INCFILES})
 add_executable(${ProjectName} ${addExe})
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set YACCLAB as startup group instead of ALL_BUILD
 target_link_libraries (${ProjectName}  ${OpenCV_LIBS})
+
+# Creation of output directory
+if (NOT EXISTS "${GRAPHSGEN_OUTPUT_PATH}")
+		file(MAKE_DIRECTORY ${GRAPHSGEN_OUTPUT_PATH})
+endif()

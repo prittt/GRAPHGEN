@@ -59,7 +59,7 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
     //     +-------+-------+-------+
 	//	   | a   b | c   d | e   f |
 	//	   | g   h | i   j | k   l |
-	// A:  +-------+-------+-------+				c = w - 4 (NO PROBLEM)
+	// A:  +-------+-------+-------+				c = w - 4 (No problem)
 	//	   | m   n | o   p |       |
 	//	   | q   r | s   t |       |
 	//	   +-------+-------+       |
@@ -67,7 +67,7 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
 	//         +-------+-------+---|---+
 	//	       | a   b | c   d | e | f |
 	//	       | g   h | i   j | k | l |
-	// B:      +-------+-------+---|---+			c = w - 3 (NO PROBLEM)
+	// B:      +-------+-------+---|---+			c = w - 3 (No problem)
 	//	       | m   n | o   p |   |
 	//	       | q   r | s   t |   |
 	//	       +-------+-------+   |
@@ -75,7 +75,7 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
 	//             +-------+-------+-------+
 	//	           | a   b | c   d | e   f |
 	//	           | g   h | i   j | k   l |
-	// C:          +-------+-------+-------+		c = w - 2
+	// C:          +-------+-------+-------+		c = w - 2 (This requires one group of end-trees)
 	//	           | m   n | o   p |   
 	//	           | q   r | s   t |   
 	//	           +-------+-------+   
@@ -83,7 +83,7 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
 	//                 +-------+---|---+-------+
 	//	               | a   b | c | d | e   f |
 	//	               | g   h | i | j | k   l |
-	// D:              +-------+---|---+-------+	c = w - 1
+	// D:              +-------+---|---+-------+	c = w - 1 (This requires one group of end-trees)
 	//	               | m   n | o | p |   
 	//	               | q   r | s | t |   
 	//	               +-------+---|---+   
@@ -106,6 +106,17 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
                 end_trees_.back().emplace_back(tr);
             }
         }
+
+		// Set end_trees_'s next_trees to uint32_t max value
+		for(auto& t_a: end_trees_){ // foreach group of end trees
+			for (auto& t_b : t_a) {	// foreach tree in a group
+				for(auto& n : t_b.nodes){ // foreach node in a tree
+					if(n->isleaf()){
+						n->data.next = numeric_limits<uint32_t>::max();
+					}
+				}
+			}
+		}
     }
 }
 

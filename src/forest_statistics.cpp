@@ -26,43 +26,12 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_UTILITIES_H_
-#define GRAPHSGEN_UTILITIES_H_
+#include "forest_statistics.h"
 
-#include <algorithm>
-#include <string>
+#include <iostream>
 
-
-#include "performance_evaluator.h"
-
-extern std::string global_output_path;
-
-using uint = uint32_t;
-
-struct nodeid {
-    int _id = 0;
-    int next() { return ++_id; }
-    int get() { return _id; }
-};
-
-static inline void RemoveCharacter(std::string& s, const char c) {
-    s.erase(std::remove(s.begin(), s.end(), c), s.end());
+void PrintStats(const Forest& f) {
+	ForestStatistics fs(f);
+	std::cout << "Nodes = " << fs.nodes() << "\n";
+	std::cout << "Leaves = " << fs.leaves() << "\n";
 }
-
-// Convert value into string filling the head of the string with zeros up to n characters
-template <typename T>
-std::string zerostr(const T& val, size_t n) {
-	std::stringstream ss;
-	ss << std::setw(n) << ::setfill('0') << val;
-	return ss.str();
-}
-
-// Function to automatically print a message before and after each operation
-// No braces around instruction, so you can log also variable definitions without scoping them
-#define LOG(message, instructions) std::cout << (message) << "... "; instructions std::cout << "done.\n"
-
-static PerformanceEvaluator tlog_pe;
-#define TLOG(message, instructions) std::cout << (message) << "... "; tlog_pe.start(); instructions std::cout << "done. " << tlog_pe.stop() << " ms.\n";
-
-#endif // !GRAPHSGEN_UTILITIES_H_
-

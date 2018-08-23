@@ -58,4 +58,6 @@ public:
     auto leaves() const { return visited_leaves.size(); }
 };
 
+void PrintStats(const ltree& t);
+
 #endif // !GRAPHSGEN_DRAG_STATISTICS_H_

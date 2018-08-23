@@ -42,6 +42,7 @@
 #include "condition_action.h"
 #include "code_generator.h"
 #include "forest2dag.h"
+#include "forest_statistics.h"
 #include "drag_statistics.h"
 #include "drag2optimal.h"
 #include "hypercube.h"
@@ -51,45 +52,6 @@
 //#include "utilities.h"
 
 using namespace std;
-
-class ForestStatistics {
-    std::set<const ltree::node*> visited_nodes;
-    std::set<const ltree::node*> visited_leaves;
-
-    void PerformStatistics(const ltree::node *n) {
-        if (n->isleaf()) {
-            visited_leaves.insert(n);
-            return;
-        }
-
-        if (visited_nodes.insert(n).second) {
-            PerformStatistics(n->left);
-            PerformStatistics(n->right);
-        }
-    }
-
-public:
-    ForestStatistics(const Forest& f) {
-        for (const auto& t : f.trees_)
-            PerformStatistics(t.root);
-    }
-
-    auto nodes() const { return visited_nodes.size(); }
-    auto leaves() const { return visited_leaves.size(); }
-};
-
-
-void print_stats(const Forest& f) {
-    ForestStatistics fs(f);
-    cout << "Nodes = " << fs.nodes() << "\n";
-    cout << "Leaves = " << fs.leaves() << "\n";
-}
-
-void print_stats(const ltree& t) {
-    DragStatistics ds(t);
-    cout << "Nodes = " << ds.nodes() << "\n";
-    cout << "Leaves = " << ds.leaves() << "\n";
-}
 
 // Instead of defining a novel format to save DRAGS, we save them as trees, then link
 // identical sub-trees. Since the order of traversal is the same, the result should be the same.
@@ -115,7 +77,7 @@ void PerformOptimalDragGeneration(ltree& t, const string& algorithm_name)
     );
     string drag_filename = global_output_path + algorithm_name + "_drag_identities";
     DrawDagOnFile(drag_filename, t, true);
-    print_stats(t);
+    PrintStats(t);
 
     string odrag_filename = global_output_path + algorithm_name + "_optimal_drag.txt";
     if (!LoadConactDrag(t, odrag_filename)) {
@@ -126,7 +88,7 @@ void PerformOptimalDragGeneration(ltree& t, const string& algorithm_name)
     }
     string optimal_drag_filename = global_output_path + algorithm_name + "_optimal_drag";
     DrawDagOnFile(optimal_drag_filename, t, true);
-    print_stats(t);
+    PrintStats(t);
 
     LOG("Writing DRAG code",
         {
@@ -135,13 +97,6 @@ void PerformOptimalDragGeneration(ltree& t, const string& algorithm_name)
             GenerateCode(os, t);
         }
     );
-}
-
-template <typename T>
-string zerostr(const T& val, size_t n) {
-    stringstream ss;
-    ss << setw(n) << setfill('0') << val;
-    return ss.str();
 }
 
 int main()
@@ -160,7 +115,7 @@ int main()
     }
     string tree_filename = global_output_path + algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, t, false, true);
-    print_stats(t);
+    PrintStats(t);
 
     //PerformOptimalDragGeneration(t, algorithm_name);
 
@@ -170,7 +125,7 @@ int main()
             DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
         }
     );
-    print_stats(f);
+    PrintStats(f);
 
     for (size_t i = 0; i < f.end_trees_.size(); ++i) {
         for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
@@ -184,7 +139,7 @@ int main()
             DrawDagOnFile(algorithm_name + "drag" + zerostr(i, 4), f.trees_[i], true);
         }
     );
-    print_stats(f);
+    PrintStats(f);
     DrawForestOnFile(algorithm_name + "forest", f, true);
 
 	string forest_code = global_output_path + algorithm_name + "_forestidentities_code.txt";
@@ -388,7 +343,7 @@ int main()
     LOG("Reducing forest",
         STree st(f);
     );
-    print_stats(f);
+    PrintStats(f);
 
     DrawForestOnFile(algorithm_name + "forest_reduced", f, true);
 
