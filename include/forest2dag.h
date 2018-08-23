@@ -35,7 +35,7 @@
 
 #include "forest.h"
 
-// Converts forest of decision trees into polydag
+// Converts forest of decision trees into poly-rooted-dag
 struct Forest2Dag {
 	std::unordered_map<ltree::node*, std::string> ps_;
 	std::unordered_map<std::string, ltree::node*> sp_;
