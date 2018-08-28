@@ -37,6 +37,9 @@ class ForestStatistics {
 	std::set<const ltree::node*> visited_nodes;
 	std::set<const ltree::node*> visited_leaves;
 
+	std::set<const ltree::node*> visited_end_nodes;
+	std::set<const ltree::node*> visited_end_leaves;
+
 	void PerformStatistics(const ltree::node *n) {
 		if (n->isleaf()) {
 			visited_leaves.insert(n);
@@ -49,14 +52,37 @@ class ForestStatistics {
 		}
 	}
 
+	void PerformEndStatistics(const ltree::node *n) {
+		if (n->isleaf()) {
+			visited_end_leaves.insert(n);
+			return;
+		}
+
+		if (visited_end_nodes.insert(n).second) {
+			PerformEndStatistics(n->left);
+			PerformEndStatistics(n->right);
+		}
+	}
+
 public:
 	ForestStatistics(const Forest& f) {
-		for (const auto& t : f.trees_)
+		// Internal trees statistics
+		for (const auto& t : f.trees_) {
 			PerformStatistics(t.root);
+		}
+
+		// End trees statistics
+		for (const auto& g : f.end_trees_) {
+			for (const auto& t : g) {
+				PerformEndStatistics(t.root);
+			}
+		}
 	}
 
 	auto nodes() const { return visited_nodes.size(); }
 	auto leaves() const { return visited_leaves.size(); }
+	auto end_nodes() const { return visited_end_nodes.size(); }
+	auto end_leaves() const { return visited_end_leaves.size(); }
 };
 
 void PrintStats(const Forest& f);
