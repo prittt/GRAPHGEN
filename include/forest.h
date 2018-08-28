@@ -29,11 +29,11 @@
 #ifndef GRAPHSGEN_FOREST_H_
 #define GRAPHSGEN_FOREST_H_
 
-
 #include <algorithm>
 #include <map>
 #include <numeric>
 
+#include "base_forest.h"
 #include "conact_tree.h"
 #include "pixel_set.h"
 
@@ -66,7 +66,7 @@ struct Equivalences {
 
 using constraints = std::map<std::string, int>;
 
-struct Forest {
+struct Forest : BaseForest {
     ltree t_;
     Equivalences eq_;
 
@@ -74,7 +74,7 @@ struct Forest {
     std::vector<ltree> trees_;
 
     std::vector<std::vector<ltree>> end_trees_;
-
+	std::vector<std::vector<int>> end_trees_mapping_;
 
     Forest(ltree t, const pixel_set& ps);
 
@@ -82,6 +82,8 @@ struct Forest {
 
     void UpdateNext(ltree::node* n);
     bool RemoveEqualTrees();
+
+	bool RemoveEqualEndTrees();
 
     void InitNextRec(ltree::node* n);
     void InitNext(ltree& t);

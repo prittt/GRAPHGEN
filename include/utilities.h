@@ -30,8 +30,8 @@
 #define GRAPHSGEN_UTILITIES_H_
 
 #include <algorithm>
+#include <iomanip>
 #include <string>
-
 
 #include "performance_evaluator.h"
 
@@ -53,7 +53,7 @@ static inline void RemoveCharacter(std::string& s, const char c) {
 template <typename T>
 std::string zerostr(const T& val, size_t n) {
 	std::stringstream ss;
-	ss << std::setw(n) << ::setfill('0') << val;
+	ss << std::setw(n) << std::setfill('0') << val;
 	return ss.str();
 }
 
