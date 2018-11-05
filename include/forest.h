@@ -44,10 +44,10 @@ struct Equivalences {
     Equivalences(const pixel_set& ps) {
         using namespace std;
         for (const auto& p : ps) {
-            auto x = p.dx + ps.shift_;
-            auto it = find_if(begin(ps), end(ps), [&x, &p](const pixel& q) { return x == q.dx && p.dy == q.dy; });
+            auto x = p.GetDx() + ps.GetShift2D();
+            auto it = find_if(begin(ps), end(ps), [&x, &p](const pixel& q) { return x == q.GetDx() && p.GetDy() == q.GetDy(); });
             if (it != end(ps)) {
-                eq_[it->name] = p.name;
+                eq_[it->name_] = p.name_;
             }
         }
     }

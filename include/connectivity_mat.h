@@ -41,15 +41,14 @@
 connectivity_mat stores a matrix which tells if two pixels/blocks are connected, as an intermediate
 step to choose which actions should be performed during connected components labeling.
 */
-template<size_t N>
 struct connectivity_mat {
-    bool data_[N][N] = { 0 }; // connectivity matrix
+    std::vector<std::vector<int>> data_; // connectivity matrix
     std::map<std::string, size_t> pos_; // inverse lookup table (from pixel names to matrix indexes)
     std::vector<std::string> names_; // list of pixel names (ordered as in the connectivity matrix)
 
     // a connectivity matrix is constructed from a list of pixel names
-    connectivity_mat(const std::vector<std::string> &names) : names_{ names } {
-        assert(names.size() == N);
+    connectivity_mat(const std::vector<std::string> &names) : names_{ names }, data_{ names.size(), std::vector<int>(names.size(), 0) } {
+        auto N = data_.size();
         for (size_t i = 0; i < N; ++i) {
             data_[i][i] = 1; // by definition every pixel is connected to itself
             pos_[names[i]] = i; // initialize the inverse look up table
@@ -72,6 +71,7 @@ struct connectivity_mat {
 
     // gives back the name of a row/column
     const std::string& GetHeader(size_t i) {
+        auto N = data_.size();
         assert(i < N);
         return names_[i];
     }
@@ -84,6 +84,7 @@ struct connectivity_mat {
 
     // prints a visual representation of the matrix
     void DisplayMap(std::ostream & os = std::cout) {
+        auto N = data_.size();
         for (size_t c = 0; c < N; ++c) {
             os << "\t" << names_[c];
         }

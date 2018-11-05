@@ -30,71 +30,47 @@
 #define YACCLAB_PERFORMANCE_EVALUATOR_H_
 
 #include <map>
-
-#include "opencv2/core.hpp"
+#include <chrono>
 
 class PerformanceEvaluator {
-    struct Elapsed {
-        double last;
-        double total;
+    using hrc = std::chrono::high_resolution_clock;
+    using tp = hrc::time_point;
 
-        Elapsed() : last(0), total(0) {}
+    struct Elapsed {
+        double last = 0, total = 0;
     };
 
+    tp last_;
+
 public:
-    PerformanceEvaluator()
-    {
-        tick_frequency_ = cv::getTickFrequency();
+    void start() {
+        last_ = hrc::now();
     }
-
-    void start()
-    {
-        int64 ticks = cv::getTickCount();
-        counter_.last = static_cast<double>(ticks);
-    }
-
-    double stop()
-    {
-        int64 ticks = cv::getTickCount();
-        double t = ticks - counter_.last;
+    double stop() {
+        auto cur = hrc::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(cur - last_).count();
+        double t = static_cast<double>(duration);
         counter_.last = t;
         counter_.total += t;
-        return counter_.last*1000. / tick_frequency_;
+        return counter_.last;
     }
 
-    void reset()
-    {
-        counter_.total = 0;
-    }
+    void reset() { counter_.total = 0; }
+    double last() const { return counter_.last; }
+    double total() const { return counter_.total; }
 
-    double last()
-    {
-        return counter_.last*1000. / tick_frequency_;
-    }
-
-    double total()
-    {
-        return counter_.total*1000. / tick_frequency_;
-    }
-
-    void store(const std::string& s, double time /*milliseconds*/)
-    {
+    void store(const std::string& s, double time /*milliseconds*/) {
         counters_[s].last = time;
         counters_[s].total += time;
     }
-
-    double get(const std::string& s)
-    {
+    double get(const std::string& s) {
         return counters_.at(s).last;
     }
-
-    bool find(const std::string& s)
-    {
+    bool find(const std::string& s) {
         return counters_.find(s) != counters_.end();
     }
 
 private:
-    double tick_frequency_;
     Elapsed counter_;
     std::map<std::string, Elapsed> counters_;
 };

@@ -32,7 +32,7 @@
 #include "conact_tree.h"
 #include "base_forest.h"
 
-struct EndForest : BaseForest {
+class EndForest : BaseForest {
 	
 };
 

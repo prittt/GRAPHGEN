@@ -29,17 +29,17 @@
 #ifndef GRAPHSGEN_RULE_SET_H_
 #define GRAPHSGEN_RULE_SET_H_
 
-#include <unordered_map>
+#include <bitset>
 #include <fstream>
+#include <iterator>
+#include <unordered_map>
 
 #include "pixel_set.h"
 #include "utilities.h"
 
-std::string binary(uint u, uint nbits);
-
 struct rule {
 	unsigned long long frequency = 1;
-	uint actions; // bitmapped
+	std::bitset<128> actions; // bitmapped
 };
 
 struct rule_set {
@@ -50,13 +50,20 @@ struct rule_set {
 	std::vector<rule> rules;
     pixel_set ps_;
 
+    static std::string binary(uint u, uint nbits) {
+        std::string s;
+        while (nbits-- > 0)
+            s += ((u >> nbits) & 1) + 48;
+        return s;
+    }
+
 	void init_conditions(const pixel_set& ps) {
         ps_ = ps;
 		conditions.clear();
 		conditions_pos.clear();
 		for (uint i = 0; i < ps.pixels_.size(); ++i) {
-			conditions.push_back(ps.pixels_[i].name);
-			conditions_pos[ps.pixels_[i].name] = i;
+			conditions.push_back(ps.pixels_[i].name_);
+			conditions_pos[ps.pixels_[i].name_] = i;
 		}
 	}
 
@@ -67,7 +74,7 @@ struct rule_set {
 			actions_pos[actions[i]] = i + 1; // Action 0 doesn't exist
 	}
 
-    uint GetNumberOfRules() {
+    uint GetNumberOfRules() const {
         return 1 << conditions.size();
     };
 
@@ -80,14 +87,24 @@ struct rule_set {
 		}
 	}
 
-	void print_rules(std::ostream& os) const;
+    void print_rules(std::ostream& os) const {
+        copy(std::rbegin(conditions), std::rend(conditions), std::ostream_iterator<std::string>(os, ","));
+        os << "\n";
+        for (size_t i = 0; i < rules.size(); ++i) {
+            os << binary(i, conditions.size()) << " ";
+            for (uint j = 0; j < actions.size(); ++j)
+                if (rules[i].actions[j])
+                    os << actions[j] << "(" << actions_pos.at(actions[j]) << ")" << ", ";
+            os << "\n";
+        }
+    }
 
 	uint get_condition(const std::string& s, uint rule) const {
 		return (rule >> conditions_pos.at(s)) & 1;
 	}
 
 	void set_action(const std::string& s, uint rule) {
-		rules[rule].actions |= 1 << (actions_pos.at(s) - 1);
+		rules[rule].actions.set(actions_pos.at(s) - 1);
 	}
     void SetFrequency(uint rule, uint frequency) { 
         // Da migliorare: chi assicura che vi sia corrispondenza nella rappresentazione

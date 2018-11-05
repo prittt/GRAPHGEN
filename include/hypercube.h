@@ -109,7 +109,7 @@ struct VIndex {
 
 #pragma pack(1)
 struct VNode {
-	unsigned uiAction;
+	std::bitset<128> uiAction;
 	/*unsigned*/ unsigned long long uiProb;
     /*unsigned*/ unsigned long long uiGain;
 	byte uiMaxGainIndex;
@@ -139,7 +139,7 @@ struct VHyperCube {
         auto nrules = rs.rules.size();
         for (size_t i = 0; i < nrules; ++i) {
             // for each rule generate the hypercube index
-            std::string s = binary(i, m_iDim);
+			std::string s = std::bitset<128>(i).to_string(); //binary(i, m_iDim);
             std::reverse(begin(s), end(s));
             VIndex idx(s);
             // and set its values

@@ -41,8 +41,8 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
 		constraints start_constr;
 		using namespace std;
 		for (const auto& p : ps) {
-			if (p.dx < 0)
-				start_constr[p.name] = 0;
+			if (p.GetDx() < 0)
+				start_constr[p.name_] = 0;
 		}
 		ltree t;
 		t.root = Reduce(t_.root, t, start_constr);
@@ -94,8 +94,8 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
 		for (int out_offset = 1;; ++out_offset) {
 			constraints end_constr;
 			for (const auto& p : ps) {
-				if (p.dx >= out_offset)
-					end_constr[p.name] = 0;
+				if (p.GetDx() >= out_offset)
+					end_constr[p.name_] = 0;
 			}
 			if (end_constr.empty())
 				break;

@@ -33,12 +33,11 @@
 
 #include "connectivity_mat.h"
 
-template <size_t N>
 struct MergeSet {
     std::set<std::vector<std::string>> mergesets_;
-    connectivity_mat<N> &con_;
+    connectivity_mat &con_;
 
-    MergeSet(connectivity_mat<N> &con) : con_{ con } {}
+    MergeSet(connectivity_mat &con) : con_{ con } {}
 
     void ReduceMergeSet(std::vector<std::string>& ms) {
         for (size_t i = 0; i < ms.size(); ++i) {
@@ -61,9 +60,10 @@ struct MergeSet {
             mergesets_.emplace(ms);
         }
         else {
-            string cur = ms[pos];
+            std::string cur = ms[pos];
+            auto N = con_.data_.size();
             for (size_t i = 0; i < N; ++i) {
-                string h = con_.GetHeader(i);
+                std::string h = con_.GetHeader(i);
                 if (h != "x" && con_(cur, h)) {
                     ms[pos] = h;
                     ExpandAllEquivalences(ms, pos + 1);
@@ -75,8 +75,9 @@ struct MergeSet {
     void BuildMergeSet() {
         std::vector<std::string> ms;
         // Create initial merge set
+        auto N = con_.data_.size();
         for (size_t i = 0; i < N; ++i) {
-            string h = con_.GetHeader(i);
+            std::string h = con_.GetHeader(i);
             if (h != "x" && con_("x", h)) {
                 ms.push_back(h);
             }

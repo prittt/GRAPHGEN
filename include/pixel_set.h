@@ -32,31 +32,61 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <cassert>
+#include <algorithm>
 
 struct pixel {
-	std::string name;
-	int dx, dy;
+    std::vector<int> coords_;
+    std::string name_;
 
-	pixel(std::string name_, int dx_, int dy_) : name{ std::move(name_) }, dx{ dx_ }, dy{ dy_ } {}
+    pixel(std::string name, std::vector<int> coords) : name_{ std::move(name) }, coords_{ std::move(coords) } {}
+
+    auto size() const { return coords_.size(); }
+    auto& operator[](size_t i) { return coords_[i]; }
+    auto& operator[](size_t i) const { return coords_[i]; }
+
+	// Metodi provvisori per adattare il pixel al vecchio codice specifico per il 2D
+	int GetDx() const { return coords_[0]; }
+	int GetDy() const { return coords_[1]; }
 };
 
+static int ChebyshevDistance(const pixel& p1, const pixel& p2)
+{
+    assert(p1.size() == p2.size());
+    int max = 0;
+    for (size_t i = 0; i < p1.size(); ++i) {
+        max = std::max(max, abs(p1[i] - p2[i]));
+    }
+    return max;
+}
+
 struct pixel_set {
-	std::vector<pixel> pixels_;
-    uint8_t shift_ = 1;
+    std::vector<pixel> pixels_;
+    std::vector<uint8_t> shifts_;
 
     pixel_set() {}
-    pixel_set(std::initializer_list<pixel> il) : pixels_{ il }{}
+    pixel_set(std::initializer_list<pixel> il) : pixels_{ il } {
+        shifts_.resize(pixels_.front().size());
+        for (size_t i = 0; i < pixels_.front().size(); ++i)
+            shifts_[i] = 1;
+    }
 
-    void SetShift(uint8_t shift) {
-        shift_ = shift;
+    void SetShifts(std::vector<uint8_t> shifts) {
+        shifts_ = shifts;
     };
 
-	void add(std::string name, int dx, int dy) { pixels_.emplace_back(name, dx, dy); }
+    auto& operator[](size_t i) { return pixels_[i]; }
+    auto& operator[](size_t i) const { return pixels_[i]; }
+
+    auto size() const { return pixels_.size(); }
 
     auto begin() { return std::begin(pixels_); }
     auto end() { return std::end(pixels_); }
     auto begin() const { return std::begin(pixels_); }
     auto end() const { return std::end(pixels_); }
+
+	// Metodi provvisori per adattare il pixel_set al vecchio codice specifico per il 2D
+	int GetShift2D() const { return shifts_[0]; }
 };
 
 #endif //GRAPHSGEN_PIXEL_SET_H_

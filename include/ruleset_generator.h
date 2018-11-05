@@ -31,7 +31,8 @@
 
 #include "rule_set.h"
 
-#define RSG_ALGO RSG(rosenfeld) RSG(bbdt) RSG(thin_zs1)
+// #define RSG_ALGO RSG(rosenfeld) RSG(bbdt) RSG(thin_zs1)
+#define RSG_ALGO RSG(rosenfeld) RSG(rosenfeld_3d)
 
 #define RSG(a) rule_set generate_##a();
 RSG_ALGO
