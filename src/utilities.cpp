@@ -30,3 +30,9 @@
 
 std::string global_output_path = "..\\outputs\\";
 
+std::string binary(uint u, uint nbits) {
+    std::string s;
+    while (nbits-- > 0)
+        s += ((u >> nbits) & 1) + 48;
+    return s;
+}

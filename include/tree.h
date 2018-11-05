@@ -39,7 +39,7 @@
 // shall have two children. In our case exactly two or zero.
 template<typename T>
 struct tree { 
-    struct 
+    struct node
 	{
         T data;
         node *left = nullptr, *right = nullptr;

@@ -40,6 +40,8 @@ extern std::string global_output_path;
 
 using uint = uint32_t;
 
+std::string binary(uint u, uint nbits);
+
 struct nodeid {
     int _id = 0;
     int next() { return ++_id; }

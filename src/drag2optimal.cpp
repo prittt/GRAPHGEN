@@ -81,11 +81,13 @@ void Dag2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_no
         if (actions_list.size() > 1) {
             for (size_t i = 0; i < actions_list.size() - 1; ++i) {
                 std::map<const ltree::node*, bool> visited_node_cur;
-                n->data.action = 1 << (actions_list[i] - 1);
+                n->data.action = 0;
+                n->data.action.set(actions_list[i] - 1);
                 nt = t;
                 Dag2OptimalDagRec(nt, nt.root, best_tree, best_nodes, best_leaves, visited_node_cur, counter);
             }
-            n->data.action = 1 << (actions_list[actions_list.size() - 1] - 1);
+            n->data.action = 0;
+            n->data.action.set(actions_list[actions_list.size() - 1] - 1);
         }
         return;
     }

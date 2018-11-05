@@ -67,7 +67,7 @@ ltree VHyperCube::optimize(bool bVerbose)
 				std::cout << "0";
 			else
 				for (unsigned i = 1; i < 32; i++)
-					if (m_arrIndex[idx.GetIndex()].uiAction & (1 << (i - 1)))
+					if (m_arrIndex[idx.GetIndex()].uiAction[1 << (i - 1)])
 						std::cout << i << ",";
 			std::cout << "\n";
 		} while (idx.MoveNext());
@@ -111,14 +111,14 @@ ltree VHyperCube::optimize(bool bVerbose)
 					VNode node0(m_arrIndex[idx0.GetIndex()]), node1(m_arrIndex[idx1.GetIndex()]);
 
 					// Faccio l'intersezione delle possibili azioni
-					unsigned uiIntersezione = node0.uiAction & node1.uiAction;
+					auto uiIntersezione = node0.uiAction & node1.uiAction;
 
 					m_arrIndex[idx.GetIndex()].uiAction = uiIntersezione;
 					arrProb[i] = node0.uiProb + node1.uiProb;
 					arrGain[i] = node0.uiGain + node1.uiGain;
 					arrNEq[i] = node0.neq * node1.neq;
 
-					if (uiIntersezione > 0) {
+					if (uiIntersezione != 0) {
 						arrGain[i] += arrProb[i];
 						arrNEq[i] = 0;
 					}
@@ -149,7 +149,7 @@ ltree VHyperCube::optimize(bool bVerbose)
 						std::cout << "0";
 					else
 						for (unsigned j = 1; j < 32; j++)
-							if (m_arrIndex[idx.GetIndex()].uiAction & (1 << (j - 1)))
+							if (m_arrIndex[idx.GetIndex()].uiAction[1 << (j - 1)])
 								std::cout << j << ",";
 					std::cout << "\t";
 

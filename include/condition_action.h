@@ -31,6 +31,8 @@
 
 #include <string>
 #include <vector>
+#include <bitset>
+
 
 using uint = uint32_t;
 
@@ -42,7 +44,7 @@ struct conact {
     // CONDITION
     std::string condition;
     // ACTION
-    uint action = 0; // List of actions (bitmapped)
+    std::bitset<128> action = 0; // List of actions (bitmapped)
     uint next = 0;
 
     conact() {}
@@ -51,10 +53,10 @@ struct conact {
 
     std::vector<uint> actions() const {
         std::vector<uint> a;
-        uint uAction = action;
+        std::bitset<128> uAction = action;
         uint nAction = 1;
         while (uAction != 0) {
-            if (uAction & 1)
+            if (uAction[0])
                 a.push_back(nAction);
             uAction >>= 1;
             nAction++;
@@ -83,7 +85,7 @@ struct conact {
         if (t == type::CONDITION)
             return condition == other.condition;
         else
-            return (action & other.action) && next == other.next;
+            return (action & other.action) != 0 && next == other.next;
     }
     // To check if two conact are not equivalent (the leaves actions has empty intersection)
     bool neq(const conact& other) const {

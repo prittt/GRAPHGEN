@@ -49,7 +49,7 @@ static ltree::node* LoadConactTreeRec(ltree& t, ifstream& is)
 		do {
 			int action;
 			is >> action >> ws;
-			n->data.action |= 1 << (action - 1);
+			n->data.action.set(action - 1);
 		} while (is.peek() == ',' && is.get());
 	}
 	else {

@@ -37,8 +37,11 @@ string Forest2Dag::Tree2String(ltree::node* n) {
 		return it->second;
 
 	string s;
-	if (n->isleaf())
-		s = to_string(n->data.action) + to_string(n->data.next);
+    if (n->isleaf()) {
+        char a_action[sizeof(n->data.action) + 1] = { 0 };
+        memcpy(a_action, reinterpret_cast<char*>(&n->data.action), sizeof(n->data.action));
+        s = a_action + to_string(n->data.next);
+    }
 	else
 		s = n->data.condition + Tree2String(n->left) + Tree2String(n->right);
 
