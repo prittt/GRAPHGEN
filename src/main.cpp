@@ -118,9 +118,8 @@ int main()
     DrawDagOnFile(tree_filename, t, false, true);
     PrintStats(t);
 
-    return 0;
-
     //PerformOptimalDragGeneration(t, algorithm_name);
+    return 0;
 
     LOG("Making forest",
         Forest f(t, rs.ps_);

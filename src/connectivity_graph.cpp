@@ -1,7 +1,7 @@
 #include "connectivity_graph.h"
 
 #include <set>
-#include <unordered_set>
+//#include <unordered_set>
 #include <iterator>
 #include <bitset>
 
@@ -60,11 +60,18 @@ std::ostream& operator<<(std::ostream& os, const graph& g) {
     return os;
 }
 
+template<size_t N>
+struct less {
+    bool operator()(const std::bitset<N>& lhs, const std::bitset<N>& rhs) {
+        return lhs.to_string() < rhs.to_string();
+    }
+};
+
 std::vector<std::string> generate_all_possible_labeling_actions(const graph& ag)
 {
     auto nconds = ag.size();
     auto nrules = 1u << nconds;
-    std::unordered_set<std::bitset<128>> actions_set; // Insieme di azioni descritte come elenco dei pixel di cui fare il merge
+    std::set<std::bitset<128>, less<128>> actions_set; // Insieme di azioni descritte come elenco dei pixel di cui fare il merge
     std::vector<std::string> actions = { "nothing" };
 
     auto posx = ag.rnodes_.at("x");
