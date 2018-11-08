@@ -41,13 +41,13 @@ rule_set generate_rosenfeld()
     };
 
     rule_set labeling;
-    labeling.init_conditions(rosenfeld_mask);
+    labeling.InitConditions(rosenfeld_mask);
 
-    graph ag = make_adjacencies(rosenfeld_mask);
+    graph ag = MakeAdjacencies(rosenfeld_mask);
 
-    auto actions = generate_all_possible_labeling_actions(ag);
+    auto actions = GenerateAllPossibleLabelingActions(ag);
 
-    labeling.init_actions(actions);
+    labeling.InitActions(actions);
 
     labeling.generate_rules([&](rule_set& rs, uint i) {
         rule_wrapper r(rs, i);
@@ -60,9 +60,9 @@ rule_set generate_rosenfeld()
         auto lag = ag;
         for (size_t j = 0; j < lag.size(); ++j) {
             if (((i >> j) & 1) == 0)
-                lag.detach_node(j);
+                lag.DetachNode(j);
         }
-        graph cg = make_connectivities(lag);
+        graph cg = MakeConnectivities(lag);
 
         connectivity_mat con(rs.conditions);
         con.data_ = cg.arcs_;

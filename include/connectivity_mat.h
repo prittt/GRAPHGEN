@@ -43,10 +43,10 @@ step to choose which actions should be performed during connected components lab
 */
 struct connectivity_mat {
     std::vector<std::vector<int>> data_; // connectivity matrix
-    std::map<std::string, size_t> pos_; // inverse lookup table (from pixel names to matrix indexes)
-    std::vector<std::string> names_; // list of pixel names (ordered as in the connectivity matrix)
+    std::map<std::string, size_t> pos_;  // inverse lookup table (from pixel names to matrix indexes)
+    std::vector<std::string> names_;     // list of pixel names (ordered as in the connectivity matrix)
 
-    // a connectivity matrix is constructed from a list of pixel names
+    // A connectivity matrix is constructed from a list of pixel names
     connectivity_mat(const std::vector<std::string> &names) : names_{ names }, data_{ names.size(), std::vector<int>(names.size(), 0) } {
         auto N = data_.size();
         for (size_t i = 0; i < N; ++i) {

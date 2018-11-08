@@ -5,7 +5,8 @@
 #include <iterator>
 #include <bitset>
 
-graph make_adjacencies(const pixel_set& ps) {
+// This function creates and initializes an adjacencies graph with name and values starting from a pixel_set
+graph MakeAdjacencies(const pixel_set& ps) {
     graph g(ps.size());
 
     for (size_t i = 0; i < g.size(); ++i)
@@ -20,17 +21,17 @@ graph make_adjacencies(const pixel_set& ps) {
     return g;
 }
 
-static void make_connectivities_rec(size_t i, size_t j, graph& g, const graph& ag, std::set<size_t>& visited) {
+static void MakeConnectivitiesRec(size_t i, size_t j, graph& g, const graph& ag, std::set<size_t>& visited) {
     for (size_t k = 0; k < g.size(); ++k) {
         if (visited.find(k) == visited.end() && ag[j][k]) {
             g[i][k] = 1;
             visited.insert(k);
             if (g.nodes_[k] != "x")
-                make_connectivities_rec(i, k, g, ag, visited);
+				MakeConnectivitiesRec(i, k, g, ag, visited);
         }
     }
 }
-graph make_connectivities(const graph& ag) {
+graph MakeConnectivities(const graph& ag) {
     graph g(ag.size());
     g.nodes_ = ag.nodes_;
     g.rnodes_ = ag.rnodes_;
@@ -38,7 +39,7 @@ graph make_connectivities(const graph& ag) {
     for (size_t i = 0; i < g.size(); ++i) {
         if (ag[i][i]) {
             std::set<size_t> visited;
-            make_connectivities_rec(i, i, g, ag, visited);
+			MakeConnectivitiesRec(i, i, g, ag, visited);
         }
     }
 
@@ -60,6 +61,7 @@ std::ostream& operator<<(std::ostream& os, const graph& g) {
     return os;
 }
 
+// Less operator for bitset
 template<size_t N>
 struct less {
     bool operator()(const std::bitset<N>& lhs, const std::bitset<N>& rhs) {
@@ -67,11 +69,12 @@ struct less {
     }
 };
 
-std::vector<std::string> generate_all_possible_labeling_actions(const graph& ag)
+// This function generates all possible actions, avoiding useless ones such as merges between adjacent pixels
+std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag)
 {
     auto nconds = ag.size();
     auto nrules = 1u << nconds;
-    std::set<std::bitset<128>, less<128>> actions_set; // Insieme di azioni descritte come elenco dei pixel di cui fare il merge
+    std::set<std::bitset<128>, less<128>> actions_set; // Set of actions described as list of pixels to be merged
     std::vector<std::string> actions = { "nothing" };
 
     auto posx = ag.rnodes_.at("x");
@@ -112,7 +115,6 @@ std::vector<std::string> generate_all_possible_labeling_actions(const graph& ag)
 
         actions.push_back(action);
     }
-
 
     return actions;
 }

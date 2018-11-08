@@ -47,8 +47,8 @@ rule_set generate_bbdt()
     grana_mask.SetShifts({ 2, 2 });
 
     rule_set labeling;
-    labeling.init_conditions(grana_mask);
-    labeling.init_actions({ "nothing", "x<-newlabel",
+    labeling.InitConditions(grana_mask);
+    labeling.InitActions({ "nothing", "x<-newlabel",
         "x<-P", "x<-Q", "x<-R", "x<-S",
         "x<-P+Q", "x<-P+R", "x<-P+S", "x<-Q+R", "x<-Q+S", "x<-R+S",
         "x<-P+Q+R", "x<-P+Q+S", "x<-P+R+S", "x<-Q+R+S", });

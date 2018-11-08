@@ -141,6 +141,19 @@ void GenerateCode(std::ostream& os, ltree& t) {
     GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, nodeid(), 2, false);
 }
 
+// Overloading function
+bool GenerateCode(const string& filename, ltree& t) {
+	ofstream os(filename);
+
+	if (!os) {
+		return false;
+	}
+
+	GenerateCode(os, t);
+
+	return true;
+}
+
 // TODO: check
 void GenerateForestCode(std::ostream& os, const Forest& f) {
 	

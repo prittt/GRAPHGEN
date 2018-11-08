@@ -42,8 +42,8 @@ rule_set generate_thin_zs1()
     };
 
     rule_set thinning;
-    thinning.init_conditions(zs_mask);
-    thinning.init_actions({
+    thinning.InitConditions(zs_mask);
+    thinning.InitActions({
         "nothing",
         "remove",
         });

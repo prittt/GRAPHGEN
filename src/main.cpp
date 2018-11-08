@@ -116,6 +116,10 @@ int main()
     }
     string tree_filename = global_output_path + algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, t, false, true);
+	
+	string tree_code_filename = global_output_path + algorithm_name + "_code.txt";
+	GenerateCode(tree_code_filename, t);
+
     PrintStats(t);
 
     //PerformOptimalDragGeneration(t, algorithm_name);

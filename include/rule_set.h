@@ -57,7 +57,7 @@ struct rule_set {
         return s;
     }
 
-	void init_conditions(const pixel_set& ps) {
+	void InitConditions(const pixel_set& ps) {
         ps_ = ps;
 		conditions.clear();
 		conditions_pos.clear();
@@ -67,7 +67,7 @@ struct rule_set {
 		}
 	}
 
-	void init_actions(std::vector<std::string> actions_) {
+	void InitActions(std::vector<std::string> actions_) {
 		actions = std::move(actions_);
 		actions_pos.clear();
 		for (uint i = 0; i < actions.size(); ++i)

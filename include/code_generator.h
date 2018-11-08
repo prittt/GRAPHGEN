@@ -37,6 +37,9 @@
 // All nodes must have both sons! 
 void GenerateCode(std::ostream& os, ltree& t);
 
+// Overloading function
+bool GenerateCode(const std::string& filename, ltree& t);
+
 // TODO: check this!!
 void GenerateForestCode(std::ostream& os, const Forest& f);
 

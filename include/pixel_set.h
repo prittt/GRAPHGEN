@@ -50,6 +50,9 @@ struct pixel {
 	int GetDy() const { return coords_[1]; }
 };
 
+// This function return the ChebyshevDistance between the two pixels p1 and p2. 
+// The Chebyshev distance between two vectors is the greatest of their differences
+// along any coordinate dimension.
 static int ChebyshevDistance(const pixel& p1, const pixel& p2)
 {
     assert(p1.size() == p2.size());
