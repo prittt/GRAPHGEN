@@ -29,11 +29,11 @@
 #ifndef GRAPHSGEN_PIXEL_SET_H_
 #define GRAPHSGEN_PIXEL_SET_H_
 
+#include <algorithm>
+#include <cassert>
 #include <fstream>
 #include <string>
 #include <vector>
-#include <cassert>
-#include <algorithm>
 
 struct pixel {
     std::vector<int> coords_;
@@ -75,7 +75,8 @@ struct pixel_set {
     }
 
     void SetShifts(std::vector<uint8_t> shifts) {
-        shifts_ = shifts;
+		assert(shifts.size() == shifts_.size() && "'shifts' vector size cannot be changed"); 
+		shifts_ = shifts;
     };
 
     auto& operator[](size_t i) { return pixels_[i]; }
