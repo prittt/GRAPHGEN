@@ -119,8 +119,14 @@ int main()
 	string tree_filename = global_output_path + algorithm_name + "_tree";
 	DrawDagOnFile(tree_filename, t, false, true);
 
-	Dag2DagUsingIdenties(t);
-	DrawDagOnFile("dag_rosenfeld_3d_with_identities", t, false, true);
+	PrintStats(t);
+
+	// Inutile, non ci sono sottoalberi identici nel caso della maschera di resenfeld 3d
+	//Dag2DagUsingIdenties(t);
+	//DrawDagOnFile("dag_rosenfeld_3d_with_identities", t, false, true);
+
+	Dag2DagUsingEquivalences(t);
+	DrawDagOnFile("dag_rosenfeld_3d_with_equivalences", t, false, true);
 
 	string tree_code_filename = global_output_path + algorithm_name + "_code.txt";
 	GenerateCode(tree_code_filename, t);

@@ -65,10 +65,52 @@ void Dag2DagUsingIdentiesRec(ltree::node *n, ltree& t, std::map<ltree::node*, bo
     }
 }
 
-// Converts dag to dag using equivalences between subtrees
+// Converts dag to dag using identies between subtrees
 void Dag2DagUsingIdenties(ltree& t) {
-    std::map<ltree::node*, bool> visited_n;
-    Dag2DagUsingIdentiesRec(t.root, t, visited_n);
+	std::map<ltree::node*, bool> visited_n;
+	Dag2DagUsingIdentiesRec(t.root, t, visited_n);
+}
+
+// TODO: 
+// Le funzioni che seguono sono praticamente identiche alle versione con identità, riddurre il codice aggiungendo parametri alle funzioni?
+// FindAndLinkEquivalencesDagRec
+// Dag2DagUsingEquivalencesRec
+// Dag2DagUsingEquivalences
+void FindAndLinkEquivalencesDagRec(ltree::node* n1, ltree::node* n2, std::map<ltree::node*, bool> &visited_fl) {
+	if (n2->isleaf() || n1 == n2 || visited_fl[n2])
+		return;
+	visited_fl[n2] = true;
+
+	if (n1 != n2->left && equivalent_trees(n1, n2->left)) {
+		n2->left = n1;
+	}
+
+	if (n1 != n2->right && equivalent_trees(n1, n2->right)) {
+		n2->right = n1;
+	}
+
+	FindAndLinkEquivalencesDagRec(n1, n2->left, visited_fl);
+	FindAndLinkEquivalencesDagRec(n1, n2->right, visited_fl);
+}
+
+// Recursive auxiliary function for the conversion of a DAG into DAG with no equivalent subgraphs
+void Dag2DagUsingEquivalencesRec(ltree::node *n, ltree& t, std::map<ltree::node*, bool> &visited_n) {
+	std::map<ltree::node*, bool> visited_fl;
+	FindAndLinkEquivalencesDagRec(n, t.root, visited_fl);
+	visited_n[n] = true;
+
+	if (!n->isleaf()) {
+		if (!visited_n[n->left])
+			Dag2DagUsingEquivalencesRec(n->left, t, visited_n);
+		if (!visited_n[n->right])
+			Dag2DagUsingEquivalencesRec(n->right, t, visited_n);
+	}
+}
+
+// Converts dag to dag using equivalences between subtrees
+void Dag2DagUsingEquivalences(ltree& t) {
+	std::map<ltree::node*, bool> visited_n;
+	Dag2DagUsingEquivalencesRec(t.root, t, visited_n);
 }
 
 // Given a dag with multiple actions on leaves this function generate all possible dags with only one action per leaf
