@@ -60,6 +60,17 @@ std::string zerostr(const T& val, size_t n) {
 	return ss.str();
 }
 
+// This function tokenize an input string
+template <typename T>
+void StringSplit(const std::string& str, T& cont, char delim = '+')
+{
+	std::stringstream ss(str);
+	std::string token;
+	while (std::getline(ss, token, delim)) {
+		cont.push_back(token);
+	}
+}
+
 // Function to automatically print a message before and after each operation
 // No braces around instruction, so you can log also variable definitions without scoping them
 #define LOG(message, instructions) std::cout << (message) << "... "; instructions std::cout << "done.\n"

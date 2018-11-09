@@ -82,6 +82,20 @@ struct pixel_set {
     auto& operator[](size_t i) { return pixels_[i]; }
     auto& operator[](size_t i) const { return pixels_[i]; }
 
+	// Search predicate to apply find algorithm on vector of pixels 
+	struct find_pixel
+	{
+		std::string name_;
+		find_pixel(std::string name) : name_(name) {}
+		bool operator () (const pixel& p) const
+		{
+			return p.name_ == name_;
+		}
+	};
+
+	auto& operator[](const std::string& s) { return *std::find_if(pixels_.begin(), pixels_.end(), find_pixel(s)); }
+	auto& operator[](const std::string& s) const { return *std::find_if(pixels_.begin(), pixels_.end(), find_pixel(s)); }
+
     auto size() const { return pixels_.size(); }
 
     auto begin() { return std::begin(pixels_); }

@@ -33,14 +33,19 @@
 
 #include "conact_tree.h"
 #include "forest.h"
+#include "rule_set.h"
 
-// All nodes must have both sons! 
+// This function generates tree/dag code. All nodes must have both sons! 
 void GenerateCode(std::ostream& os, ltree& t);
-
 // Overloading function
 bool GenerateCode(const std::string& filename, ltree& t);
 
-// TODO: check this!!
+// This function generates forest code. TODO: check this!!
 void GenerateForestCode(std::ostream& os, const Forest& f);
+
+// This function generates code per conditions and actions' macros and rows' pointers
+void GenerateConditionsActionsCode(std::ofstream& os, const rule_set& rs);
+// Overloading function
+bool GenerateConditionsActionsCode(const std::string& filename, const rule_set& rs);
 
 #endif // !GRAPHSGEN_CODE_GENERATOR_H_
