@@ -102,7 +102,7 @@ void PerformOptimalDragGeneration(ltree& t, const string& algorithm_name)
 
 int main()
 {
-	auto at = ruleset_generator_type::rosenfeld;
+	auto at = ruleset_generator_type::rosenfeld_3d;
 
 	auto algorithm_name = ruleset_generator_names[static_cast<int>(at)];
 	auto ruleset_generator = ruleset_generator_functions[static_cast<int>(at)];
@@ -118,6 +118,9 @@ int main()
 	}
 	string tree_filename = global_output_path + algorithm_name + "_tree";
 	DrawDagOnFile(tree_filename, t, false, true);
+
+	Dag2DagUsingIdenties(t);
+	DrawDagOnFile("dag_rosenfeld_3d_with_identities", t, false, true);
 
 	string tree_code_filename = global_output_path + algorithm_name + "_code.txt";
 	GenerateCode(tree_code_filename, t);

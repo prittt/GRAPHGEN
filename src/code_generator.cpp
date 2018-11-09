@@ -210,10 +210,10 @@ string GenerateAccessPixelCode(const string& img_name, const pixel& p) {
 	string row_id = "row" + string(p.coords_[1] < 0 ? "1" : "0") + to_string(abs(p.coords_[1]));
 	string col = "";
 	if (p.coords_[0] > 0) {
-		col += "+" + to_string(abs(p.coords_[0]));
+		col += " + " + to_string(abs(p.coords_[0]));
 	}
 	else if (p.coords_[0] < 0) {
-		col += "-" + to_string(abs(p.coords_[0]));
+		col += " - " + to_string(abs(p.coords_[0]));
 	}
 
 	return img_name + slice_id + row_id + "[c" + col + "]";
@@ -282,6 +282,7 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 	string type_in_prefix_string = "const unsigned char* const ";
 	string type_out_prefix_string = "unsigned* const ";
 
+	// TODO: 3D generation only works with unitary shift
 	// x is always ignored because we always create row pointers
 	switch (n_dims) {
 	case 2:
@@ -374,7 +375,7 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 				type_out_prefix_string +
 				"img_labels_slice11_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
 				" = (unsigned *)(((char *)" + base_row_out_name + ") - img_labels_.step.p[0] + img_labels_.step.p[1] * " + to_string(j) + ");";
-			out_ss << complete_string_in + "\n";
+			out_ss << complete_string_out + "\n";
 
 		}
 	}
@@ -394,14 +395,14 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 		stringstream col;
 		for (size_t i = 0; i < n_dims; ++i) {
 			if (p.coords_[i] < 0) {
-				os << counters_names[i] << "-" << abs(p.coords_[i]) << ">=0 && ";
+				os << counters_names[i] << " > " << -p.coords_[i] - 1 << " && ";
 			}
 			else if (p.coords_[i] > 0) {
-				os << counters_names[i] << "+" << p.coords_[i] << "<" + sizes_names[i] + " && ";
+				os << counters_names[i] << " < " << sizes_names[i] << " - " << p.coords_[i] << " && ";
 			}
 		}
 
-		os << GenerateAccessPixelCode("img_", p) << ">0\n";
+		os << GenerateAccessPixelCode("img_", p) << " > 0\n";
 	}
 
 	// Actions:
