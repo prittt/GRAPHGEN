@@ -43,7 +43,7 @@ struct mask {
     int increment_ = 0;
 
     mask(const pixel_set &ps) {
-        increment_ = ps.GetShift2D();
+        increment_ = ps.GetShiftX();
         exp_ = ps.pixels_.size();
         for (int i = 0; i < exp_; ++i) {
             border_ = std::max(border_, std::max(std::abs(ps.pixels_[i].GetDx()), std::abs(ps.pixels_[i].GetDy())));

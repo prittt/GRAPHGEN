@@ -28,6 +28,9 @@
 
 #include "forest2dag.h"
 
+#include <sstream>
+#include <iomanip>
+
 using namespace std;
 
 // Converts a tree into unique string exploiting memoization 
@@ -38,9 +41,11 @@ string Forest2Dag::Tree2String(ltree::node* n) {
 
 	string s;
     if (n->isleaf()) {
-        char a_action[sizeof(n->data.action) + 1] = { 0 };
-        memcpy(a_action, reinterpret_cast<char*>(&n->data.action), sizeof(n->data.action));
-        s = a_action + to_string(n->data.next);
+        //char a_action[sizeof(n->data.action) + 1] = { 0 };
+        //memcpy(a_action, reinterpret_cast<char*>(&n->data.action), sizeof(n->data.action));
+		stringstream ss;
+		ss << setfill('0') << setw(3) << n->data.next;
+		s = n->data.action.to_string() + ss.str();
     }
 	else
 		s = n->data.condition + Tree2String(n->left) + Tree2String(n->right);

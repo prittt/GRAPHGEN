@@ -43,9 +43,9 @@ struct Equivalences {
 
     Equivalences(const pixel_set& ps) {
         using namespace std;
-        for (const auto& p : ps) {
-            auto x = p.GetDx() + ps.GetShift2D();
-            auto it = find_if(begin(ps), end(ps), [&x, &p](const pixel& q) { return x == q.GetDx() && p.GetDy() == q.GetDy(); });
+        for (auto p : ps) {
+            p.ShiftX(ps.GetShiftX());
+            auto it = find(begin(ps), end(ps), p);
             if (it != end(ps)) {
                 eq_[it->name_] = p.name_;
             }

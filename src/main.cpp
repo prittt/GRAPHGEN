@@ -125,16 +125,18 @@ int main()
 	//Dag2DagUsingIdenties(t);
 	//DrawDagOnFile("dag_rosenfeld_3d_with_identities", t, false, true);
 
-	Dag2DagUsingEquivalences(t);
-	DrawDagOnFile("dag_rosenfeld_3d_with_equivalences", t, false, true);
+	//Dag2DagUsingEquivalences(t, false);
+	//Dag2DagUsingEquivalences(t, true);
+	//DrawDagOnFile("dag_rosenfeld_3d_with_equivalences", t, false, true);
+
+	//Dag2OptimalDag(t);
+	//DrawDagOnFile("dag_rosenfeld_3d_optimal", t, false, true);
 
 	string tree_code_filename = global_output_path + algorithm_name + "_code.txt";
 	GenerateCode(tree_code_filename, t);
 
 	PrintStats(t);
-
 	//PerformOptimalDragGeneration(t, algorithm_name);
-	return 0;
 
 	LOG("Making forest",
 		Forest f(t, rs.ps_);

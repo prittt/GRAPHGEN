@@ -36,18 +36,34 @@
 #include <vector>
 
 struct pixel {
-    std::vector<int> coords_;
-    std::string name_;
+	std::vector<int> coords_;
+	std::string name_;
 
-    pixel(std::string name, std::vector<int> coords) : name_{ std::move(name) }, coords_{ std::move(coords) } {}
+	pixel(std::string name, std::vector<int> coords) : name_{ std::move(name) }, coords_{ std::move(coords) } {}
 
-    auto size() const { return coords_.size(); }
-    auto& operator[](size_t i) { return coords_[i]; }
-    auto& operator[](size_t i) const { return coords_[i]; }
+	auto size() const { return coords_.size(); }
+	auto& operator[](size_t i) { return coords_[i]; }
+	auto& operator[](size_t i) const { return coords_[i]; }
 
 	// Metodi provvisori per adattare il pixel al vecchio codice specifico per il 2D
 	int GetDx() const { return coords_[0]; }
 	int GetDy() const { return coords_[1]; }
+
+	// It works only on coords_
+	bool operator==(const pixel& rhs) const {
+		assert(rhs.size() == coords_.size() && "Something wrong with pixel's coordinates");
+		for (size_t i = 0; i < coords_.size(); ++i) {
+			if (coords_[i] != rhs[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	void ShiftX(int s) {
+		coords_[0] += s;
+	}
+
 };
 
 // This function return the ChebyshevDistance between the two pixels p1 and p2. 
@@ -104,7 +120,7 @@ struct pixel_set {
     auto end() const { return std::end(pixels_); }
 
 	// Metodi provvisori per adattare il pixel_set al vecchio codice specifico per il 2D
-	int GetShift2D() const { return shifts_[0]; }
+	int GetShiftX() const { return shifts_[0]; }
 };
 
 #endif //GRAPHSGEN_PIXEL_SET_H_

@@ -94,23 +94,26 @@ void FindAndLinkEquivalencesDagRec(ltree::node* n1, ltree::node* n2, std::map<lt
 }
 
 // Recursive auxiliary function for the conversion of a DAG into DAG with no equivalent subgraphs
-void Dag2DagUsingEquivalencesRec(ltree::node *n, ltree& t, std::map<ltree::node*, bool> &visited_n) {
+void Dag2DagUsingEquivalencesRec(ltree::node *n, ltree& t, std::map<ltree::node*, bool> &visited_n, bool considering_leaves) {
 	std::map<ltree::node*, bool> visited_fl;
-	FindAndLinkEquivalencesDagRec(n, t.root, visited_fl);
+	
+	if (!n->isleaf() || considering_leaves) {
+		FindAndLinkEquivalencesDagRec(n, t.root, visited_fl);
+	}
 	visited_n[n] = true;
 
 	if (!n->isleaf()) {
 		if (!visited_n[n->left])
-			Dag2DagUsingEquivalencesRec(n->left, t, visited_n);
+			Dag2DagUsingEquivalencesRec(n->left, t, visited_n, considering_leaves);
 		if (!visited_n[n->right])
-			Dag2DagUsingEquivalencesRec(n->right, t, visited_n);
+			Dag2DagUsingEquivalencesRec(n->right, t, visited_n, considering_leaves);
 	}
 }
 
 // Converts dag to dag using equivalences between subtrees
-void Dag2DagUsingEquivalences(ltree& t) {
+void Dag2DagUsingEquivalences(ltree& t, bool considering_leaves) {
 	std::map<ltree::node*, bool> visited_n;
-	Dag2DagUsingEquivalencesRec(t.root, t, visited_n);
+	Dag2DagUsingEquivalencesRec(t.root, t, visited_n, considering_leaves);
 }
 
 // Given a dag with multiple actions on leaves this function generate all possible dags with only one action per leaf
