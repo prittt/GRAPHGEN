@@ -145,7 +145,7 @@ bool DrawDagOnFile(const string& output_file, tree<conact> &t, bool with_next, b
     return true;
 }
 
-bool DrawForestOnFile(const string& output_file, Forest& f, bool verbose) 
+bool DrawForestOnFile(const string& output_file, Forest& f, bool save_dotcode, bool verbose)
 {
     if (verbose) {
         std::cout << "Drawing Forest: " << output_file << ".. ";
@@ -200,6 +200,9 @@ bool DrawForestOnFile(const string& output_file, Forest& f, bool verbose)
     if (verbose) {
         std::cout << "done\n";
     }
-    remove(code_path.c_str());
+
+	if (!save_dotcode) {
+		remove(code_path.c_str());
+	}
     return true;
 }

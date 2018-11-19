@@ -86,6 +86,19 @@ void Forest2Dag::FindAndLink(ltree::node* n) {
 
 // Calls FindAndLink for each root of the forest
 Forest2Dag::Forest2Dag(Forest& f) : f_(f) {
-	for (auto& t : f_.trees_)
+	// Conversion to DAG for the main forest
+	for (auto& t : f_.trees_) {
 		FindAndLink(t.root);
+	}
+	
+	// Clean memoizing data structures
+	ps_.clear();
+	sp_.clear();
+
+	// Conversion to DAG for the end forest
+	for (auto& etg : f_.end_trees_) { // etg -> end trees groups
+		for (auto& et : etg) {
+			FindAndLink(et.root);	
+		}
+	}
 }

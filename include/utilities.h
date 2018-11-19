@@ -46,6 +46,14 @@ struct nodeid {
     int _id = 0;
     int next() { return ++_id; }
     int get() { return _id; }
+
+	void Clear() {
+		_id = 0;
+	}
+
+	void SetId(int new_id) {
+		_id = new_id;
+	}
 };
 
 static inline void RemoveCharacter(std::string& s, const char c) {

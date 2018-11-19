@@ -162,12 +162,11 @@ void GenerateForestCode(std::ostream& os, const Forest& f) {
 	nodeid id;
 	for (size_t i = 0; i < f.trees_.size(); ++i) {
 		const auto& t = f.trees_[i];
-		printed_node[t.root] = id.next();
+		// printed_node[t.root] = id.next();
 		CheckNodesTraversalRec(t.root, nodes_requiring_labels, id);
 	}
 
 	// Initial and internal trees (tree 0 is always the start tree)
-    nodeid id2;
 	//for (size_t i = 0; i < f.trees_.size(); ++i) {
 	//	const auto& t = f.trees_[i];
 	//	os << "tree_" << i << ": " << "finish_condition(" << i << "); \n"; // "finish_condition(n)" sarà da sostituire con "if (++c >= COLS - 1) goto break_n" quando inseriremo gli alberi di fine riga;
@@ -176,16 +175,31 @@ void GenerateForestCode(std::ostream& os, const Forest& f) {
 
 	//#define finish_condition(n) if ((c+=2) >= w - 2) { if (c > w - 2) { goto break_0_##n; } else { goto break_1_##n; } }
 	// TODO questa versione è specifica per BBDT, bisogna trovare un modo per generalizzare rispetto allo shift della maschera!!
+	id.Clear();
 	for (size_t i = 0; i < f.trees_.size(); ++i) {
 		const auto& t = f.trees_[i];
 		os << "tree_" << i << ": if ((c+=2) >= w - 2) { if (c > w - 2) { goto break_0_" << f.end_trees_mapping_[0][i] <<"; } else { goto break_1_" << f.end_trees_mapping_[1][i] << "; } } \n";
-		GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, id2, 2, true);
+		GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, id, 2, true);
 	}
+	int last_id_main_forest_node = id.get();
 
 	// Final trees
 	std::map<ltree::node*, int> printed_node_end_trees;
 	std::map<ltree::node*, pair<int, bool>> nodes_requiring_labels_end_trees;
-	nodeid id3;
+	id.Clear();
+	for (size_t tg = 0; tg < f.end_trees_.size(); ++tg) {
+		const auto& cur_trees = f.end_trees_[tg];
+		const auto& cur_mapping = f.end_trees_mapping_[tg];
+		for (size_t i = 0; i < cur_trees.size(); ++i) {
+			if (cur_mapping[i] == i) {
+				const auto& t = cur_trees[i];
+				// printed_node_end_trees[t.root] = id.next();
+				CheckNodesTraversalRec(t.root, nodes_requiring_labels_end_trees, id);
+			}
+		}
+	}
+
+	id.SetId(last_id_main_forest_node);
 	for (size_t tg = 0; tg < f.end_trees_.size(); ++tg) {
 		const auto& cur_trees = f.end_trees_[tg];
 		const auto& cur_mapping = f.end_trees_mapping_[tg];
@@ -193,7 +207,7 @@ void GenerateForestCode(std::ostream& os, const Forest& f) {
 			if (cur_mapping[i] == i) {
 				//os << "break_" << zerostr(tg, 2) << "_" << zerostr(i, 2) << ":\n";
 				os << "break_" << tg << "_" << i << ":\n";
-				GenerateCodeRec(os, cur_trees[i].root, printed_node_end_trees, nodes_requiring_labels_end_trees, id3, 2, false);
+				GenerateCodeRec(os, cur_trees[i].root, printed_node_end_trees, nodes_requiring_labels_end_trees, id, 2, false);
 				os << "\tcontinue;\n";
 			}
 		}

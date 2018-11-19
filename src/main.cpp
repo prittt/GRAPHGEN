@@ -102,14 +102,14 @@ void PerformOptimalDragGeneration(ltree& t, const string& algorithm_name)
 
 int main()
 {
-	auto at = ruleset_generator_type::rosenfeld_3d;
+	auto at = ruleset_generator_type::bbdt;
 
 	auto algorithm_name = ruleset_generator_names[static_cast<int>(at)];
 	auto ruleset_generator = ruleset_generator_functions[static_cast<int>(at)];
 
 	auto rs = ruleset_generator();
 
-	GenerateConditionsActionsCode("condition_action.txt", rs);
+	//GenerateConditionsActionsCode("condition_action.txt", rs);
 
 	string odt_filename = global_output_path + algorithm_name + "_odt.txt";
 	ltree t;
@@ -359,16 +359,27 @@ int main()
 		}
 	};
 
-	LOG("Reducing forest",
+	LOG("Reducing main forest",
 		STree st(f);
 	);
 	PrintStats(f);
-
-	DrawForestOnFile(algorithm_name + "forest_reduced", f, true);
 
 	string forest_reduced_code = global_output_path + algorithm_name + "_forest_reduced_code.txt";
 	{
 		ofstream os(forest_reduced_code);
 		GenerateForestCode(os, f);
 	}
+
+	return 0;
+
+	// Accrocchio per applicare le funzione di "Reducing forest" e "DrawForestOnFile" anche alla foresta di fine riga.
+	// Per farlo creiamo una nuova foresta che inizializzaziamo con tutti gli alberi di fine riga.
+	LOG("Making fake fores",
+		Forest fet(t, rs.ps_);
+	);
+
+	// Questa fun zione non considera gli alberi di fine riga
+	DrawForestOnFile(algorithm_name + "forest_reduced", f, true, true);
+
+	return EXIT_SUCCESS;
 }
