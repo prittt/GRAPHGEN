@@ -100,6 +100,10 @@ void PerformOptimalDragGeneration(ltree& t, const string& algorithm_name)
 	);
 }
 
+void CreateSpaghettiLabeling() {
+
+}
+
 int main()
 {
 	auto at = ruleset_generator_type::bbdt;
@@ -139,34 +143,33 @@ int main()
 
 	LOG("Making forest",
 		Forest f(t, rs.ps_);
-	for (size_t i = 0; i < f.trees_.size(); ++i) {
-		DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
-	}
+		for (size_t i = 0; i < f.trees_.size(); ++i) {
+			DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
+		}
 	);
 	PrintStats(f);
 
 	for (size_t i = 0; i < f.end_trees_.size(); ++i) {
 		for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
-			DrawDagOnFile(algorithm_name + "end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], false);
+			DrawDagOnFile(algorithm_name + "_end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], false);
 		}
 	}
 
 	LOG("Converting forest to dag",
 		Forest2Dag x(f);
-	for (size_t i = 0; i < f.trees_.size(); ++i) {
-		DrawDagOnFile(algorithm_name + "drag" + zerostr(i, 4), f.trees_[i], true);
-	}
+		for (size_t i = 0; i < f.trees_.size(); ++i) {
+			DrawDagOnFile(algorithm_name + "drag" + zerostr(i, 4), f.trees_[i], true);
+		}
 	);
 	PrintStats(f);
+	
 	DrawForestOnFile(algorithm_name + "forest", f, true);
 
-	string forest_code = global_output_path + algorithm_name + "_forestidentities_code.txt";
+	string forest_code = global_output_path + algorithm_name + "_forest_identities_code.txt";
 	{
 		ofstream os(forest_code);
 		GenerateForestCode(os, f);
 	}
-
-	return 0;
 
 	struct STree {
 		struct STreeProp {
@@ -231,7 +234,7 @@ int main()
 				return true;
 			}
 		};
-		unordered_map<ltree::node*, STreeProp> np_;
+		map<ltree::node*, STreeProp> np_;
 		Forest& f_;
 
 		STreeProp CollectStatsRec(ltree::node * n) {
@@ -356,26 +359,16 @@ int main()
 			return true;
 		}
 
-		bool LetsDoEndTrees() {
+		bool LetsDoEndTrees(const vector<vector<ltree*>> trees) {
 			np_.clear();
 
-			for (size_t tg = 0; tg < f_.end_trees_.size(); ++tg) {
-				const auto& cur_trees = f_.end_trees_[tg];
-				const auto& cur_mapping = f_.end_trees_mapping_[tg];
+			for (size_t tg = 0; tg < trees.size(); ++tg) {
+				const auto& cur_trees = trees[tg];
 				for (size_t i = 0; i < cur_trees.size(); ++i) {
-					if (cur_mapping[i] == i) {
-						const auto& t = cur_trees[i];
-						CollectStatsRec(t.root);
-					}
+					const auto& t = cur_trees[i];
+					CollectStatsRec(t->root);
 				}
 			}
-
-			//for (size_t i = 0; i < f_.end_trees_.size(); ++i) {
-			//	for (size_t i = 0; i < f_.trees_.size(); ++i) {
-			//		
-			//		
-			//	}
-			//}
 
 			vector<STreeProp> vec;
 			for (const auto& x : np_)
@@ -434,10 +427,14 @@ int main()
 			}
 
 			Intersect(vec[0].n_, vec[j].n_);
-			for (size_t k = 0; k < f_.trees_.size(); ++k) {
-				const auto& t = f_.trees_[k];
-				FindAndReplace(t.root, vec[0].n_, vec[j].n_);
+			for (size_t tg = 0; tg < trees.size(); ++tg) {
+				const auto& cur_trees = trees[tg];
+				for (size_t k = 0; k < cur_trees.size(); ++k) {
+					const auto& t = cur_trees[k];
+					FindAndReplace(t->root, vec[0].n_, vec[j].n_);
+				}
 			}
+
 			return true;
 		}
 
@@ -446,13 +443,33 @@ int main()
 				f_.RemoveUselessConditions();
 			}
 
-			/*while (LetsDoEndTrees()) {
-				f_.RemoveUselessConditions();
-			}*/
+			if (f_.separately) {
+				for(auto& tg: f.end_trees_) { 
+					vector<vector<ltree*>> cur_tree_ptrs = { vector<ltree*>() };
+					for (ltree &t : tg) {
+						cur_tree_ptrs.front().push_back(&t);
+					}
+					while (LetsDoEndTrees(cur_tree_ptrs)) {
+						f_.RemoveEndTreesUselessConditions();
+					}
+				}
+			}
+			else {
+				vector<vector<ltree*>> tree_ptrs;
+				for (vector<ltree> &tg : f_.end_trees_) {
+					tree_ptrs.emplace_back();
+					for (ltree &t : tg) {
+						tree_ptrs.back().push_back(&t);
+					}
+				}
+				while (LetsDoEndTrees(tree_ptrs)) {
+					f_.RemoveEndTreesUselessConditions();
+				}
+			}
 		}
 	};
 
-	LOG("Reducing main forest",
+	LOG("Reducing forest",
 		STree st(f);
 	);
 	PrintStats(f);
@@ -462,41 +479,6 @@ int main()
 		ofstream os(forest_reduced_code);
 		GenerateForestCode(os, f);
 	}
-
-	//// Accrocchio per applicare l'ottimizzatore all'end_forest
-	//Forest end_trees_forest;
-	//for (size_t tg = 0; tg < f.end_trees_.size(); ++tg) {
-	//	const auto& cur_trees = f.end_trees_[tg];
-	//	const auto& cur_mapping = f.end_trees_mapping_[tg];
-	//	for (size_t i = 0; i < cur_trees.size(); ++i) {
-	//		if (cur_mapping[i] == i) {
-	//			end_trees_forest.trees_.push_back(cur_trees[i]);
-	//			end_trees_forest.next_tree_.push_back(numeric_limits<int>::max());
-	//		}
-	//	}
-	//}
-
-	//// Riduco la nuova foresta
-	//LOG("Reducing end forest",
-	//	STree st2(end_trees_forest);
-	//);
-
-	//// Riassegno gli alberi della nuova foresta agli alberi finali della vecchia
-	//int c = 0;
-	//for (size_t tg = 0; tg < f.end_trees_.size(); ++tg) {
-	//	auto& cur_trees = f.end_trees_[tg];
-	//	auto& cur_mapping = f.end_trees_mapping_[tg];
-	//	for (size_t i = 0; i < cur_trees.size(); ++i) {
-	//		if (cur_mapping[i] == i) {
-	//			cur_trees[i] = end_trees_forest.trees_[c++];
-	//		}
-	//	}
-	//}
-
-	//cout << "old" << endl;
-	PrintStats(f);
-
-	// Questa fun zione non considera gli alberi di fine riga
 	DrawForestOnFile(algorithm_name + "_main_forest_reduced", f, true, true);
 
 	return EXIT_SUCCESS;

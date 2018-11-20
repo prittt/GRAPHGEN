@@ -70,11 +70,14 @@ struct Forest : BaseForest {
 	ltree t_;
 	Equivalences eq_;
 
-	std::vector<int> next_tree_; // This vector contains the mapping between equal main trees (tha name should be changed)
+	bool separately = true; // Specify if end trees from different groups should be treated separately during Tree2Dag conversion
+
+	std::vector<int> next_tree_; // This vector contains the equivalences between main trees
 	std::vector<ltree> trees_;
 
 	std::vector<std::vector<ltree>> end_trees_;
-	std::vector<std::vector<int>> end_trees_mapping_;
+	std::vector<std::vector<int>> end_next_trees_; // This vector contains the equivalences between end trees
+	std::vector<std::vector<int>> main_trees_end_trees_mapping_; // This is the mapping between main trees and end trees
 
 	Forest(ltree t, const pixel_set& ps);
 
@@ -93,6 +96,10 @@ struct Forest : BaseForest {
 
     void CreateReducedTreesRec(const ltree::node* n, const constraints& constr = {});
     void CreateReducedTrees(const ltree& t);
+
+private:
+	bool RemoveEqualEndTreesSeparately();
+	bool RemoveEqualEndTreesJointly();
 };
 
 #endif // !GRAPHSGEN_FOREST_H_

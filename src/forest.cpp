@@ -112,10 +112,12 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
 		}
 
 		// Init trees_ - end_trees_ mapping
-		end_trees_mapping_ = vector<vector<int>>(end_trees_.size(), vector<int>(trees_.size()));
-		for (auto& etm : end_trees_mapping_) {
+		main_trees_end_trees_mapping_ = vector<vector<int>>(end_trees_.size(), vector<int>(trees_.size()));
+		for (auto& etm : main_trees_end_trees_mapping_) {
 			iota(etm.begin(), etm.end(), 0);
 		}
+		end_next_trees_ = main_trees_end_trees_mapping_;
+
 
 		// Set end_trees_'s next_trees to uint32_t max value (max value can be replaced with any value, but all end trees must share the same fake next)
 		for (auto& t_a : end_trees_) { // foreach group of end trees
@@ -129,23 +131,9 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
 		}
 	}
 
-	// "Removes" duplicate end-trees. All trees will still be in the end_trees_ vector but end_trees_mapping_ will probably change
-	RemoveEqualEndTrees();
-
-	RemoveEndTreesUselessConditions();
-}
-
-// See RemoveUselessConditions
-void RemoveUselessConditionsRec(ltree::node* n) {
-	if (!n->isleaf()) {
-		if (EqualTrees(n->left, n->right)) {
-			*n = *n->left;
-			RemoveUselessConditionsRec(n);
-		}
-		else {
-			RemoveUselessConditionsRec(n->left);
-			RemoveUselessConditionsRec(n->right);
-		}
+	// Removes useless conditions and then possible duplicate end-trees until convergence
+	while (RemoveEqualEndTrees()) {
+		RemoveEndTreesUselessConditions();
 	}
 }
 
@@ -177,11 +165,14 @@ void RemoveUselessConditionsRec(ltree::node* n, bool& changed) {
 //       5    ...
 // these useless condition may appears after the execution of CreateReducedTrees.
 void Forest::RemoveUselessConditions() {
-	for (auto& t : trees_) {
-		RemoveUselessConditionsRec(t.root);
-	}
+	bool changed;
+	do {
+		changed = false;
+		for (auto& t : trees_) {
+			RemoveUselessConditionsRec(t.root, changed);
+		}
+	} while (changed);
 }
-
 void Forest::RemoveEndTreesUselessConditions() {
 	bool changed;
 	do {
@@ -194,6 +185,88 @@ void Forest::RemoveEndTreesUselessConditions() {
 	} while (changed);
 }
 
+// Removes duplicate end-trees (this is performed in each group separately, it can't happen that different groups contain equal trees)
+bool Forest::RemoveEqualEndTrees() {
+
+	// Find which trees are identical and mark them in end_trees_mapping
+	bool found = false;
+	for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
+		const auto& cur_trees = end_trees_[tg];
+		auto& cur_equal = end_next_trees_[tg];
+		// triangular matching
+		for (size_t i = 0; i < cur_trees.size() - 1; ++i) {
+			if (cur_equal[i] == i) {
+				for (size_t j = i + 1; j < cur_trees.size(); ++j) {
+					if (cur_equal[j] == j) {
+						if (EqualTrees(cur_trees[i].root, cur_trees[j].root)) {
+							cur_equal[j] = i;
+							found = true;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (!found) {
+		return false;
+	}
+
+	// Flatten the end_next_trees indexes
+	size_t new_index;
+	for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
+		const auto& cur_trees = end_trees_[tg];
+		auto& cur_equal = end_next_trees_[tg];
+		new_index = 0;
+		for (size_t i = 0; i < cur_equal.size(); ++i) {
+			if (cur_equal[i] == i) {
+				cur_equal[i] = new_index;
+				++new_index;
+			}
+			else {
+				cur_equal[i] = cur_equal[cur_equal[i]];
+			}
+		}
+	}
+
+	// Update the main_trees_end_trees_mapping_ data structure whose size will never change
+	for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
+		auto& cur_equal = end_next_trees_[tg];
+		auto& cur_mapping = main_trees_end_trees_mapping_[tg];
+		for (size_t i = 0; i < cur_mapping.size(); ++i) {
+			cur_mapping[i] = cur_equal[cur_mapping[i]];
+		}
+	}
+
+	// Remove trees which are identical to already inserted ones
+	for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
+		auto& cur_trees = end_trees_[tg];
+		auto& cur_equal = end_next_trees_[tg];
+		new_index = 0;
+		vector<ltree> trees;
+		for (size_t i = 0; i < cur_equal.size(); ++i) {
+			if (cur_equal[i] == new_index) {
+				trees.push_back(cur_trees[i]);
+				++new_index;
+			}
+		}
+		cur_trees = move(trees);
+	}
+
+	// No next for end trees, "UpdateNext" is useless
+
+	// Update of end_next_trees_
+	for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
+		auto& cur_trees = end_trees_[tg];
+		auto& cur_equal = end_next_trees_[tg];
+	
+		cur_equal.resize(cur_trees.size());
+		iota(begin(cur_equal), end(cur_equal), 0);
+	}
+
+	return true;
+}
+
 void Forest::UpdateNext(ltree::node* n) {
 	if (n->isleaf()) {
 		n->data.next = next_tree_[n->data.next];
@@ -202,29 +275,6 @@ void Forest::UpdateNext(ltree::node* n) {
 		UpdateNext(n->left);
 		UpdateNext(n->right);
 	}
-}
-
-// Removes duplicate end-trees (this is performed in each group of end trees separately)
-bool Forest::RemoveEqualEndTrees() {
-	// Find which trees are identical and mark them in next_tree
-	bool found = false;
-	for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
-		const auto& cur_trees = end_trees_[tg];
-		auto& cur_mapping = end_trees_mapping_[tg];
-		for (size_t i = 0; i < cur_trees.size() - 1; ++i) {
-			if (cur_mapping[i] == i) {
-				for (size_t j = i + 1; j < cur_trees.size(); ++j) {
-					if (cur_mapping[j] == j) {
-						if (EqualTrees(cur_trees[i].root, cur_trees[j].root)) {
-							cur_mapping[j] = i;
-							found = true;
-						}
-					}
-				}
-			}
-		}
-	}
-	return found;
 }
 
 // Removes duplicate trees inside the forest

@@ -40,13 +40,13 @@ string Forest2Dag::Tree2String(ltree::node* n) {
 		return it->second;
 
 	string s;
-    if (n->isleaf()) {
-        //char a_action[sizeof(n->data.action) + 1] = { 0 };
-        //memcpy(a_action, reinterpret_cast<char*>(&n->data.action), sizeof(n->data.action));
+	if (n->isleaf()) {
+		//char a_action[sizeof(n->data.action) + 1] = { 0 };
+		//memcpy(a_action, reinterpret_cast<char*>(&n->data.action), sizeof(n->data.action));
 		stringstream ss;
 		ss << setfill('0') << setw(3) << n->data.next;
 		s = n->data.action.to_string() + ss.str();
-    }
+	}
 	else
 		s = n->data.condition + Tree2String(n->left) + Tree2String(n->right);
 
@@ -90,15 +90,22 @@ Forest2Dag::Forest2Dag(Forest& f) : f_(f) {
 	for (auto& t : f_.trees_) {
 		FindAndLink(t.root);
 	}
-	
+
 	// Clean memoizing data structures
 	ps_.clear();
 	sp_.clear();
 
 	// Conversion to DAG for the end forest
 	for (auto& etg : f_.end_trees_) { // etg -> end trees groups
+
+		if (f.separately) {
+			// Clean memoizing data structures
+			ps_.clear();
+			sp_.clear();
+		}
+
 		for (auto& et : etg) {
-			FindAndLink(et.root);	
+			FindAndLink(et.root);
 		}
 	}
 }
