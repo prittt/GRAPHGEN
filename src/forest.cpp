@@ -129,8 +129,10 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
 		}
 	}
 
-	// "Removes" duplicate end-trees
+	// "Removes" duplicate end-trees. All trees will still be in the end_trees_ vector but end_trees_mapping_ will probably change
 	RemoveEqualEndTrees();
+
+	RemoveEndTreesUselessConditions();
 }
 
 // See RemoveUselessConditions
@@ -143,6 +145,21 @@ void RemoveUselessConditionsRec(ltree::node* n) {
 		else {
 			RemoveUselessConditionsRec(n->left);
 			RemoveUselessConditionsRec(n->right);
+		}
+	}
+}
+
+// See RemoveUselessConditions
+void RemoveUselessConditionsRec(ltree::node* n, bool& changed) {
+	if (!n->isleaf()) {
+		if (EqualTrees(n->left, n->right)) {
+			changed = true;
+			*n = *n->left;
+			RemoveUselessConditionsRec(n, changed);
+		}
+		else {
+			RemoveUselessConditionsRec(n->left, changed);
+			RemoveUselessConditionsRec(n->right, changed);
 		}
 	}
 }
@@ -163,6 +180,18 @@ void Forest::RemoveUselessConditions() {
 	for (auto& t : trees_) {
 		RemoveUselessConditionsRec(t.root);
 	}
+}
+
+void Forest::RemoveEndTreesUselessConditions() {
+	bool changed;
+	do {
+		changed = false;
+		for (auto& tg : end_trees_) {
+			for (auto& t : tg) {
+				RemoveUselessConditionsRec(t.root, changed);
+			}
+		}
+	} while (changed);
 }
 
 void Forest::UpdateNext(ltree::node* n) {

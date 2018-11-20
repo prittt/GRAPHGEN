@@ -135,7 +135,6 @@ int main()
 	string tree_code_filename = global_output_path + algorithm_name + "_code.txt";
 	GenerateCode(tree_code_filename, t);
 
-	PrintStats(t);
 	//PerformOptimalDragGeneration(t, algorithm_name);
 
 	LOG("Making forest",
@@ -148,7 +147,7 @@ int main()
 
 	for (size_t i = 0; i < f.end_trees_.size(); ++i) {
 		for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
-			DrawDagOnFile(algorithm_name + "end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], true);
+			DrawDagOnFile(algorithm_name + "end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], false);
 		}
 	}
 
@@ -166,6 +165,8 @@ int main()
 		ofstream os(forest_code);
 		GenerateForestCode(os, f);
 	}
+
+	return 0;
 
 	struct STree {
 		struct STreeProp {
@@ -343,7 +344,94 @@ int main()
 				if (vec[0].equivalent(vec[j]))
 					break;
 			}
-			assert(j < vec.size());
+			if (j >= vec.size()) {
+				throw;
+			}
+
+			Intersect(vec[0].n_, vec[j].n_);
+			for (size_t k = 0; k < f_.trees_.size(); ++k) {
+				const auto& t = f_.trees_[k];
+				FindAndReplace(t.root, vec[0].n_, vec[j].n_);
+			}
+			return true;
+		}
+
+		bool LetsDoEndTrees() {
+			np_.clear();
+
+			for (size_t tg = 0; tg < f_.end_trees_.size(); ++tg) {
+				const auto& cur_trees = f_.end_trees_[tg];
+				const auto& cur_mapping = f_.end_trees_mapping_[tg];
+				for (size_t i = 0; i < cur_trees.size(); ++i) {
+					if (cur_mapping[i] == i) {
+						const auto& t = cur_trees[i];
+						CollectStatsRec(t.root);
+					}
+				}
+			}
+
+			//for (size_t i = 0; i < f_.end_trees_.size(); ++i) {
+			//	for (size_t i = 0; i < f_.trees_.size(); ++i) {
+			//		
+			//		
+			//	}
+			//}
+
+			vector<STreeProp> vec;
+			for (const auto& x : np_)
+				vec.emplace_back(x.second);
+			sort(begin(vec), end(vec));
+
+			for (size_t i = 0; i < vec.size(); /*empty*/) {
+				size_t j = i + 1;
+				for (; j < vec.size(); ++j) {
+					if (vec[i].conditions != vec[j].conditions)
+						break;
+				}
+				if (j == i + 1) {
+					vec.erase(begin(vec) + i);
+				}
+				else {
+					// from i to j-1 the subtrees have the same conditions.
+					// Let's check if they have any equivalent subtree
+					map<int, bool> keep;
+					for (size_t k = i; k < j; ++k)
+						keep[k] = false;
+					for (size_t k = i; k < j; ++k) {
+						for (size_t h = k + 1; h < j; ++h) {
+							if (vec[k].equivalent(vec[h])) {
+								keep[k] = true;
+								keep[h] = true;
+							}
+						}
+						if (!keep[k])
+							vec[k].conditions = "Mark for erase";
+					}
+					for (size_t k = i; k < j;) {
+						if (vec[k].conditions == "Mark for erase") {
+							vec.erase(begin(vec) + k);
+							--j;
+						}
+						else
+							++k;
+					}
+
+					i = j;
+				}
+			}
+
+			// Accrocchio temporaneo
+			if (vec.empty())
+				return false;
+
+			size_t j = 1;
+			for (; j < vec.size(); ++j) {
+				if (vec[0].equivalent(vec[j]))
+					break;
+			}
+			if (j >= vec.size()) {
+				throw;
+			}
 
 			Intersect(vec[0].n_, vec[j].n_);
 			for (size_t k = 0; k < f_.trees_.size(); ++k) {
@@ -354,8 +442,13 @@ int main()
 		}
 
 		STree(Forest& f) : f_(f) {
-			while (LetsDoIt())
+			while (LetsDoIt()) {
 				f_.RemoveUselessConditions();
+			}
+
+			/*while (LetsDoEndTrees()) {
+				f_.RemoveUselessConditions();
+			}*/
 		}
 	};
 
@@ -370,16 +463,41 @@ int main()
 		GenerateForestCode(os, f);
 	}
 
-	return 0;
+	//// Accrocchio per applicare l'ottimizzatore all'end_forest
+	//Forest end_trees_forest;
+	//for (size_t tg = 0; tg < f.end_trees_.size(); ++tg) {
+	//	const auto& cur_trees = f.end_trees_[tg];
+	//	const auto& cur_mapping = f.end_trees_mapping_[tg];
+	//	for (size_t i = 0; i < cur_trees.size(); ++i) {
+	//		if (cur_mapping[i] == i) {
+	//			end_trees_forest.trees_.push_back(cur_trees[i]);
+	//			end_trees_forest.next_tree_.push_back(numeric_limits<int>::max());
+	//		}
+	//	}
+	//}
 
-	// Accrocchio per applicare le funzione di "Reducing forest" e "DrawForestOnFile" anche alla foresta di fine riga.
-	// Per farlo creiamo una nuova foresta che inizializzaziamo con tutti gli alberi di fine riga.
-	LOG("Making fake fores",
-		Forest fet(t, rs.ps_);
-	);
+	//// Riduco la nuova foresta
+	//LOG("Reducing end forest",
+	//	STree st2(end_trees_forest);
+	//);
+
+	//// Riassegno gli alberi della nuova foresta agli alberi finali della vecchia
+	//int c = 0;
+	//for (size_t tg = 0; tg < f.end_trees_.size(); ++tg) {
+	//	auto& cur_trees = f.end_trees_[tg];
+	//	auto& cur_mapping = f.end_trees_mapping_[tg];
+	//	for (size_t i = 0; i < cur_trees.size(); ++i) {
+	//		if (cur_mapping[i] == i) {
+	//			cur_trees[i] = end_trees_forest.trees_[c++];
+	//		}
+	//	}
+	//}
+
+	//cout << "old" << endl;
+	PrintStats(f);
 
 	// Questa fun zione non considera gli alberi di fine riga
-	DrawForestOnFile(algorithm_name + "forest_reduced", f, true, true);
+	DrawForestOnFile(algorithm_name + "_main_forest_reduced", f, true, true);
 
 	return EXIT_SUCCESS;
 }

@@ -67,18 +67,19 @@ struct Equivalences {
 using constraints = std::map<std::string, int>;
 
 struct Forest : BaseForest {
-    ltree t_;
-    Equivalences eq_;
+	ltree t_;
+	Equivalences eq_;
 
-    std::vector<int> next_tree_;
-    std::vector<ltree> trees_;
+	std::vector<int> next_tree_; // This vector contains the mapping between equal main trees (tha name should be changed)
+	std::vector<ltree> trees_;
 
-    std::vector<std::vector<ltree>> end_trees_;
+	std::vector<std::vector<ltree>> end_trees_;
 	std::vector<std::vector<int>> end_trees_mapping_;
 
-    Forest(ltree t, const pixel_set& ps);
+	Forest(ltree t, const pixel_set& ps);
 
     void RemoveUselessConditions();
+	void RemoveEndTreesUselessConditions();
 
     void UpdateNext(ltree::node* n);
     bool RemoveEqualTrees();
