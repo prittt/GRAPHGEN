@@ -79,7 +79,7 @@ struct Forest : BaseForest {
 	std::vector<std::vector<int>> end_next_trees_; // This vector contains the equivalences between end trees
 	std::vector<std::vector<int>> main_trees_end_trees_mapping_; // This is the mapping between main trees and end trees
 
-	Forest(ltree t, const pixel_set& ps);
+	Forest(ltree t, const pixel_set& ps, const constraints& initial_constraints = {}); // Initial_constraints are useful to create particular forests such as the first line forest
 
     void RemoveUselessConditions();
 	void RemoveEndTreesUselessConditions();
@@ -95,7 +95,7 @@ struct Forest : BaseForest {
     static ltree::node* Reduce(const ltree::node* n, ltree& t, const constraints& constr);
 
     void CreateReducedTreesRec(const ltree::node* n, const constraints& constr = {});
-    void CreateReducedTrees(const ltree& t);
+    void CreateReducedTrees(const ltree& t, const constraints& initial_constr);
 
 private:
 	bool RemoveEqualEndTreesSeparately();

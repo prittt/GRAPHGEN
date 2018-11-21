@@ -154,8 +154,8 @@ bool GenerateCode(const string& filename, ltree& t) {
 	return true;
 }
 
-// TODO: check
-void GenerateForestCode(std::ostream& os, const Forest& f) {
+// This function generates forest code using numerical labels starting from start_id and return the last used_id
+int GenerateForestCode(std::ostream& os, const Forest& f, int start_id) {
 
 	std::map<ltree::node*, int> printed_node;
 	std::map<ltree::node*, pair<int, bool>> nodes_requiring_labels;
@@ -176,6 +176,7 @@ void GenerateForestCode(std::ostream& os, const Forest& f) {
 	//#define finish_condition(n) if ((c+=2) >= w - 2) { if (c > w - 2) { goto break_0_##n; } else { goto break_1_##n; } }
 	// TODO questa versione è specifica per BBDT, bisogna trovare un modo per generalizzare rispetto allo shift della maschera!!
 	id.Clear();
+	id.SetId(start_id);
 	for (size_t i = 0; i < f.trees_.size(); ++i) {
 		const auto& t = f.trees_[i];
 		os << "tree_" << i << ": if ((c+=2) >= w - 2) { if (c > w - 2) { goto break_0_" << f.main_trees_end_trees_mapping_[0][i] << "; } else { goto break_1_" << f.main_trees_end_trees_mapping_[1][i] << "; } } \n";
@@ -206,6 +207,8 @@ void GenerateForestCode(std::ostream& os, const Forest& f) {
 			os << "\tcontinue;\n";
 		}
 	}
+
+	return id.get();
 }
 
 // Generate string to access a pixel value using pointers

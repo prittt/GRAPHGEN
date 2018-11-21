@@ -32,8 +32,9 @@
 
 using namespace std;
 
-Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
+Forest::Forest(ltree t, const pixel_set& ps, const constraints& initial_constraints) : /*t_(std::move(t)),*/ eq_(ps) {
 	next_tree_.push_back(0); // Setup next_tree_ for holding a reference to the start tree in first position
+	t_.root = Reduce(t.root, t_, initial_constraints);
 	InitNext(t_);
 
 	// Create start tree constraints and add start tree in position 0 of the tree_ array
@@ -49,7 +50,7 @@ Forest::Forest(ltree t, const pixel_set& ps) : t_(std::move(t)), eq_(ps) {
 		trees_.emplace_back(t);
 	}
 
-	CreateReducedTrees(t_);
+	CreateReducedTrees(t_, {});
 	while (RemoveEqualTrees()) {
 		RemoveUselessConditions();
 	}
@@ -390,6 +391,6 @@ void Forest::CreateReducedTreesRec(const ltree::node* n, const constraints& cons
 // tree is recursively explored and constraints (different on each branch) are defined using equivalences 
 // between pixels (i.e. pixels which remain in the mask when it moves). When a leaf is reached the 
 // original tree is reduced using current branch's constraints. 
-void Forest::CreateReducedTrees(const ltree& t) {
-	CreateReducedTreesRec(t_.root);
+void Forest::CreateReducedTrees(const ltree& t, const constraints& initial_constr) {
+	CreateReducedTreesRec(t_.root, initial_constr);
 }

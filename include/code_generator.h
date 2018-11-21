@@ -41,7 +41,7 @@ void GenerateCode(std::ostream& os, ltree& t);
 bool GenerateCode(const std::string& filename, ltree& t);
 
 // This function generates forest code. TODO: check this!!
-void GenerateForestCode(std::ostream& os, const Forest& f);
+int GenerateForestCode(std::ostream& os, const Forest& f, int start_id = 0);
 
 // This function generates code per conditions and actions' macros and rows' pointers
 void GenerateConditionsActionsCode(std::ofstream& os, const rule_set& rs);
