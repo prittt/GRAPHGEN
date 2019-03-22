@@ -36,20 +36,25 @@
 
 using ltree = tree<conact>;
 
-// Example of conact tree
-//  x
-//  	a (left son of x) 
-//  		c 
-//  			. 2
-//  			. 3
-//  		. 1,3,4 (list of actions)
-//  	b (right son of x)
-//  		c
-//  			. 2
-//  			. 3
-//  		. 4
-
-// Loads a tree from a txt file structured as in the example above
+/**
+* Load tree from file. The tree must be saved in a file with the following structure:
+*	
+* x
+*   	a (left son of x)
+*   		c
+*   			. 2
+*   			. 3
+*   		. 1,3,4 (list of actions)
+*   	b (right son of x)
+*   		c
+*   			. 2
+*   			. 3
+*   		. 4
+* @param [out] t: Loaded tree
+* @param [in] filename: Name of the file (path) from which load the tree
+*
+* @return whether the tree has been loaded or not
+*/
 bool LoadConactTree(ltree& t, const std::string& filename);
 
 // Write a tree into a txt file structured as in the example above
@@ -61,6 +66,17 @@ void intersect_leaves(ltree::node* n1, ltree::node* n2);
 // Checks if two (sub)trees 'n1' and 'n2' are equal
 bool EqualTrees(const ltree::node* n1, const ltree::node* n2);
 
+void IntersectTrees(ltree::node* n1, ltree::node* n2);
+
+// Instead of defining a novel format to save DRAGS, we save them as trees, then link
+// identical sub-trees. Since the order of traversal is the same, the result should be the same.
+// Should...
+bool LoadConactDrag(ltree& t, const std::string& filename);
+
+// Instead of defining a novel format to save DRAGS, we save them as trees, then link
+// identical sub-trees. Since the order of traversal is the same, the result should be the same.
+// Should...
+bool WriteConactDrag(ltree& t, const std::string& filename);
 
 #endif // !GRAPHSGEN_CONACT_TREE_H_
 

@@ -159,7 +159,9 @@ struct STree {
 
 		for (size_t i = 0; i < f_.trees_.size(); ++i) {
 			const auto& t = f_.trees_[i];
-			CollectStatsRec(t.root);
+			// To avoid finding of equal trees that optimizer cannot compress
+			CollectStatsRec(t.root->right);
+			CollectStatsRec(t.root->left);
 		}
 
 		vector<STreeProp> vec;
@@ -220,7 +222,13 @@ struct STree {
 
 		Intersect(vec[0].n_, vec[j].n_);
 		for (size_t k = 0; k < f_.trees_.size(); ++k) {
-			const auto& t = f_.trees_[k];
+			auto& t = f_.trees_[k];
+			// Era un viaggio che poi è deviato verso un altro viaggio
+			//// Whole trees can be equivalent too
+			//if (t.root == vec[0].n_) {
+			//	t.root = vec[j].n_;
+			//}
+			/////////////////////////////////////
 			FindAndReplace(t.root, vec[0].n_, vec[j].n_);
 		}
 		return true;
@@ -232,8 +240,10 @@ struct STree {
 		for (size_t tg = 0; tg < trees.size(); ++tg) {
 			const auto& cur_trees = trees[tg];
 			for (size_t i = 0; i < cur_trees.size(); ++i) {
-				const auto& t = cur_trees[i];
-				CollectStatsRec(t->root);
+				const auto t = cur_trees[i];
+				// To avoid finding of equal trees that optimizer cannot compress
+				CollectStatsRec(t->root->right);
+				CollectStatsRec(t->root->left);
 			}
 		}
 
@@ -298,6 +308,12 @@ struct STree {
 			const auto& cur_trees = trees[tg];
 			for (size_t k = 0; k < cur_trees.size(); ++k) {
 				const auto& t = cur_trees[k];
+				// Era un viaggio che poi è deviato verso un altro viaggio
+				// Whole trees can be equivalent too
+				/*if (t->root == vec[0].n_) {
+					t->root = vec[j].n_;
+				}*/
+				///////////////////////////////////
 				FindAndReplace(t->root, vec[0].n_, vec[j].n_);
 			}
 		}
@@ -308,6 +324,7 @@ struct STree {
 	STree(Forest& f) : f_(f) {
 		while (LetsDoIt()) {
 			f_.RemoveUselessConditions();
+			//f_.RemoveEqualTrees();
 		}
 
 		if (f_.separately) {
@@ -318,6 +335,7 @@ struct STree {
 				}
 				while (LetsDoEndTrees(cur_tree_ptrs)) {
 					f_.RemoveEndTreesUselessConditions();
+					//f_.RemoveEqualEndTrees();
 				}
 			}
 		}
@@ -331,6 +349,7 @@ struct STree {
 			}
 			while (LetsDoEndTrees(tree_ptrs)) {
 				f_.RemoveEndTreesUselessConditions();
+				//f_.RemoveEqualEndTrees();
 			}
 		}
 	}

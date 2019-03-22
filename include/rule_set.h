@@ -42,6 +42,12 @@ struct rule {
 	std::bitset<128> actions; // bitmapped
 };
 
+// Accrocchio per capire come mai pred va meglio di spagfhetti su granularity a frequenze tra 9 e 19
+struct rule2 {
+	rule r_;
+	size_t condition_outcome_;
+};
+
 struct rule_set {
 	std::vector<std::string> conditions;
 	std::unordered_map<std::string, uint> conditions_pos;
@@ -49,6 +55,23 @@ struct rule_set {
 	std::unordered_map<std::string, uint> actions_pos;
 	std::vector<rule> rules;
     pixel_set ps_;
+
+	//std::vector<rule2> GetMaxFreqRules(int N) {
+	//	std::bitset<128> no_action = 1;
+	//	std::bitset<128> new_label = 2;
+
+	//	std::vector<rule2> new_rules;
+	//	for (size_t i = 0; i < rules.size(); ++i) {
+	//		if (rules[i].actions != no_action && rules[i].actions != new_label) {
+	//			new_rules.push_back({ rules[i], i });
+	//		}
+	//	}
+
+	//	std::sort(new_rules.begin(), new_rules.end(), [](const rule2& a, const rule2& b) -> bool { return a.r_.frequency > b.r_.frequency; });
+	//	new_rules.resize(N);
+	//	return new_rules;
+
+	//}
 
     static std::string binary(uint u, uint nbits) {
         std::string s;

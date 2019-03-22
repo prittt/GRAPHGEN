@@ -30,6 +30,9 @@
 
 #include <cassert>
 
+#include "Forest2dag.h"
+#include "forest_optimizer.h"
+
 using namespace std;
 
 Forest::Forest(ltree t, const pixel_set& ps, const constraints& initial_constraints) : /*t_(std::move(t)),*/ eq_(ps) {
@@ -51,9 +54,23 @@ Forest::Forest(ltree t, const pixel_set& ps, const constraints& initial_constrai
 	}
 
 	CreateReducedTrees(t_, {});
+	
+	// Vecchio metodo
 	while (RemoveEqualTrees()) {
 		RemoveUselessConditions();
 	}
+
+	////Nuovo Metodo
+	//do {
+	//	while (RemoveEquivalentTrees()) {
+	//		RemoveUselessConditions();
+	//	}
+	//	Forest2Dag f2d(*this);
+	//	STree st(*this);
+	//	RemoveUselessConditions();		
+	//	RebuildDisjointTrees();
+	//} while (RemoveEquivalentTrees());
+	 
 
 	// For each tree creates end trees with end line constraints
 	// BBDT example (borderline cases): 
@@ -133,10 +150,53 @@ Forest::Forest(ltree t, const pixel_set& ps, const constraints& initial_constrai
 	}
 
 	// Removes useless conditions and then possible duplicate end-trees until convergence
+	// Vecchio metodo ( se non lo metto non va un cazzo, perchè? )
 	while (RemoveEqualEndTrees()) {
 		RemoveEndTreesUselessConditions();
 	}
+
+	//// Nuovo metodo
+	//do {
+	//	while (RemoveEquivalentEndTrees()) {
+	//		RemoveEndTreesUselessConditions();
+	//	}
+	//	Forest2Dag f2d(*this);
+	//	STree st(*this);
+	//	RemoveEndTreesUselessConditions();
+	//	RebuildDisjointEndTrees();
+	//} while (RemoveEquivalentEndTrees());
 }
+
+void Forest::RebuildDisjointTrees() {
+
+	vector<ltree> new_trees;
+
+	for (auto& t : trees_) {
+		// Here Reduce() is used just to recreate trees 
+		ltree new_t;
+		new_t.root = Reduce(t.root, new_t, {});
+		new_trees.push_back(move(new_t));
+	}
+
+	trees_ = move(new_trees);
+}
+
+void Forest::RebuildDisjointEndTrees() {
+	
+	vector<vector<ltree>> new_trees;
+	for (auto& tg : end_trees_) {
+		new_trees.emplace_back();
+		for (auto& t : tg) {
+			// Here Reduce() is used just to recreate trees 
+			ltree new_t;
+			new_t.root = Reduce(t.root, new_t, {});
+			new_trees.back().push_back(move(new_t));
+		}
+	}
+	end_trees_ = new_trees;
+
+}
+
 
 // See RemoveUselessConditions
 void RemoveUselessConditionsRec(ltree::node* n, bool& changed) {
@@ -186,8 +246,16 @@ void Forest::RemoveEndTreesUselessConditions() {
 	} while (changed);
 }
 
-// Removes duplicate end-trees (this is performed in each group separately, it can't happen that different groups contain equal trees)
 bool Forest::RemoveEqualEndTrees() {
+	return RemoveEndTrees(EqualTrees);
+}
+
+bool Forest::RemoveEquivalentEndTrees() {
+	return RemoveEndTrees(equivalent_trees);
+}
+
+// Removes duplicate end-trees (this is performed in each group separately, it can't happen that different groups contain equal trees)
+bool Forest::RemoveEndTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2)) {
 
 	// Find which trees are identical and mark them in end_trees_mapping
 	bool found = false;
@@ -199,9 +267,12 @@ bool Forest::RemoveEqualEndTrees() {
 			if (cur_equal[i] == i) {
 				for (size_t j = i + 1; j < cur_trees.size(); ++j) {
 					if (cur_equal[j] == j) {
-						if (EqualTrees(cur_trees[i].root, cur_trees[j].root)) {
+						if (FunctionPtr(cur_trees[i].root, cur_trees[j].root)) {
 							cur_equal[j] = i;
 							found = true;
+							if (FunctionPtr == equivalent_trees) {
+								IntersectTrees(cur_trees[i].root, cur_trees[j].root);
+							}
 						}
 					}
 				}
@@ -278,17 +349,29 @@ void Forest::UpdateNext(ltree::node* n) {
 	}
 }
 
-// Removes duplicate trees inside the forest
+bool Forest::RemoveEquivalentTrees() {
+	return RemoveTrees(equivalent_trees);
+}
+
 bool Forest::RemoveEqualTrees() {
+	return RemoveTrees(EqualTrees);
+}
+
+
+// Removes duplicate trees inside the forest
+bool Forest::RemoveTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2)) {
 	// Find which trees are identical and mark them in next_tree
 	bool found = false;
 	for (size_t i = 0; i < next_tree_.size() - 1; ++i) {
 		if (next_tree_[i] == i) {
 			for (size_t j = i + 1; j < next_tree_.size(); ++j) {
 				if (next_tree_[j] == j) {
-					if (EqualTrees(trees_[i].root, trees_[j].root)) {
+					if (FunctionPtr(trees_[i].root, trees_[j].root)) {
 						next_tree_[j] = i;
 						found = true;
+						if (FunctionPtr == equivalent_trees) {
+							IntersectTrees(trees_[i].root, trees_[j].root);
+						}
 					}
 				}
 			}

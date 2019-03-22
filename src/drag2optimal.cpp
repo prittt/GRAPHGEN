@@ -156,13 +156,13 @@ void Dag2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_no
 
         DragStatistics ds(dag);
 
-        if (best_nodes > ds.nodes()) {
-            best_nodes = ds.nodes();
-            best_leaves = ds.leaves();
+        if (best_nodes > ds.Nodes()) {
+            best_nodes = ds.Nodes();
+            best_leaves = ds.Leaves();
             best_tree = dag;
         }
-        else if (best_nodes == ds.nodes() && best_leaves > ds.leaves()) {
-            best_leaves = ds.leaves();
+        else if (best_nodes == ds.Nodes() && best_leaves > ds.Leaves()) {
+            best_leaves = ds.Leaves();
             best_tree = dag;
         }
 

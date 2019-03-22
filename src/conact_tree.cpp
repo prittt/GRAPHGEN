@@ -27,6 +27,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "conact_tree.h"
+#include "drag2optimal.h"
 
 #include <cassert>
 
@@ -133,5 +134,32 @@ bool EqualTrees(const ltree::node* n1, const ltree::node* n2) {
         return true;
     else
         return EqualTrees(n1->left, n2->left) && EqualTrees(n1->right, n2->right);
+}
+
+// Works only with equivalent trees
+void IntersectTrees(ltree::node* n1, ltree::node* n2) {
+	if (n1->isleaf()) {
+		n1->data.action &= n2->data.action;
+		n2->data.action = n1->data.action;
+	}
+	else {
+		IntersectTrees(n1->left, n2->left);
+		IntersectTrees(n1->right, n2->right);
+	}
+}
+
+bool LoadConactDrag(ltree& t, const string& filename)
+{
+	if (!LoadConactTree(t, filename))
+		return false;
+
+	Dag2DagUsingIdenties(t);
+
+	return true;
+}
+
+bool WriteConactDrag(ltree& t, const string& filename)
+{
+	return WriteConactTree(t, filename);
 }
 

@@ -70,7 +70,7 @@ struct Forest : BaseForest {
 	ltree t_;
 	Equivalences eq_;
 
-	bool separately = true; // Specify if end trees from different groups should be treated separately during Tree2Dag conversion
+	bool separately = false; // Specify if end trees from different groups should be treated separately during Tree2Dag conversion
 
 	std::vector<int> next_tree_; // This vector contains the equivalences between main trees
 	std::vector<ltree> trees_;
@@ -86,8 +86,13 @@ struct Forest : BaseForest {
 
     void UpdateNext(ltree::node* n);
     bool RemoveEqualTrees();
+	bool RemoveEquivalentTrees();
+	bool RemoveTrees(bool(*FunctionPrt)(const ltree::node* n1, const ltree::node* n2));
 
 	bool RemoveEqualEndTrees();
+	bool RemoveEquivalentEndTrees();
+	bool RemoveEndTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2));
+
 
     void InitNextRec(ltree::node* n);
     void InitNext(ltree& t);
@@ -100,6 +105,9 @@ struct Forest : BaseForest {
 private:
 	bool RemoveEqualEndTreesSeparately();
 	bool RemoveEqualEndTreesJointly();
+
+	void RebuildDisjointTrees();
+	void RebuildDisjointEndTrees();
 };
 
 #endif // !GRAPHSGEN_FOREST_H_

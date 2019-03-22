@@ -32,6 +32,6 @@
 
 void PrintStats(const ltree& t) {
 	DragStatistics ds(t);
-	std::cout << "Nodes = " << ds.nodes() << "\n";
-	std::cout << "Leaves = " << ds.leaves() << "\n";
+	std::cout << "Nodes = " << ds.Nodes() << "\n";
+	std::cout << "Leaves = " << ds.Leaves() << "\n";
 }

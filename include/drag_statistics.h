@@ -33,6 +33,10 @@
 
 #include "conact_tree.h"
 
+/** 
+* Calculates the statisics of a DRAG (the number of unique nodes an unique leaves).
+*
+*/
 class DragStatistics {
     std::set<const ltree::node*> visited_nodes;
     std::set<const ltree::node*> visited_leaves;
@@ -50,14 +54,35 @@ class DragStatistics {
     }
 
 public:
+	/** 
+	* The constructor creates a DragStatistics object and calculates the statistics of a DRAG
+	* 
+	* @param [in] t: DRAG on which calculate statistics. Note that simple tree are also DRAG.
+	*/
     DragStatistics(const ltree& t) {
         PerformStatistics(t.root);
     }
 
-    auto nodes() const { return visited_nodes.size(); }
-    auto leaves() const { return visited_leaves.size(); }
+	/**
+	* Returns the number of unique nodes inside the DRAG.
+	* 
+	* @return number of unique nodes
+	*/
+    auto Nodes() const { return visited_nodes.size(); }
+
+	/**
+	* Returns the number of unique leaves inside the DRAG.
+	*
+	* @return number of unique leaves
+	*/
+	auto Leaves() const { return visited_leaves.size(); }
 };
 
+/**
+* Displays on stdout the statisics of a DRAG (number of unique nodes an unique leaves).
+*
+* @param [in] t: DRAG on which calculate statistics. Note that simple tree are also DRAG.
+*/
 void PrintStats(const ltree& t);
 
 #endif // !GRAPHSGEN_DRAG_STATISTICS_H_

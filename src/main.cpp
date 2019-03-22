@@ -53,24 +53,9 @@
 #include "tree2dag_identities.h"
 //#include "utilities.h"
 
+#include "image_frequencies.h"
+
 using namespace std;
-
-// Instead of defining a novel format to save DRAGS, we save them as trees, then link
-// identical sub-trees. Since the order of traversal is the same, the result should be the same.
-// Should...
-bool LoadConactDrag(ltree& t, const string& filename)
-{
-	if (!LoadConactTree(t, filename))
-		return false;
-
-	Dag2DagUsingIdenties(t);
-
-	return true;
-}
-bool WriteConactDrag(ltree& t, const string& filename)
-{
-	return WriteConactTree(t, filename);
-}
 
 void PerformOptimalDragGeneration(ltree& t, const string& algorithm_name)
 {
@@ -101,12 +86,8 @@ void PerformOptimalDragGeneration(ltree& t, const string& algorithm_name)
 	);
 }
 
+// DA RIGUARDARE COSA FACCIAMO NEL PAPER E SCRIVERE LA GENERAZIONE ALLO STESSO MODO
 void CreateSpaghettiLabeling() {
-	// TODO
-}
-
-int main()
-{
 	auto at = ruleset_generator_type::bbdt;
 
 	auto algorithm_name = ruleset_generator_names[static_cast<int>(at)];
@@ -121,9 +102,8 @@ int main()
 	if (!LoadConactTree(t, odt_filename)) {
 		t = GenerateOdt(rs, odt_filename);
 	}
-	string tree_filename = global_output_path + algorithm_name + "_tree";
+	string tree_filename = algorithm_name + "_tree";
 	DrawDagOnFile(tree_filename, t, false, true);
-
 	PrintStats(t);
 
 	// Inutile, non ci sono sottoalberi identici nel caso della maschera di resenfeld 3d
@@ -144,11 +124,17 @@ int main()
 
 	LOG("Making forest",
 		Forest f(t, rs.ps_);
-		for (size_t i = 0; i < f.trees_.size(); ++i) {
-			DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
-		}
+	for (size_t i = 0; i < f.trees_.size(); ++i) {
+		DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
+	}
 	);
 	PrintStats(f);
+
+	string forest_code_nodag = global_output_path + algorithm_name + "_forest_nodag_frequencies_code.txt";
+	{
+		ofstream os(forest_code_nodag);
+		GenerateForestCode(os, f);
+	}
 
 	for (size_t i = 0; i < f.end_trees_.size(); ++i) {
 		for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
@@ -156,15 +142,15 @@ int main()
 		}
 	}
 
-	LOG("Converting forest to dag",
-		Forest2Dag x(f);
-		for (size_t i = 0; i < f.trees_.size(); ++i) {
-			DrawDagOnFile(algorithm_name + "drag" + zerostr(i, 4), f.trees_[i], true);
-		}
-	);
-	PrintStats(f);
-	
-	DrawForestOnFile(algorithm_name + "forest", f, true);
+	//LOG("Converting forest to dag",
+	//	Forest2Dag x(f);
+	//	for (size_t i = 0; i < f.trees_.size(); ++i) {
+	//		DrawDagOnFile(algorithm_name + "drag" + zerostr(i, 4), f.trees_[i], true);
+	//	}
+	//);
+	//PrintStats(f);
+	//
+	//DrawForestOnFile(algorithm_name + "forest", f, true);
 
 	string forest_code = global_output_path + algorithm_name + "_forest_identities_code.txt";
 	{
@@ -172,10 +158,10 @@ int main()
 		GenerateForestCode(os, f);
 	}
 
-	LOG("Reducing forest",
-		STree st(f);
-	);
-	PrintStats(f);
+	//LOG("Reducing forest",
+	//	STree st(f);
+	//);
+	//PrintStats(f);
 
 	int last_nodeid_main_forest_group;
 	string forest_reduced_code = global_output_path + algorithm_name + "_forest_reduced_code.txt";
@@ -183,7 +169,7 @@ int main()
 		ofstream os(forest_reduced_code);
 		last_nodeid_main_forest_group = GenerateForestCode(os, f);
 	}
-	DrawForestOnFile(algorithm_name + "_forest_reduced", f, true, true);
+	//DrawForestOnFile(algorithm_name + "_forest_reduced", f, true, true);
 
 	// Create first line constraints
 	constraints first_line_constr;
@@ -192,22 +178,90 @@ int main()
 		if (p.GetDy() < 0)
 			first_line_constr[p.name_] = 0;
 	}
-	
+
 	Forest flf(t, rs.ps_, first_line_constr);
 	DrawForestOnFile(algorithm_name + "_first_line_original", flf, true, true);
 
-	LOG("Converting first line forest to dag",
-		Forest2Dag y(flf);
+	/*LOG("Converting first line forest to dag",
+	Forest2Dag y(flf);
 	);
 	PrintStats(flf);
+
+	LOG("Reducing first line forest",
+	STree st_fl(flf);
+	);
+	PrintStats(flf);*/
 
 	DrawForestOnFile(algorithm_name + "_first_line_reduced", flf, true, true);
 
 	string first_line_forest_reduced_code = global_output_path + algorithm_name + "_first_line_forest_reduced_code.txt";
 	{
 		ofstream os(first_line_forest_reduced_code);
-		GenerateForestCode(os, flf, last_nodeid_main_forest_group);
+		last_nodeid_main_forest_group = GenerateForestCode(os, flf, last_nodeid_main_forest_group);
 	}
+
+	// Create last line constraints
+	constraints last_line_constr;
+	using namespace std;
+	for (const auto& p : rs.ps_) {
+		if (p.GetDy() > 0)
+			last_line_constr[p.name_] = 0;
+	}
+
+	Forest llf(t, rs.ps_, last_line_constr);
+	DrawForestOnFile(algorithm_name + "_last_line_original", llf, true, true);
+
+	/*LOG("Converting first line forest to dag",
+	Forest2Dag z(llf);
+	);
+	PrintStats(llf);
+
+	LOG("Reducing last line forest",
+	STree st_ll(llf);
+	);
+	PrintStats(llf);*/
+
+	DrawForestOnFile(algorithm_name + "_last_line_reduced", llf, true, true);
+
+	string last_line_forest_reduced_code = global_output_path + algorithm_name + "_last_line_forest_reduced_code.txt";
+	{
+		ofstream os(last_line_forest_reduced_code);
+		last_nodeid_main_forest_group = GenerateForestCode(os, llf, last_nodeid_main_forest_group);
+	}
+
+	// Create last line constraints
+	constraints single_line_constr;
+	using namespace std;
+	for (const auto& p : rs.ps_) {
+		if (p.GetDy() != 0)
+			single_line_constr[p.name_] = 0;
+	}
+
+	Forest slf(t, rs.ps_, single_line_constr);
+	DrawForestOnFile(algorithm_name + "_single_line_original", slf, true, true);
+
+	/*LOG("Converting single line forest to dag",
+	Forest2Dag w(slf);
+	);
+	PrintStats(slf);
+
+	LOG("Reducing single line forest",
+	STree st_sl(slf);
+	);
+	PrintStats(slf);*/
+
+	DrawForestOnFile(algorithm_name + "_single_line_reduced", slf, true, true);
+
+	string single_line_forest_reduced_code = global_output_path + algorithm_name + "_single_line_forest_reduced_code.txt";
+	{
+		ofstream os(single_line_forest_reduced_code);
+		GenerateForestCode(os, slf, last_nodeid_main_forest_group);
+	}
+}
+
+int main()
+{
+	
 
 	return EXIT_SUCCESS;
 }
