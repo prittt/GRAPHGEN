@@ -154,7 +154,7 @@ bool GenerateCode(const string& filename, ltree& t) {
 	return true;
 }
 
-// This function generates forest code using numerical labels starting from start_id and return the last used_id
+// This function generates forest code using numerical labels starting from start_id and returns the last used_id
 int GenerateForestCode(std::ostream& os, const Forest& f, int start_id) {
 
 	std::map<ltree::node*, int> printed_node;
@@ -179,7 +179,8 @@ int GenerateForestCode(std::ostream& os, const Forest& f, int start_id) {
 	id.SetId(start_id);
 	for (size_t i = 0; i < f.trees_.size(); ++i) {
 		const auto& t = f.trees_[i];
-		os << "tree_" << i << ": if ((c+=2) >= w - 2) { if (c > w - 2) { goto break_0_" << f.main_trees_end_trees_mapping_[0][i] << "; } else { goto break_1_" << f.main_trees_end_trees_mapping_[1][i] << "; } } \n";
+		// BBDT os << "tree_" << i << ": if ((c+=2) >= w - 2) { if (c > w - 2) { goto break_0_" << f.main_trees_end_trees_mapping_[0][i] << "; } else { goto break_1_" << f.main_trees_end_trees_mapping_[1][i] << "; } } \n";
+        /* Thinning */ os << "tree_" << i << ": if ((c+=1) >= w - 1) goto break_0_" << f.main_trees_end_trees_mapping_[0][i] << ";\n";
 		GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, id, 2, true);
 	}
 	int last_id_main_forest_node = id.get();

@@ -259,9 +259,68 @@ void CreateSpaghettiLabeling() {
 	}
 }
 
+void CreateThinning() {
+    auto at = ruleset_generator_type::thin_zs1;
+    auto algorithm_name = ruleset_generator_names[static_cast<int>(at)];
+    auto ruleset_generator = ruleset_generator_functions[static_cast<int>(at)];
+    auto rs = ruleset_generator();
+
+    //GenerateConditionsActionsCode("condition_action.txt", rs);
+    
+    string odt_filename = global_output_path + algorithm_name + "_odt.txt";
+    ltree t;
+    if (!LoadConactTree(t, odt_filename)) {
+        t = GenerateOdt(rs, odt_filename);
+    }
+    string tree_filename = algorithm_name + "_tree";
+    DrawDagOnFile(tree_filename, t, false, true);
+    PrintStats(t);
+
+    string tree_code_filename = global_output_path + algorithm_name + "_code.txt";
+    GenerateCode(tree_code_filename, t);
+
+    LOG("Making forest",
+        Forest f(t, rs.ps_);
+    );
+    for (size_t i = 0; i < f.trees_.size(); ++i) {
+        DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
+    }
+    PrintStats(f);
+
+    string forest_code_nodag = global_output_path + algorithm_name + "_forest_nodag_frequencies_code.txt";
+    {
+        ofstream os(forest_code_nodag);
+        GenerateForestCode(os, f);
+    }
+
+    for (size_t i = 0; i < f.end_trees_.size(); ++i) {
+        for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
+            DrawDagOnFile(algorithm_name + "_end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], false);
+        }
+    }
+
+    LOG("Converting forest to dag",
+    	Forest2Dag x(f);
+    	for (size_t i = 0; i < f.trees_.size(); ++i) {
+    		DrawDagOnFile(algorithm_name + "drag" + zerostr(i, 4), f.trees_[i], true);
+    	}
+    );
+    PrintStats(f);
+    
+    DrawForestOnFile(algorithm_name + "forest", f, true);
+
+    string forest_code = global_output_path + algorithm_name + "_forest_identities_code.txt";
+    {
+        ofstream os(forest_code);
+        GenerateForestCode(os, f);
+    }
+
+    return;
+}
+
 int main()
 {
-	
+    CreateThinning();
 
 	return EXIT_SUCCESS;
 }
