@@ -56,8 +56,8 @@ string Forest2Dag::Tree2String(ltree::node* n) {
 
 // Recursively searches for equal subtrees inside the forest. It starts from a root of the forest
 // and explore its subtrees. For each subtree, if there is an equal subtree (i.e. sp_ hash table
-// contains the tree identifier string) the function update the link, otherwise it updates the 
-// has table with the "new" subtree. This must be repeated for every root of the forest (see Forest2Dag) 
+// contains the tree identifier string) the function updates the link, otherwise it updates the 
+// hash table with the "new" subtree. This must be repeated for every root of the forest (see Forest2Dag) 
 void Forest2Dag::FindAndLink(ltree::node* n) {
 	if (!n->isleaf()) {
 		auto s = Tree2String(n->left);

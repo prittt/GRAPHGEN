@@ -188,7 +188,6 @@ bool DrawMainForestOnFile(const string& output_file, Forest& f, bool save_dotcod
 	std::vector<std::string> links;
 	for (size_t i = 0; i < f.trees_.size(); ++i) {
 		const auto& t = f.trees_[i];
-		// In order to easily print "ROOT #: " in front of every root we change the condition string
 		string tmp = t.root->data.condition;
 		if (i == 0)
 			t.root->data.condition = "!" + tmp; // "! -> identifies the root of the start tree"

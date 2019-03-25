@@ -37,8 +37,8 @@
 
 // Converts forest of decision trees into poly-rooted-dag
 struct Forest2Dag {
-	std::unordered_map<ltree::node*, std::string> ps_;
-	std::unordered_map<std::string, ltree::node*> sp_;
+	std::unordered_map<ltree::node*, std::string> ps_; // pointer -> string
+	std::unordered_map<std::string, ltree::node*> sp_; // string -> pointer
 	Forest& f_;
 
 	std::string Tree2String(ltree::node* n);
