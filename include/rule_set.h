@@ -80,13 +80,21 @@ struct rule_set {
         return s;
     }
 
+    void AddCondition(const std::string& name) {
+        conditions.emplace_back(name);
+        conditions_pos[name] = conditions.size()-1;
+    }
+
+    void ClearConditions() {
+        conditions.clear();
+        conditions_pos.clear();
+    }
+
 	void InitConditions(const pixel_set& ps) {
         ps_ = ps;
-		conditions.clear();
-		conditions_pos.clear();
+        ClearConditions();
 		for (uint i = 0; i < ps.pixels_.size(); ++i) {
-			conditions.push_back(ps.pixels_[i].name_);
-			conditions_pos[ps.pixels_[i].name_] = i;
+            AddCondition(ps.pixels_[i].name_);
 		}
 	}
 

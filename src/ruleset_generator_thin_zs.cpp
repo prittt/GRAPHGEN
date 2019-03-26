@@ -43,9 +43,11 @@ rule_set generate_thin_zs1()
 
     rule_set thinning;
     thinning.InitConditions(zs_mask);
+    thinning.AddCondition("iter");
     thinning.InitActions({
-        "nothing",
-        "remove",
+        "keep0",
+        "keep1",
+        "change0",
         });
 
 
@@ -62,7 +64,7 @@ rule_set generate_thin_zs1()
         int P8 = r["P8"];
         int P9 = r["P9"];
         if (!P1) {
-            r << "nothing";
+            r << "keep0";
             return;
         }
 
@@ -72,16 +74,25 @@ rule_set generate_thin_zs1()
             (P8 == 0 && P9 == 1) + (P9 == 0 && P2 == 1);
 
         int B = P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9;
-
+        int m1, m2;
+        if (r["iter"] == 0) {
+            m1 = P2 * P4 * P6;
+            m2 = P4 * P6 * P8;
+        }
+        else {
+            m1 = P2 * P4 * P8;
+            m2 = P2 * P6 * P8;
+        }
+        
         if (
             /*(a)*/ (2 <= B && B <= 6) &&
             /*(b)*/ A == 1 &&
-            /*(c)*/ P2*P4*P6 == 0 &&
-            /*(d)*/ P4*P6*P8 == 0
+            /*(c)*/ m1 == 0 &&
+            /*(d)*/ m2 == 0
             )
-            r << "remove";
+            r << "change0";
         else
-            r << "nothing";
+            r << "keep1";
     });
 
     return thinning;
