@@ -260,7 +260,7 @@ void CreateSpaghettiLabeling() {
 }
 
 void CreateThinning() {
-    auto at = ruleset_generator_type::thin_zs1;
+    auto at = ruleset_generator_type::thin_hscp;
     auto algorithm_name = ruleset_generator_names[static_cast<int>(at)];
     auto ruleset_generator = ruleset_generator_functions[static_cast<int>(at)];
     auto rs = ruleset_generator();
