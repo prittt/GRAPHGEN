@@ -260,7 +260,7 @@ void CreateSpaghettiLabeling() {
 }
 
 void CreateThinning() {
-    auto at = ruleset_generator_type::thin_hscp;
+    auto at = ruleset_generator_type::thin_ch;
     auto algorithm_name = ruleset_generator_names[static_cast<int>(at)];
     auto ruleset_generator = ruleset_generator_functions[static_cast<int>(at)];
     auto rs = ruleset_generator();
@@ -276,7 +276,7 @@ void CreateThinning() {
     DrawDagOnFile(tree_filename, t, false, true);
     PrintStats(t);
 
-    string tree_code_filename = global_output_path + algorithm_name + "_code.txt";
+    string tree_code_filename = global_output_path + algorithm_name + "tree_code.txt";
     GenerateCode(tree_code_filename, t);
 
     LOG("Making forest",

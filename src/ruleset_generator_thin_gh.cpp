@@ -33,16 +33,16 @@
 using namespace std;
 
 // First subiteration
-rule_set generate_thin_zs()
+rule_set generate_thin_gh()
 {
-    pixel_set zs_mask {
+    pixel_set gh_mask {
         { "P9", {-1, -1} }, { "P2", {0, -1} }, { "P3", {+1, -1} },
         { "P8", {-1,  0} }, { "P1", {0,  0} }, { "P4", {+1,  0} },
         { "P7", {-1, +1} }, { "P6", {0, +1} }, { "P5", {+1, +1} },
     };
 
     rule_set thinning;
-    thinning.InitConditions(zs_mask);
+    thinning.InitConditions(gh_mask);
     thinning.AddCondition("iter");
     thinning.InitActions({
         "keep0",
@@ -68,27 +68,24 @@ rule_set generate_thin_zs()
             return;
         }
 
-        int A = (P2 == 0 && P3 == 1) + (P3 == 0 && P4 == 1) +
-            (P4 == 0 && P5 == 1) + (P5 == 0 && P6 == 1) +
-            (P6 == 0 && P7 == 1) + (P7 == 0 && P8 == 1) +
-            (P8 == 0 && P9 == 1) + (P9 == 0 && P2 == 1);
-
-        int B = P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9;
-        int m1, m2;
+        int C = ((!P2) & (P3 | P4)) + ((!P4) & (P5 | P6)) +
+                ((!P6) & (P7 | P8)) + ((!P8) & (P9 | P2));
+        int N1 = (P9 | P2) + (P3 | P4) + (P5 | P6) + (P7 | P8);
+        int N2 = (P2 | P3) + (P4 | P5) + (P6 | P7) + (P8 | P9);
+        int N = N1 < N2 ? N1 : N2;
+        
+        int m;
         if (r["iter"] == 0) {
-            m1 = P2 * P4 * P6;
-            m2 = P4 * P6 * P8;
+            m = (P6 | P7 | (!P9)) & P8;
         }
         else {
-            m1 = P2 * P4 * P8;
-            m2 = P2 * P6 * P8;
+            m = (P2 | P3 | (!P5)) & P4;
         }
         
         if (
-            /*(a)*/ (2 <= B && B <= 6) &&
-            /*(b)*/ A == 1 &&
-            /*(c)*/ m1 == 0 &&
-            /*(d)*/ m2 == 0
+            /*(a)*/ (C == 1) && 
+            /*(b)*/ (2 <= N && N <= 3) &&
+            /*(c)*/ m == 0 
             )
             r << "change0";
         else

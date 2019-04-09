@@ -33,16 +33,16 @@
 using namespace std;
 
 // First subiteration
-rule_set generate_thin_zs()
+rule_set generate_thin_ch()
 {
-    pixel_set zs_mask {
+    pixel_set gh_mask {
         { "P9", {-1, -1} }, { "P2", {0, -1} }, { "P3", {+1, -1} },
         { "P8", {-1,  0} }, { "P1", {0,  0} }, { "P4", {+1,  0} },
         { "P7", {-1, +1} }, { "P6", {0, +1} }, { "P5", {+1, +1} },
     };
 
     rule_set thinning;
-    thinning.InitConditions(zs_mask);
+    thinning.InitConditions(gh_mask);
     thinning.AddCondition("iter");
     thinning.InitActions({
         "keep0",
@@ -69,26 +69,33 @@ rule_set generate_thin_zs()
         }
 
         int A = (P2 == 0 && P3 == 1) + (P3 == 0 && P4 == 1) +
-            (P4 == 0 && P5 == 1) + (P5 == 0 && P6 == 1) +
-            (P6 == 0 && P7 == 1) + (P7 == 0 && P8 == 1) +
-            (P8 == 0 && P9 == 1) + (P9 == 0 && P2 == 1);
-
+                (P4 == 0 && P5 == 1) + (P5 == 0 && P6 == 1) +
+                (P6 == 0 && P7 == 1) + (P7 == 0 && P8 == 1) +
+                (P8 == 0 && P9 == 1) + (P9 == 0 && P2 == 1);
         int B = P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9;
-        int m1, m2;
+        
+        int c, d, f, g;
         if (r["iter"] == 0) {
-            m1 = P2 * P4 * P6;
-            m2 = P4 * P6 * P8;
+            c = (P2 * P4 * P6 == 0);
+            d = (P4 * P6 * P8 == 0);
+            f = (P2 * P4 == 1 && P6 + P7 + P8 == 0);
+            g = (P4 * P6 == 1 && P2 + P8 + P9 == 0);
         }
         else {
-            m1 = P2 * P4 * P8;
-            m2 = P2 * P6 * P8;
+            c = (P2 * P4 * P8 == 0);
+            d = (P2 * P6 * P8 == 0);
+            f = (P2 * P8 == 1 && P4 + P5 + P6 == 0);
+            g = (P6 * P8 == 1 && P2 + P3 + P4 == 0);
         }
         
         if (
-            /*(a)*/ (2 <= B && B <= 6) &&
-            /*(b)*/ A == 1 &&
-            /*(c)*/ m1 == 0 &&
-            /*(d)*/ m2 == 0
+            /*(a)*/ (2 <= B && B <= 7) && ((
+            /*(b)*/ (A == 1) &&
+            /*(c)*/ c        &&
+            /*(d)*/ d )      || (
+            /*(e)*/ (A == 2) && (
+            /*(f)*/ f        ||
+            /*(g)*/ g )))
             )
             r << "change0";
         else
