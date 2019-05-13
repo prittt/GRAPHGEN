@@ -43,13 +43,13 @@
 void print_node(tree<conact>::node *n, int i);
 
 // All nodes must have both sons! 
-void GenerateDotCodeForDag(std::ostream& os, tree<conact>& t, bool with_next = false);
+void GenerateDotCodeForDag(std::ostream& os, const tree<conact>& t, bool with_next = false);
 
 // "output_file": output file name without extension 
 // "t": tree<conact> to draw
 // "verbose": to print messages on standard output
 // return true if the process ends correctly, false otherwise
-bool DrawDagOnFile(const std::string& output_file, tree<conact> &t, bool with_next = false, bool verbose = false);
-bool DrawForestOnFile(const std::string& output_file, Forest& f, bool save_dotcode = false, bool verbose = false);
+bool DrawDagOnFile(const std::string& output_file, const tree<conact> &t, bool with_next = false, bool verbose = false);
+bool DrawForestOnFile(const std::string& output_file, const Forest& f, bool save_dotcode = false, bool verbose = false);
 
 #endif // !GRAPHSGEN_OUTPUT_GENERATOR_H_

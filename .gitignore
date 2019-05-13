@@ -18,3 +18,5 @@
 **/*.jpg 
 **/*.png
 /outputs
+/outputs.zip
+/outputs_

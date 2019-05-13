@@ -36,6 +36,8 @@
 
 #include "pixel_set.h"
 
+#include "rule_set.h" // Da rimuove, provvisorio
+
 struct graph {
     std::vector<std::string> nodes_;        // Index -> Name
     std::map<std::string, size_t> rnodes_;  // Name  -> Index
@@ -60,14 +62,23 @@ struct graph {
         }
     }
     void DetachNode(const std::string& name) { DetachNode(rnodes_[name]); }
+
+    bool Write(const std::string& filename);
 };
 
 graph MakeAdjacencies(const pixel_set& ps);
 
 graph MakeConnectivities(const graph& ag);
 
+graph MakeConnectivitiesSpecial(const graph& ag, const std::vector<std::string>& pixel_list);
+
 std::ostream& operator<<(std::ostream& os, const graph& g);
 
+
+
 std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag);
+std::vector<std::string> GenerateAllPossibleLabelingActionsGivenTheSetOfPixelToBeLabeled(const graph& ag, const std::vector<std::string>& to_be_labeled_pixels, rule_set& rs);
+
+std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag, const std::string& ref_pixel_name);
 
 #endif // !GRAPHSGEN_CONNECTIVITY_GRAPH_H_

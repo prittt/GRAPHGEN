@@ -41,7 +41,7 @@ using namespace std;
 struct STree {
 	struct STreeProp {
 		string conditions;
-		vector<std::bitset<128>> actions;
+		vector<std::bitset<11881>> actions;
 		vector<uint> nexts;
 		ltree::node* n_;
 

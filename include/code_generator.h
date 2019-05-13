@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,5 +47,8 @@ int GenerateForestCode(std::ostream& os, const Forest& f, int start_id = 0);
 void GenerateConditionsActionsCode(std::ofstream& os, const rule_set& rs);
 // Overloading function
 bool GenerateConditionsActionsCode(const std::string& filename, const rule_set& rs);
+
+
+bool GenerateActionsForCtbe(const std::string& filename, const rule_set& rs);
 
 #endif // !GRAPHSGEN_CODE_GENERATOR_H_
