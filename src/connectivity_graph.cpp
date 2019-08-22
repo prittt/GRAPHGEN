@@ -347,7 +347,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActionsGivenTheSetOfPixelToB
     auto nconds = ag.size();
     auto nrules = 1u << nconds;
 
-    for (int i = 0; i < nrules; ++i) {
+    for (int i = 0; i < static_cast<int>(nrules); ++i) {
         rule_wrapper r(rs, i);
 
         auto lag = ag;

@@ -773,7 +773,6 @@ void CreateCtbeLabeling() {
 
 }
 
-// Per rispondere ai revisori di TIP. Genera BBDT e spaghetti con la maschera di CTB estesa
 void CreateRonsefeldLabeling() {
     auto at = ruleset_generator_type::rosenfeld;
 
@@ -782,6 +781,14 @@ void CreateRonsefeldLabeling() {
 
     auto rs = ruleset_generator();
 
+    string odt_filename = global_output_path + algorithm_name + "_odt.txt";
+    ltree t;
+    if (!LoadConactTree(t, odt_filename)) {
+        t = GenerateOdt(rs, odt_filename);
+    }
+
+    string tree_filename = algorithm_name + "_tree";
+    DrawDagOnFile(tree_filename, t, false, true);
 }
 
 
@@ -846,7 +853,8 @@ void CreateThinning() {
 
 int main()
 {
-    CreateSpaghettiLabeling();
+    CreateRonsefeldLabeling();
+    //CreateSpaghettiLabeling();
     //CreateChangLabeling();
     //CreateCtbeLabeling();
     //CreateRonsefeldLabeling();
