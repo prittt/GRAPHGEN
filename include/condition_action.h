@@ -53,7 +53,7 @@ struct conact {
 
     std::vector<uint> actions() const {
         std::vector<uint> a;
-        std::bitset<11881> uAction = action;
+        auto uAction = action;
         uint nAction = 1;
         while (uAction != 0) {
             if (uAction[0])

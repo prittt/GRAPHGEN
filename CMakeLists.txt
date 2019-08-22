@@ -32,7 +32,7 @@ set (ProjectName "GRAPHSGEN")
 project (${ProjectName})
 
 #Suppress creation of ZERO_CHECK
-set(CMAKE_SUPPRESS_REGENERATION true)
+#set(CMAKE_SUPPRESS_REGENERATION true)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Configs" FORCE)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Install prefix" FORCE)
@@ -95,7 +95,7 @@ message(STATUS "C flags: ${CMAKE_C_FLAGS}")
 # ----------------------------------------------------------------------------
 
 # Save libs and executables in the same place
-set(TreesGenerator_EXECUTABLE_OUTPUT_PATH "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Output directory for applications" )
+set(GRAPHSGEN_EXECUTABLE_OUTPUT_PATH "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Output directory for applications" )
 
 # ----------------------------------------------------------------------------
 # Solution folders

@@ -329,7 +329,7 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 		out_ss << "// Row pointers for the output image \n";
 		out_ss << base_row_out + "\n";
 
-		for (int j = -shifts[1]; j < shifts[1]; ++j) {
+		for (int j = -shifts[1]; j < shifts[1]; ++j) { // TODO: should use min and max y in mask
 
 			if (j == 0) {
 				continue;
@@ -337,14 +337,14 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 
 			string complete_string_in =
 				type_in_prefix_string +
-				"img_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned char *)(((char *)" + base_row_in_name + ") + img_.step.p[0] * " + to_string(j) + ");";
 			in_ss << complete_string_in + "\n";
 
 
 			string complete_string_out =
 				type_out_prefix_string +
-				"img_labels_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_labels_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned *)(((char *)" + base_row_out_name + ") + img_labels_.step.p[0] * " + to_string(j) + ");";
 			out_ss << complete_string_out + "\n";
 
@@ -375,13 +375,13 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 
 			string complete_string_in =
 				type_in_prefix_string +
-				"img_slice00_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_slice00_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned char *)(((char *)" + base_row_in_name + ") + img_.step.p[1] * " + to_string(j) + ");";
 			in_ss << complete_string_in + "\n";
 
 			string complete_string_out =
 				type_out_prefix_string +
-				"img_labels_slice00_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_labels_slice00_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned *)(((char *)" + base_row_out_name + ") + img_labels_.step.p[1] * " + to_string(j) + ");";
 			out_ss << complete_string_out + "\n";
 
@@ -398,13 +398,13 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 
 			string complete_string_in =
 				type_in_prefix_string +
-				"img_slice11_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_slice11_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned char *)(((char *)" + base_row_in_name + ") - img_.step.p[0] + img_.step.p[1] * " + to_string(j) + ");";
 			in_ss << complete_string_in + "\n";
 
 			string complete_string_out =
 				type_out_prefix_string +
-				"img_labels_slice11_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_labels_slice11_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned *)(((char *)" + base_row_out_name + ") - img_labels_.step.p[0] + img_labels_.step.p[1] * " + to_string(j) + ");";
 			out_ss << complete_string_out + "\n";
 
