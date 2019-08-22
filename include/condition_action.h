@@ -44,7 +44,7 @@ struct conact {
     // CONDITION
     std::string condition;
     // ACTION
-    std::bitset<128> action = 0; // List of actions (bitmapped)
+    std::bitset<11881> action = 0; // List of actions (bitmapped)
     uint next = 0;
 
     conact() {}
@@ -53,7 +53,7 @@ struct conact {
 
     std::vector<uint> actions() const {
         std::vector<uint> a;
-        std::bitset<128> uAction = action;
+        auto uAction = action;
         uint nAction = 1;
         while (uAction != 0) {
             if (uAction[0])

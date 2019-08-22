@@ -263,6 +263,25 @@ string CreateAssignmentCode(const string& action, const rule_set& rs) {
 	return CreateAssignmentCodeRec(pixels_names, rs);
 }
 
+// Scritta per ctbe
+string CreateActionCodeCtbe(const string& action, const rule_set& rs, const string& assignment_variable) {
+    if (action == "nothing") {
+        return "NOTHING";
+    }
+
+    string action_ = action.substr(3);
+    if (action_ == "newlabel") {
+        return assignment_variable + " LabelsSolver::NewLabel()";
+    }
+
+    std::vector<std::string> pixels_names;
+    StringSplit(action_, pixels_names);
+
+    assert(pixels_names.size() > 0 && "Something wrong with actions");
+
+    return assignment_variable + " " + CreateAssignmentCodeRec(pixels_names, rs);
+}
+
 // This function .. it works only for 2d and 3d images
 void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 	// The names of pointers are identified by the following string
@@ -310,7 +329,7 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 		out_ss << "// Row pointers for the output image \n";
 		out_ss << base_row_out + "\n";
 
-		for (int j = -shifts[1]; j < shifts[1]; ++j) {
+		for (int j = -shifts[1]; j < shifts[1]; ++j) { // TODO: should use min and max y in mask
 
 			if (j == 0) {
 				continue;
@@ -318,14 +337,14 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 
 			string complete_string_in =
 				type_in_prefix_string +
-				"img_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned char *)(((char *)" + base_row_in_name + ") + img_.step.p[0] * " + to_string(j) + ");";
 			in_ss << complete_string_in + "\n";
 
 
 			string complete_string_out =
 				type_out_prefix_string +
-				"img_labels_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_labels_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned *)(((char *)" + base_row_out_name + ") + img_labels_.step.p[0] * " + to_string(j) + ");";
 			out_ss << complete_string_out + "\n";
 
@@ -356,13 +375,13 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 
 			string complete_string_in =
 				type_in_prefix_string +
-				"img_slice00_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_slice00_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned char *)(((char *)" + base_row_in_name + ") + img_.step.p[1] * " + to_string(j) + ");";
 			in_ss << complete_string_in + "\n";
 
 			string complete_string_out =
 				type_out_prefix_string +
-				"img_labels_slice00_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_labels_slice00_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned *)(((char *)" + base_row_out_name + ") + img_labels_.step.p[1] * " + to_string(j) + ");";
 			out_ss << complete_string_out + "\n";
 
@@ -379,13 +398,13 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 
 			string complete_string_in =
 				type_in_prefix_string +
-				"img_slice11_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_slice11_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned char *)(((char *)" + base_row_in_name + ") - img_.step.p[0] + img_.step.p[1] * " + to_string(j) + ");";
 			in_ss << complete_string_in + "\n";
 
 			string complete_string_out =
 				type_out_prefix_string +
-				"img_labels_slice11_row" + to_string(((j >> (sizeof(int) - 1)) & 1)) + to_string(abs(j)) +
+				"img_labels_slice11_row" + to_string(j < 0) + to_string(abs(j)) +
 				" = (unsigned *)(((char *)" + base_row_out_name + ") - img_labels_.step.p[0] + img_labels_.step.p[1] * " + to_string(j) + ");";
 			out_ss << complete_string_out + "\n";
 
@@ -443,4 +462,57 @@ bool GenerateConditionsActionsCode(const string& filename, const rule_set& rs) {
 	GenerateConditionsActionsCode(os, rs);
 
 	return true;
+}
+
+bool GenerateActionsForCtbe(const string& filename, const rule_set& rs) {
+    ofstream os(filename);
+
+    if (!os) {
+        return false;
+    }
+    
+    // Actions:
+    os << "\n\n//Actions:\n";
+    os << "#define NOTHING \n";
+    for (size_t a = 0; a < rs.actions.size(); ++a) {
+
+        string cur_action = rs.actions[a];
+
+        os << "// Action " << a + 1 << ": " << cur_action << "\n";
+        os << "#define ACTION_" << a + 1 << " ";
+        
+        vector<string> pixels_actions;
+        StringSplit(cur_action, pixels_actions,',');
+
+        if (pixels_actions[1].substr(3) == "e" && (pixels_actions[2].substr(3) == "e" || pixels_actions[2].substr(3) == "g")) {
+            os << CreateActionCodeCtbe(pixels_actions[0], rs, "img_labels_row00[c] = img_labels_row01[c] = img_labels_row02[c] = ") << "; continue; \n";
+        }
+        else {
+            if (pixels_actions[1].substr(3) == "e") {
+                os << CreateActionCodeCtbe(pixels_actions[0], rs, "img_labels_row00[c] = img_labels_row01[c] = ") << "; ";
+                os << CreateActionCodeCtbe(pixels_actions[2], rs, "img_labels_row02[c] = ") << "; continue;\n";
+            }
+            else {
+                if (pixels_actions[2].substr(3) == "e") {
+                    os << CreateActionCodeCtbe(pixels_actions[0], rs, "img_labels_row00[c] = img_labels_row02[c] = ") << "; ";
+                    os << CreateActionCodeCtbe(pixels_actions[1], rs, "img_labels_row01[c] = ") << "; continue;\n";
+                }
+                else {
+                    // Il pixel "e" ha azione unica
+                    
+                    os << CreateActionCodeCtbe(pixels_actions[0], rs, "img_labels_row00[c] = ") << "; ";
+                    if (pixels_actions[2].substr(3) == "e") {
+                        os << CreateActionCodeCtbe(pixels_actions[1], rs, "img_labels_row01[c] = img_labels_row02[c] = ") << "; continue;\n";
+                    }
+                    else {
+                        // Ogni pixel ha la sua azione
+                        os << CreateActionCodeCtbe(pixels_actions[1], rs, "img_labels_row01[c] = ") << "; ";
+                        os << CreateActionCodeCtbe(pixels_actions[2], rs, "img_labels_row02[c] = ") << "; continue;\n";
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
 }

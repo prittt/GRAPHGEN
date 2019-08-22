@@ -111,7 +111,7 @@ void GenerateDotCodeForDagRec(std::ostream& os, tree<conact>::node *n, std::map<
 }
 
 // All nodes must have both sons! 
-void GenerateDotCodeForDag(std::ostream& os, tree<conact>& t, bool with_next) {
+void GenerateDotCodeForDag(std::ostream& os, const tree<conact>& t, bool with_next) {
 	os << "digraph dag{\n";
 	os << "\tsubgraph tree{\n";
 
@@ -131,7 +131,7 @@ void GenerateDotCodeForDag(std::ostream& os, tree<conact>& t, bool with_next) {
 // "t": tree<conact> to draw
 // "verbose": to print messages on standard output
 // return true if the process ends correctly, false otherwise
-bool DrawDagOnFile(const string& output_file, tree<conact> &t, bool with_next, bool verbose) {
+bool DrawDagOnFile(const string& output_file, const tree<conact> &t, bool with_next, bool verbose) {
 
 	if (verbose) {
 		std::cout << "Drawing DAG: " << output_file << ".. ";
@@ -163,7 +163,7 @@ bool DrawDagOnFile(const string& output_file, tree<conact> &t, bool with_next, b
 	return true;
 }
 
-bool DrawMainForestOnFile(const string& output_file, Forest& f, bool save_dotcode, bool verbose) {
+bool DrawMainForestOnFile(const string& output_file, const Forest& f, bool save_dotcode, bool verbose) {
 	if (verbose) {
 		std::cout << "Drawing Main Forest: " << output_file << ".. ";
 	}
@@ -224,7 +224,7 @@ bool DrawMainForestOnFile(const string& output_file, Forest& f, bool save_dotcod
 }
 
 // TODO try to write a single main common function for DrawEndForestOnFile and DrawMainForestOnFile
-bool DrawEndForestOnFile(const string& output_file, Forest& f, bool save_dotcode, bool verbose) {
+bool DrawEndForestOnFile(const string& output_file, const Forest& f, bool save_dotcode, bool verbose) {
 	if (verbose) {
 		std::cout << "Drawing End Forest: " << output_file << ".. ";
 	}
@@ -285,10 +285,10 @@ bool DrawEndForestOnFile(const string& output_file, Forest& f, bool save_dotcode
 	return true;
 }
 
-bool DrawForestOnFile(const string& output_file, Forest& f, bool save_dotcode, bool verbose)
+bool DrawForestOnFile(const string& output_file, const Forest& f, bool save_dotcode, bool verbose)
 {
-	bool m = DrawMainForestOnFile(output_file + "_main", f, save_dotcode, verbose);
-	bool e = DrawEndForestOnFile(output_file + "_end", f, save_dotcode, verbose);
+	bool m = DrawMainForestOnFile(output_file + "_mainforest", f, save_dotcode, verbose);
+	bool e = DrawEndForestOnFile(output_file + "_endforest", f, save_dotcode, verbose);
 
 	return m && e;
 }
