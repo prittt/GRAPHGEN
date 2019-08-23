@@ -26,6 +26,13 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "rule_set.h"
+#include "utilities.h"
 
+std::filesystem::path global_output_path;
 
+std::string binary(uint u, uint nbits) {
+    std::string s;
+    while (nbits-- > 0)
+        s += ((u >> nbits) & 1) + 48;
+    return s;
+}

@@ -33,10 +33,11 @@
 #include <iomanip>
 #include <string>
 #include <sstream>
+#include <filesystem>
 
 #include "performance_evaluator.h"
 
-extern std::string global_output_path;
+extern std::filesystem::path global_output_path;
 
 using uint = uint32_t;
 

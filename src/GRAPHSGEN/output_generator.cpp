@@ -138,7 +138,7 @@ bool DrawDagOnFile(const string& output_file, const tree<conact> &t, bool with_n
 	}
 	string output_path_lowercase = output_file;
 	std::transform(output_path_lowercase.begin(), output_path_lowercase.end(), output_path_lowercase.begin(), ::tolower);
-	output_path_lowercase = global_output_path + output_path_lowercase;
+	output_path_lowercase = global_output_path.string() + "/" + output_path_lowercase;
 	string code_path = output_path_lowercase + "_dotcode.txt";
 	string pdf_path = output_path_lowercase + ".pdf";
 	ofstream os(code_path);
@@ -169,7 +169,7 @@ bool DrawMainForestOnFile(const string& output_file, const Forest& f, bool save_
 	}
 	string output_path_lowercase = output_file;
 	std::transform(output_path_lowercase.begin(), output_path_lowercase.end(), output_path_lowercase.begin(), ::tolower);
-	output_path_lowercase = global_output_path + output_path_lowercase;
+	output_path_lowercase = global_output_path.string() + "/" + output_path_lowercase;
 	string code_path = output_path_lowercase + "_dotcode.txt";
 	string pdf_path = output_path_lowercase + ".pdf";
 	ofstream os(code_path);
@@ -230,7 +230,7 @@ bool DrawEndForestOnFile(const string& output_file, const Forest& f, bool save_d
 	}
 	string output_path_lowercase = output_file;
 	std::transform(output_path_lowercase.begin(), output_path_lowercase.end(), output_path_lowercase.begin(), ::tolower);
-	output_path_lowercase = global_output_path + output_path_lowercase;
+	output_path_lowercase = global_output_path.string() + "/" + output_path_lowercase;
 	string code_path = output_path_lowercase + "_dotcode.txt";
 	string pdf_path = output_path_lowercase + ".pdf";
 	ofstream os(code_path);

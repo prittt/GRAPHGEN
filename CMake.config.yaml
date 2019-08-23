@@ -1,0 +1,11 @@
+%YAML:1.2
+---
+############################################
+# This is the GRAPHSGEN configuration file #
+############################################
+
+paths: {input: "", output: "${GRAPHSGEN_OUTPUT_PATH}"}
+
+############################################
+# This is the GRAPHSGEN configuration file #
+############################################

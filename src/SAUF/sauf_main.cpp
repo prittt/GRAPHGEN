@@ -26,14 +26,42 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "ruleset_generator.h"
+//#include <set>
+//#include <algorithm>
+//#include <fstream>
+//#include <unordered_map>
+//#include <iterator>
+//#include <iomanip>
+//#include <string>
+//#include <vector>
+//#include <cstdint>
+//#include <map>
+//#include <unordered_map>
+//#include <unordered_set>
 
-#include "merge_set.h"
-#include "connectivity_graph.h"
+//#include <intrin.h>
+
+//#include "condition_action.h"
+//#include "code_generator.h"
+//#include "file_manager.h"
+//#include "forest2dag.h"
+//#include "forest_optimizer.h"
+//#include "forest_statistics.h"
+//#include "drag_statistics.h"
+//#include "drag2optimal.h"
+//#include "hypercube.h"
+//#include "output_generator.h"
+//#include "ruleset_generator.h"
+//#include "tree2dag_identities.h"
+//#include "utilities.h"
+
+#include <opencv2/imgproc.hpp>
+
+#include "graphsgen.h"
 
 using namespace std;
 
-rule_set generate_rosenfeld()
+rule_set generate_SAUF()
 {
     pixel_set rosenfeld_mask{
         { "p", {-1, -1} }, { "q", {0, -1} }, { "r", {+1, -1} },
@@ -44,7 +72,7 @@ rule_set generate_rosenfeld()
     labeling.InitConditions(rosenfeld_mask);
 
     graph ag = MakeAdjacencies(rosenfeld_mask);
-    ag.Write("resenfeld_adjacencies_graph.txt");
+    ag.Write("rosenfeld_adjacencies_graph.txt");
     auto actions = GenerateAllPossibleLabelingActions(ag);
 
     //{
@@ -93,4 +121,38 @@ rule_set generate_rosenfeld()
     });
 
     return labeling;
+}
+
+int main()
+{
+    // Read yaml configuration file
+    const string config_file = "config.yaml";
+    cv::FileStorage fs;
+    try {
+        fs.open(config_file, cv::FileStorage::READ);
+    }
+    catch (const cv::Exception&) {
+        exit(EXIT_FAILURE);  // Error redirected,
+                             // OpenCV redirected function will
+                             // print the error on stdout
+    }
+
+    global_output_path = string(fs["paths"]["output"]);
+
+    string algorithm_name = "SAUF";
+
+    auto rs = generate_SAUF();
+
+    // Call GRAPHSGEN
+    string odt_filename = global_output_path.string() + "/" + algorithm_name + "_odt.txt";
+    ltree t;
+    if (!LoadConactTree(t, odt_filename)) {
+        t = GenerateOdt(rs, odt_filename);
+    }
+
+    string tree_filename = algorithm_name + "_tree";
+    DrawDagOnFile(tree_filename, t, false, true);
+
+
+	return EXIT_SUCCESS;
 }
