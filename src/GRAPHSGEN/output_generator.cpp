@@ -111,11 +111,11 @@ void GenerateDotCodeForDagRec(std::ostream& os, tree<conact>::node *n, std::map<
 }
 
 // All nodes must have both sons! 
-void GenerateDotCodeForDag(std::ostream& os, const tree<conact>& t, bool with_next) {
+void GenerateDotCodeForDag(std::ostream& os, const tree<conact>& t, bool with_next = false) {
 	os << "digraph dag{\n";
 	os << "\tsubgraph tree{\n";
 
-	std::map<tree<conact>::node*, int> printed_node = { { t.root, 0 } };;
+	std::map<tree<conact>::node*, int> printed_node = { { t.root, 0 } };
 	std::vector<std::string> links;
 	GenerateDotCodeForDagRec(os, t.root, printed_node, links, nodeid(), with_next, 2);
 

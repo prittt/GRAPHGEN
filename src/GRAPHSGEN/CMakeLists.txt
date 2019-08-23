@@ -11,6 +11,7 @@ target_sources(GRAPHSGEN PRIVATE
 	forest_statistics.h
 	forest2dag.cpp
 	forest2dag.h
+	graphsgen.h
 	hypercube.cpp
 	hypercube.h
 	merge_set.h
@@ -25,12 +26,14 @@ target_sources(GRAPHSGEN PRIVATE
 	utilities.cpp
 	utilities.h
 	base_forest.h
-	code_generator.cpp
-	code_generator.h
 	conact_tree.cpp
 	conact_tree.h
 	condition_action.h
 	connectivity_graph.cpp
 	connectivity_graph.h
 	connectivity_mat.h
+	graph_code_generator.h
+	conact_code_generator.cpp
+	conact_code_generator.h
+	graph_code_generator.cpp
 )

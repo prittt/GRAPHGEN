@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,25 +26,21 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_OUTPUT_GENERATOR_H_
-#define GRAPHSGEN_OUTPUT_GENERATOR_H_
+#ifndef GRAPHSGEN_CONACT_CODE_GENERATOR_H_
+#define GRAPHSGEN_CONACT_CODE_GENERATOR_H_
 
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <sstream>
-#include <string>
+#include <ostream>
 
-#include "condition_action.h"
+#include "conact_tree.h"
 #include "forest.h"
-#include "tree.h"
-#include "utilities.h"
+#include "rule_set.h"
 
-// "output_file": output file name without extension 
-// "t": tree<conact> to draw
-// "verbose": to print messages on standard output
-// return true if the process ends correctly, false otherwise
-bool DrawDagOnFile(const std::string& output_file, const tree<conact> &t, bool with_next = false, bool verbose = false);
-bool DrawForestOnFile(const std::string& output_file, const Forest& f, bool save_dotcode = false, bool verbose = false);
+// This function generates code for conditions and actions' macros and rows' pointers
+void GenerateConditionsActionsCode(std::ofstream& os, const rule_set& rs);
+// Overloading function
+bool GenerateConditionsActionsCode(const std::string& filename_prefix, const rule_set& rs);
 
-#endif // !GRAPHSGEN_OUTPUT_GENERATOR_H_
+
+bool GenerateActionsForCtbe(const std::string& filename, const rule_set& rs);
+
+#endif // GRAPHSGEN_CONACT_CODE_GENERATOR_H_

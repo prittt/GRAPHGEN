@@ -153,6 +153,10 @@ int main()
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, t, false, true);
 
+    GenerateCode(algorithm_name, t);
+
+    GenerateConditionsActionsCode(algorithm_name, rs);
+
 
 	return EXIT_SUCCESS;
 }

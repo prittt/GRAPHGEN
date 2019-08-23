@@ -26,8 +26,8 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_CODE_GENERATOR_H_
-#define GRAPHSGEN_CODE_GENERATOR_H_
+#ifndef GRAPHSGEN_GRAPH_CODE_GENERATOR_H_
+#define GRAPHSGEN_GRAPH_CODE_GENERATOR_H_
 
 #include <ostream>
 
@@ -38,17 +38,10 @@
 // This function generates tree/dag code. All nodes must have both sons! 
 void GenerateCode(std::ostream& os, ltree& t);
 // Overloading function
-bool GenerateCode(const std::string& filename, ltree& t);
+// "output_file": output file name without extension 
+bool GenerateCode(const std::string& filename_prefix, ltree& t);
 
 // This function generates forest code. TODO: check this!!
 int GenerateForestCode(std::ostream& os, const Forest& f, int start_id = 0);
 
-// This function generates code per conditions and actions' macros and rows' pointers
-void GenerateConditionsActionsCode(std::ofstream& os, const rule_set& rs);
-// Overloading function
-bool GenerateConditionsActionsCode(const std::string& filename, const rule_set& rs);
-
-
-bool GenerateActionsForCtbe(const std::string& filename, const rule_set& rs);
-
-#endif // !GRAPHSGEN_CODE_GENERATOR_H_
+#endif // GRAPHSGEN_GRAPH_CODE_GENERATOR_H_
