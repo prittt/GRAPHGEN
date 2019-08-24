@@ -1,4 +1,4 @@
-# Copyright(c) 2018 Federico Bolelli, Costantino Grana
+# Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -62,14 +62,11 @@ if(MSVC)
 	endif()
 endif()
 
+find_package(Git QUIET)
+
 # --------------------
 # Project
 # --------------------
-
-#include_directories("${CMAKE_SOURCE_DIR}/include")
-#file(GLOB SRCFILES ${SRCFILES} "src/*.cc" "src/*.cpp" "src/*.c")
-#file(GLOB HFILES ${HFILES} "include/*.h" "include/*.hpp")
-#file(GLOB INCFILES ${INCFILES} "include/*.inc")
 
 include_directories(src/GRAPHSGEN)
 
@@ -77,9 +74,10 @@ add_library(GRAPHSGEN STATIC "")
 add_subdirectory(src/GRAPHSGEN)
 
 add_executable(SAUF "")
+
 set_target_properties(SAUF PROPERTIES FOLDER "Labeling")
 add_subdirectory(src/SAUF)
-target_link_libraries (SAUF GRAPHSGEN ${OpenCV_LIBS})
+target_link_libraries (SAUF PUBLIC GRAPHSGEN ${OpenCV_LIBS})
 
 # Check for c++17 support (TODO check if it actually works)
 set_property(TARGET SAUF GRAPHSGEN PROPERTY CXX_STANDARD 17)
@@ -96,3 +94,12 @@ configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/
 if (NOT EXISTS "${GRAPHSGEN_OUTPUT_PATH}")
 	file(MAKE_DIRECTORY ${GRAPHSGEN_OUTPUT_PATH})
 endif()
+
+# --------------------
+# 3rdparty 
+# --------------------
+
+set(CMAKE_FOLDER 3rdparty)
+add_subdirectory(3rdparty)
+set(CMAKE_FOLDER "")
+# --------------------

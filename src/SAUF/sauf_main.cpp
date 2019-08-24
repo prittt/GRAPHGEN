@@ -58,6 +58,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include "graphsgen.h"
+#include "yaml-cpp/yaml.h"
 
 using namespace std;
 
@@ -127,17 +128,16 @@ int main()
 {
     // Read yaml configuration file
     const string config_file = "config.yaml";
-    cv::FileStorage fs;
+    YAML::Node config;
     try {
-        fs.open(config_file, cv::FileStorage::READ);
+         config = YAML::LoadFile("config.yaml");
     }
     catch (const cv::Exception&) {
-        exit(EXIT_FAILURE);  // Error redirected,
-                             // OpenCV redirected function will
-                             // print the error on stdout
+        // TODO add log messages
+        exit(EXIT_FAILURE);  
     }
 
-    global_output_path = string(fs["paths"]["output"]);
+    global_output_path = string(config["paths"]["output"].as<string>());
 
     string algorithm_name = "SAUF";
 
@@ -156,7 +156,6 @@ int main()
     GenerateCode(algorithm_name, t);
 
     GenerateConditionsActionsCode(algorithm_name, rs);
-
 
 	return EXIT_SUCCESS;
 }
