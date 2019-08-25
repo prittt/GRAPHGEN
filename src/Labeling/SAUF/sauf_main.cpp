@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -25,37 +25,6 @@
 // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-//#include <set>
-//#include <algorithm>
-//#include <fstream>
-//#include <unordered_map>
-//#include <iterator>
-//#include <iomanip>
-//#include <string>
-//#include <vector>
-//#include <cstdint>
-//#include <map>
-//#include <unordered_map>
-//#include <unordered_set>
-
-//#include <intrin.h>
-
-//#include "condition_action.h"
-//#include "code_generator.h"
-//#include "file_manager.h"
-//#include "forest2dag.h"
-//#include "forest_optimizer.h"
-//#include "forest_statistics.h"
-//#include "drag_statistics.h"
-//#include "drag2optimal.h"
-//#include "hypercube.h"
-//#include "output_generator.h"
-//#include "ruleset_generator.h"
-//#include "tree2dag_identities.h"
-//#include "utilities.h"
-
-#include <opencv2/imgproc.hpp>
 
 #include "graphsgen.h"
 #include "yaml-cpp/yaml.h"
@@ -132,7 +101,7 @@ int main()
     try {
          config = YAML::LoadFile("config.yaml");
     }
-    catch (const cv::Exception&) {
+    catch (...) {
         // TODO add log messages
         exit(EXIT_FAILURE);  
     }

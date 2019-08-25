@@ -76,7 +76,7 @@ add_subdirectory(src/GRAPHSGEN)
 add_executable(SAUF "")
 
 set_target_properties(SAUF PROPERTIES FOLDER "Labeling")
-add_subdirectory(src/SAUF)
+add_subdirectory(src/Labeling/SAUF)
 target_link_libraries (SAUF PUBLIC GRAPHSGEN ${OpenCV_LIBS})
 
 # Check for c++17 support (TODO check if it actually works)
