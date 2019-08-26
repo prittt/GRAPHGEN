@@ -29,9 +29,3 @@ set(CMAKE_FOLDER 3rdparty/yaml-cpp)
 add_subdirectory(yaml-cpp)
 set(CMAKE_FOLDER 3rdparty)
 
-target_include_directories(SAUF PUBLIC 
-                                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdparty/yaml-cpp/include> 
-                                $<INSTALL_INTERFACE:include>)
-target_link_libraries(SAUF PUBLIC yaml-cpp)
-#target_link_libraries(SAUF PUBLIC optimized libyaml-cppmd)
-#target_link_libraries(SAUF PUBLIC debug libyaml-cppmdd)

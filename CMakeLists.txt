@@ -65,23 +65,32 @@ endif()
 find_package(Git QUIET)
 
 # --------------------
-# Project
+# 3rdparty 
+# --------------------
+set(CMAKE_FOLDER 3rdparty)
+add_subdirectory(3rdparty)
+set(CMAKE_FOLDER "")
 # --------------------
 
-include_directories(src/GRAPHSGEN)
 
+# --------------------
+# Project
+# --------------------
 add_library(GRAPHSGEN STATIC "")
+target_include_directories(GRAPHSGEN PUBLIC src/GRAPHSGEN)
 add_subdirectory(src/GRAPHSGEN)
 
-add_executable(SAUF "")
-
-set_target_properties(SAUF PROPERTIES FOLDER "Labeling")
-add_subdirectory(src/Labeling/SAUF)
-target_link_libraries (SAUF PUBLIC GRAPHSGEN ${OpenCV_LIBS})
+set(LABELING_ALGORITHMS SAUF PRED CACHE INTERNAL ON FORCE)
+foreach(ALGO ${LABELING_ALGORITHMS})
+	add_executable(${ALGO} "")
+	set_target_properties(${ALGO} PROPERTIES FOLDER "Labeling")
+	add_subdirectory(src/Labeling/${ALGO})
+	target_link_libraries (${ALGO} GRAPHSGEN yaml-cpp)
+endforeach()
 
 # Check for c++17 support (TODO check if it actually works)
-set_property(TARGET SAUF GRAPHSGEN PROPERTY CXX_STANDARD 17)
-set_property(TARGET SAUF GRAPHSGEN PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ${LABELING_ALGORITHMS} GRAPHSGEN PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${LABELING_ALGORITHMS} GRAPHSGEN PROPERTY CXX_STANDARD_REQUIRED ON)
 
 #add_definitions(-D_CRT_SECURE_NO_WARNINGS) #To suppress 'fopen' opencv warning/bug  
 # Set configuration file	
@@ -95,11 +104,6 @@ if (NOT EXISTS "${GRAPHSGEN_OUTPUT_PATH}")
 	file(MAKE_DIRECTORY ${GRAPHSGEN_OUTPUT_PATH})
 endif()
 
-# --------------------
-# 3rdparty 
-# --------------------
-
-set(CMAKE_FOLDER 3rdparty)
-add_subdirectory(3rdparty)
-set(CMAKE_FOLDER "")
-# --------------------
+#target_include_directories(SAUF PUBLIC 
+#                                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdparty/yaml-cpp/include> 
+#                                $<INSTALL_INTERFACE:include>)
