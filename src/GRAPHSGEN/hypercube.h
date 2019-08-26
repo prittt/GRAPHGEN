@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -165,9 +165,26 @@ struct VHyperCube {
     ltree optimize(bool bVerbose = false);
 };
 
+// TODO should these functions be hide from the outside?
 // Generates an Optimal Decision Tree from the given rule_set,
 // and store it in the filename when specified.
 ltree GenerateOdt(const rule_set& rs);
 ltree GenerateOdt(const rule_set& rs, const std::string& filename);
+
+
+/** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
+
+This function generates from the given rule set the optimal decision tree generated. When the number
+of rules is too high a pseudo optimal tree is generated. If the tree is already been generated it
+is loaded from file, unless the "force_generation" parameter is set to true. In this case the tree
+is always regenerated. The loaded/generated tree is then returned.
+
+@param[in] rs Rule set from which generate the decision tree.
+@param[in] algorithm_name Name of the algorithm for which he tree must be generated.
+@param[in] force_generation Whether the tree must be generated or can be loaded from file.
+
+@return The optimal decision tree associated to the specified rule set.
+*/
+ltree GetOdt(const rule_set& rs, const std::string& algorithm_name, bool force_generation = false);
 
 #endif // !GRAPHSGEN_CONACT_TREE_H_

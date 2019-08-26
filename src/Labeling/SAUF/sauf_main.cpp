@@ -93,28 +93,6 @@ rule_set generate_SAUF()
     return labeling;
 }
 
-/** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
-
-This function generates from the given rule set the optimal decision tree generated. When the number
-of rules is too high a pseudo optimal tree is generated. If the tree is already been generated it
-is loaded from file, unless the "force_generation" parameter is set to true. In this case the tree
-is always regenerated. The loaded/generated tree is then returned.
-
-@param[in] rs Rule set from which generate the decision tree.
-@param[in] algorithm_name Name of the algorithm for which he tree must be generated.
-@param[in] force_generation Whether the tree must be generated or can be loaded from file.
-
-@return The optimal decision tree associated to the specified rule set.
-*/
-ltree GetOdt(const rule_set& rs, const string& algorithm_name, bool force_generation = false) {
-    string odt_filename = global_output_path.string() + "/" + algorithm_name + "_odt.txt";
-    ltree t;
-    if (force_generation || !LoadConactTree(t, odt_filename)) {
-        t = GenerateOdt(rs, odt_filename);
-    }
-    return t;
-}
-
 int main()
 {
     // Read yaml configuration file
