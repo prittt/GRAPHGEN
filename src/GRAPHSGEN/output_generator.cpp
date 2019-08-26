@@ -207,7 +207,7 @@ bool DrawMainForestOnFile(const string& output_file, const Forest& f, bool save_
 	os << "}\n";
 
 	os.close();
-	if (0 != system(string("..\\tools\\dot\\dot -Tpdf " + code_path + " -o " + pdf_path).c_str())) {
+	if (0 != system(string("..\\tools\\dot\\dot -Tpdf \"" + code_path + "\" -o \"" + pdf_path + "\"").c_str())) {
 		if (verbose) {
 			std::cout << "Unable to generate " + pdf_path + ", stopped\n";
 		}
@@ -269,7 +269,7 @@ bool DrawEndForestOnFile(const string& output_file, const Forest& f, bool save_d
 	os << "}\n";
 
 	os.close();
-	if (0 != system(string("..\\tools\\dot\\dot -Tpdf " + code_path + " -o " + pdf_path).c_str())) {
+	if (0 != system(string("..\\tools\\dot\\dot -Tpdf \"" + code_path + "\" -o \"" + pdf_path + "\"").c_str())) {
 		if (verbose) {
 			std::cout << "Unable to generate " + pdf_path + ", stopped\n";
 		}
