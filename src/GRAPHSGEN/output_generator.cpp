@@ -150,7 +150,7 @@ bool DrawDagOnFile(const string& output_file, const tree<conact> &t, bool with_n
 	}
 	GenerateDotCodeForDag(os, t, with_next);
 	os.close();
-	if (0 != system(string("..\\tools\\dot\\dot -Tpdf " + code_path + " -o " + pdf_path).c_str())) {
+	if (0 != system(string("..\\tools\\dot\\dot -Tpdf \"" + code_path + "\" -o \"" + pdf_path + "\"").c_str())) {
 		if (verbose) {
 			std::cout << "Unable to generate " + pdf_path + ", stopped\n";
 		}
