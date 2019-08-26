@@ -61,11 +61,18 @@ int main()
 
     LOG("Making forest",
         Forest f(t, rs.ps_);
-    for (size_t i = 0; i < f.trees_.size(); ++i) {
-        DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
-    }
+        for (size_t i = 0; i < f.trees_.size(); ++i) {
+            DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
+        }
+        for (size_t i = 0; i < f.end_trees_.size(); ++i) {
+            for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
+                DrawDagOnFile(algorithm_name + "_end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], false);
+            }
+        }
     );
     PrintStats(f);
+
+    DrawForestOnFile(algorithm_name + "forest", f, true);
 
     string forest_code_nodag = global_output_path.string() + "/" + algorithm_name + "_forest_nodag_code.txt";
     {
@@ -73,23 +80,8 @@ int main()
         GenerateForestCode(os, f);
     }
 
-    for (size_t i = 0; i < f.end_trees_.size(); ++i) {
-        for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
-            DrawDagOnFile(algorithm_name + "_end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], false);
-        }
-    }
-
-    DrawForestOnFile(algorithm_name + "forest", f, true);
-
-    string forest_code = global_output_path.string() + "/" + algorithm_name + "_forest_identities_code.txt";
-    {
-        ofstream os(forest_code);
-        GenerateForestCode(os, f);
-    }
-
-    /*GenerateCode(algorithm_name, t);
-
-    GenerateConditionsActionsCode(algorithm_name, rs);*/
+    // TODO: Update GenerateConditionsActionsCode to generate also conditions without ifs
+    GenerateConditionsActionsCode(algorithm_name, rs);
 
 	return EXIT_SUCCESS;
 }
