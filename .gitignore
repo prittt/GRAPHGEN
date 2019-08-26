@@ -1,3 +1,7 @@
+#############################
+# Begin: Visual Studio      #
+#############################
+
 **/*.vcxproj
 **/*.filters
 **/*.sln
@@ -11,6 +15,30 @@
 /[Bb]in*
 /[Bb]uild*
 
+#############################
+# End: Visual Studio        #
+#############################
+
+#############################
+# Begin: Documentation      #
+#############################
+
+/doc/html*
+/doc/latex*
+/doc/man*
+
+/doc/*.tmp
+/doc/doxygen/*.pdf
+/doc/doxygen/doxygen_log.txt
+
+#############################
+# End: Documentation        #
+#############################
+
+#############################
+# Begin: Others             #
+#############################
+
 /CMakeCache.txt
 /cmake_install.cmake
 /CMakeFiles
@@ -20,3 +48,7 @@
 /outputs
 /outputs.zip
 /outputs_
+
+#############################
+# End: Others               #
+#############################
