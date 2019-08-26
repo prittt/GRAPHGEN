@@ -76,7 +76,7 @@ set(CMAKE_FOLDER "")
 # --------------------
 # Project
 # --------------------
-add_library(GRAPHSGEN STATIC "")
+add_library(GRAPHSGEN STATIC "${CMAKE_INSTALL_PREFIX}/config.yaml")
 target_include_directories(GRAPHSGEN PUBLIC src/GRAPHSGEN)
 add_subdirectory(src/GRAPHSGEN)
 
@@ -96,6 +96,7 @@ set_property(TARGET ${LABELING_ALGORITHMS} GRAPHSGEN PROPERTY CXX_STANDARD_REQUI
 #add_definitions(-D_CRT_SECURE_NO_WARNINGS) #To suppress 'fopen' opencv warning/bug  
 # Set configuration file	
 configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/config.yaml")
+
 
 #set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set YACCLAB as startup group instead of ALL_BUILD
 #target_link_libraries (${ProjectName} ${OpenCV_LIBS})
