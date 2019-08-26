@@ -37,31 +37,36 @@ using namespace std;
 int main()
 {
     // Read yaml configuration file
-    const string config_file = "config.yaml";
+    string config_file = "config.yaml";
     YAML::Node config;
     try {
-         config = YAML::LoadFile("config.yaml");
+        config = YAML::LoadFile(config_file);
     }
     catch (...) {
-        // TODO add log messages
-        exit(EXIT_FAILURE);  
+        cout << "ERROR: Unable to read configuration file '" << config_file << "'\n";
+        exit(EXIT_FAILURE);
     }
 
-    global_output_path = string(config["paths"]["output"].as<string>());
-
     string algorithm_name = "SAUF";
+    global_output_path = filesystem::path(config["paths"]["output"].as<string>()) / filesystem::path(algorithm_name);
+    filesystem::create_directories(global_output_path);
 
     auto rs = GenerateRosenfeld();
 
-    // Call GRAPHSGEN
+    // Call GRAPHSGEN:
+    // 1) Load or generate Optimal Decision Tree 
     ltree t = GetOdt(rs, algorithm_name);
 
+    // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, t, false, true);
 
-    GenerateCode(algorithm_name, t);
+    // 3) Generate the C++ source code for the ODT
+    GenerateDragCode(algorithm_name, t);
 
+    // 3) Generate the C++ source code for pointers, 
+    // conditions to check and actions to perform
     GenerateConditionsActionsCode(algorithm_name, rs);
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

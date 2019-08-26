@@ -35,13 +35,18 @@
 #include "forest.h"
 #include "rule_set.h"
 
-// This function generates tree/dag code. All nodes must have both sons! 
-void GenerateCode(std::ostream& os, ltree& t);
-// Overloading function
-// "output_file": output file name without extension 
-bool GenerateCode(const std::string& filename_prefix, ltree& t);
+/** @brief Generate the C++ code for the given DRAG (Directed Rooted Acyclic Graph). 
+
+This function works only when all nodes of the DRAG have both left and right child!
+
+@param[in] algorithm_name Name of the algorithm for which the code must be generated, it is used to name the output file.
+@param[in] t Tree for which to generate the C++ code.
+
+@return Whether the operation ended correctly (true) or not (false).
+*/
+bool GenerateDragCode(const std::string& algorithm_name, ltree& t);
 
 // This function generates forest code. TODO: check this!!
-int GenerateForestCode(std::ostream& os, const Forest& f, int start_id = 0);
+int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix = "", int start_id = 0);
 
 #endif // GRAPHSGEN_GRAPH_CODE_GENERATOR_H_

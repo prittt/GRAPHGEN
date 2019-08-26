@@ -136,11 +136,11 @@ bool DrawDagOnFile(const string& output_file, const tree<conact> &t, bool with_n
 	if (verbose) {
 		std::cout << "Drawing DAG: " << output_file << ".. ";
 	}
-	string output_path_lowercase = output_file;
-	std::transform(output_path_lowercase.begin(), output_path_lowercase.end(), output_path_lowercase.begin(), ::tolower);
-	output_path_lowercase = global_output_path.string() + "/" + output_path_lowercase;
-	string code_path = output_path_lowercase + "_dotcode.txt";
-	string pdf_path = output_path_lowercase + ".pdf";
+	//string output_path_lowercase = output_file;
+	//std::transform(output_path_lowercase.begin(), output_path_lowercase.end(), output_path_lowercase.begin(), ::tolower);
+	//output_path_lowercase = global_output_path.string() + "/" + output_path_lowercase;
+	filesystem::path code_path = global_output_path / filesystem::path(output_file + "_dotcode.txt");
+    filesystem::path pdf_path  = global_output_path / filesystem::path(output_file + ".pdf");
 	ofstream os(code_path);
 	if (!os) {
 		if (verbose) {
@@ -150,16 +150,16 @@ bool DrawDagOnFile(const string& output_file, const tree<conact> &t, bool with_n
 	}
 	GenerateDotCodeForDag(os, t, with_next);
 	os.close();
-	if (0 != system(string("..\\tools\\dot\\dot -Tpdf \"" + code_path + "\" -o \"" + pdf_path + "\"").c_str())) {
+	if (0 != system(string("..\\tools\\dot\\dot -Tpdf \"" + code_path.string() + "\" -o \"" + pdf_path.string() + "\"").c_str())) {
 		if (verbose) {
-			std::cout << "Unable to generate " + pdf_path + ", stopped\n";
+			std::cout << "Unable to generate " + pdf_path.string() + ", stopped\n";
 		}
 		return false;
 	}
 	if (verbose) {
 		std::cout << "done\n";
 	}
-	remove(code_path.c_str());
+	remove(code_path.string().c_str());
 	return true;
 }
 

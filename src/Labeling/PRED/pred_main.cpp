@@ -83,5 +83,22 @@ int main()
     // TODO: Update GenerateConditionsActionsCode to generate also conditions without ifs
     GenerateConditionsActionsCode(algorithm_name, rs);
 
+    // Create first line constraints
+    constraints first_line_constr;
+    using namespace std;
+    for (const auto& p : rs.ps_) {
+        if (p.GetDy() < 0)
+            first_line_constr[p.name_] = 0;
+    }
+
+    Forest flf(t, rs.ps_, first_line_constr);
+    DrawForestOnFile(algorithm_name + "_first_line_original", flf, true, true);
+
+    string first_line_forest_reduced_code = global_output_path.string() + "/" + algorithm_name + "_first_line_forest_reduced_code.txt";
+    {
+        ofstream os(first_line_forest_reduced_code);
+        GenerateForestCode(os, flf);
+    }
+
 	return EXIT_SUCCESS;
 }
