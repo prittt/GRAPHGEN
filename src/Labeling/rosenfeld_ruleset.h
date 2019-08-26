@@ -26,44 +26,62 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "yaml-cpp/yaml.h"
+#ifndef GRAPHSGEN_ROSENFELD_RULESET_H_
+#define GRAPHSGEN_ROSENFELD_RULESET_H_
+
+#include <string>
 
 #include "graphsgen.h"
 
-#include "rosenfeld_ruleset.h"
-
-using namespace std;
-
-int main()
+rule_set GenerateRosenfeld()
 {
-    // Read yaml configuration file
-    const string config_file = "config.yaml";
-    YAML::Node config;
-    try {
-         config = YAML::LoadFile("config.yaml");
-    }
-    catch (...) {
-        // TODO add log messages
-        exit(EXIT_FAILURE);  
-    }
+    pixel_set rosenfeld_mask{
+        { "p", {-1, -1} }, { "q", {0, -1} }, { "r", {+1, -1} },
+        { "s", {-1, +0} }, { "x", {0, +0} },
+    };
 
-    global_output_path = string(config["paths"]["output"].as<string>());
+    rule_set labeling;
+    labeling.InitConditions(rosenfeld_mask);
 
-    string algorithm_name = "PRED";
+    graph ag = MakeAdjacencies(rosenfeld_mask);
+    auto actions = GenerateAllPossibleLabelingActions(ag);
+    labeling.InitActions(actions);
 
-    auto rs = GenerateRosenfeld();
+    labeling.generate_rules([&](rule_set& rs, uint i) {
+        rule_wrapper r(rs, i);
 
-    // Call GRAPHSGEN
-    ltree t = GetOdt(rs, algorithm_name);
-    string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, false, true);
-    // TODO: PrintStats(t);
+        if (!r["x"]) {
+            r << "nothing";
+            return;
+        }
 
+        auto lag = ag;
+        for (size_t j = 0; j < lag.size(); ++j) {
+            if (((i >> j) & 1) == 0)
+                lag.DetachNode(j);
+        }
+        graph cg = MakeConnectivities(lag);
 
+        connectivity_mat con(rs.conditions);
+        con.data_ = cg.arcs_;
 
-    /*GenerateCode(algorithm_name, t);
+        MergeSet ms(con);
+        ms.BuildMergeSet();
 
-    GenerateConditionsActionsCode(algorithm_name, rs);*/
+        for (const auto& s : ms.mergesets_) {
+            std::string action = "x<-";
+            if (s.empty())
+                action += "newlabel";
+            else {
+                action += s[0];
+                for (size_t i = 1; i < s.size(); ++i)
+                    action += "+" + s[i];
+            }
+            r << action;
+        }
+    });
 
-	return EXIT_SUCCESS;
+    return labeling;
 }
+
+#endif // GRAPHSGEN_ROSENFELD_RULESET_H_
