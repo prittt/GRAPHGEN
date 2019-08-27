@@ -274,11 +274,11 @@ void GenerateConditionsActionsCode(ofstream& os, const rule_set& rs) {
 }
 
 // Overloading function
-bool GenerateConditionsActionsCode(const string& filename_prefix, const rule_set& rs) {
-    string output_path_lowercase = filename_prefix;
-    std::transform(output_path_lowercase.begin(), output_path_lowercase.end(), output_path_lowercase.begin(), ::tolower);
-    output_path_lowercase = global_output_path.string() + "/" + output_path_lowercase;
-    string code_path = output_path_lowercase + "_code.cpp";
+bool GenerateConditionsActionsCode(const string& algorithm_name, const rule_set& rs) {
+    //string output_path_lowercase = filename_prefix;
+    //std::transform(output_path_lowercase.begin(), output_path_lowercase.end(), output_path_lowercase.begin(), ::tolower);
+    //output_path_lowercase = global_output_path.string() + "/" + output_path_lowercase;
+    filesystem::path code_path = global_output_path / filesystem::path(algorithm_name + "_code.cpp");
 
     ofstream os(code_path);
     if (!os) {

@@ -46,7 +46,15 @@ This function works only when all nodes of the DRAG have both left and right chi
 */
 bool GenerateDragCode(const std::string& algorithm_name, ltree& t);
 
-// This function generates forest code. TODO: check this!!
+/** @brief Generate the C++ code for the given Forest.
+
+This function works only when all nodes of the DRAGs constituting the forest have both left and right child!
+
+@param[in] algorithm_name Name of the algorithm for which the code must be generated, it is used to name the output file.
+@param[in] t Tree for which to generate the C++ code.
+
+@return Whether the operation ended correctly (true) or not (false).
+*/
 int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix = "", int start_id = 0);
 
 #endif // GRAPHSGEN_GRAPH_CODE_GENERATOR_H_

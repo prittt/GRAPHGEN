@@ -64,7 +64,7 @@ int main()
     // 3) Generate the C++ source code for the ODT
     GenerateDragCode(algorithm_name, t);
 
-    // 3) Generate the C++ source code for pointers, 
+    // 4) Generate the C++ source code for pointers, 
     // conditions to check and actions to perform
     GenerateConditionsActionsCode(algorithm_name, rs);
 

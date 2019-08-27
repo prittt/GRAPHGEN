@@ -38,8 +38,7 @@
 // This function generates code for conditions and actions' macros and rows' pointers
 void GenerateConditionsActionsCode(std::ofstream& os, const rule_set& rs);
 // Overloading function
-bool GenerateConditionsActionsCode(const std::string& filename_prefix, const rule_set& rs);
-
+bool GenerateConditionsActionsCode(const std::string& algorithm_name, const rule_set& rs);
 
 bool GenerateActionsForCtbe(const std::string& filename, const rule_set& rs);
 
