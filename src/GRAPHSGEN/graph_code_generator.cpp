@@ -34,21 +34,99 @@
 
 using namespace std;
 
-// This class allows to sum-up all the data required by the recursive function which generate
+// This class allows to sum-up all the data required by the recursive functions that generate
 // the DRAG source code, thus simplifying its signature/call.
 class GenerateCodeClass {
+    bool with_gotos_;
     std::string prefix_;
 
+    // printed_node keep tracks of the nodes that have already been written in the C++ source code and allows to avoid 
+    // duplicated nodes in the final result. Indeed, the same node can be pointed by multiple nodes in the DAG but it 
+    // will have to appear only once in the final code.
+    std::map<ltree::node*, int> printed_nodes_;
+
+    // nodes_requring_labels keep tracks of the DAG nodes that are pointed by other nodes and thus need to have a label.
+    // This map is populated by the ChekNodesTraversalRec procedure.
+    std::map<ltree::node*, bool> nodes_requiring_labels_;
+
+    nodeid id_;
+
 public:
+
+    GenerateCodeClass(bool with_gotos, std::string prefix, map<ltree::node*, int> printed_nodes) :
+        with_gotos_(with_gotos),
+        prefix_(prefix),
+        printed_nodes_(printed_nodes)
+    {}
+
+    //GenerateCodeClass(bool with_gotos, std::string prefix, map<ltree::node*, int> printed_nodes, std::map<ltree::node*, bool> nodes_requiring_labels) :
+    //    with_gotos_(with_gotos),
+    //    prefix_(prefix),
+    //    printed_nodes_(printed_nodes),
+    //    nodes_requiring_labels_(nodes_requiring_labels)
+    //{}
+
+    void Clear() {
+        ClearPrintedNodes();
+        ClearNodesRequiringLabels();
+        ClearId();
+    }
+
+    void ClearPrintedNodes() {
+        printed_nodes_.clear();
+    }
+
+    void ClearNodesRequiringLabels() {
+        nodes_requiring_labels_.clear();
+    }
+
+    void ClearId() {
+        id_.Clear();
+    }
+
+    void SetId(int id) {
+        id_.SetId(id);
+    }
+
+    int NextId() {
+        return id_.next();
+    }
+
+    int GetId() {
+        return id_.get();
+    }
+
     void SetPrefix(std::string prefix) {
         if (!prefix.empty() && prefix.back() != '_') {
             prefix += '_';
         }
         prefix_ = std::move(prefix);
     }
+
+    void SetWithGotos(bool with_gotos) {
+        with_gotos_ = with_gotos;
+    }
+
+    bool WithGotos() {
+        return with_gotos_;
+    }
+
+    auto& GetNodeRequiringLabelsMap() {
+        return nodes_requiring_labels_;
+    }
+
+    auto& GetPrintedNodeMap() {
+        return printed_nodes_;
+    }
+
+    std::string& GetPrefix() {
+        return prefix_;
+    }
 };
 
-// If leaves have multiple actions only the first one will be considered
+// This procedure write to the output stream the C++ source exploring recursively the specified DRAG. 
+// When a leaf with multiple actions is found only the first action is considered and write in the
+// output file.
 void GenerateCodeRec(std::ostream& os, ltree::node *n, std::map<ltree::node*, int>& visited_nodes, std::map<ltree::node*, bool>& nodes_requiring_labels, nodeid &id, int tab, bool add_gotos, const std::string& prefix) {
     auto& m = visited_nodes;
     auto& ml = nodes_requiring_labels;
@@ -89,6 +167,64 @@ void GenerateCodeRec(std::ostream& os, ltree::node *n, std::map<ltree::node*, in
             }
             os << " {\n";
             GenerateCodeRec(os, n->left, m, ml, id, tab + 1, add_gotos, prefix);
+            os << string(tab, '\t') << "}\n";
+        }
+        else {
+            // code already exists
+            os << "{\n" << string(tab + 1, '\t') << "goto NODE_" << m[n->left] << ";\n";
+            os << string(tab, '\t') << "}\n";
+        }
+    }
+}
+
+// This procedure write to the output stream the C++ source exploring recursively the specified DRAG. 
+// When a leaf with multiple actions is found only the first action is considered and write in the
+// output file.
+void GenerateCodeRec(std::ostream& os, ltree::node *n, int tab, GenerateCodeClass& gcc) {
+    
+    // Extract needed data from the GenerateCodeClass
+    auto& m = gcc.GetPrintedNodeMap();
+    auto& ml = gcc.GetNodeRequiringLabelsMap();
+    std::string prefix = gcc.GetPrefix();
+    bool add_gotos = gcc.WithGotos();
+
+    if (n->isleaf()) {
+        vector<uint> actions = n->data.actions();
+        os << string(tab, '\t') << "ACTION_" << actions[0] << "\n";
+        if (add_gotos)
+            os << string(tab, '\t') << "goto " << prefix << "tree_" << n->data.next << ";\n";
+    }
+    else {
+        if (ml[n]) {
+            os << string(tab, '\t') << "NODE_" << gcc.GetId() << ":\n";
+        }
+        string condition = n->data.condition;
+        transform(condition.begin(), condition.end(), condition.begin(), ::toupper);
+        os << string(tab, '\t') << "if (CONDITION_" << condition << ")";
+        if (m.find(n->right) == end(m)) {
+            // not found
+            if (!n->right->isleaf()) {
+                m[n->right] = gcc.NextId();
+            }
+            os << " {\n";
+            GenerateCodeRec(os, n->right, tab + 1, gcc);
+            os << string(tab, '\t') << "}\n";
+        }
+        else {
+            // code already exists
+            os << "{\n" << string(tab + 1, '\t') << "goto NODE_" << m[n->right] << ";\n";
+            os << string(tab, '\t') << "}\n";
+        }
+
+        os << string(tab, '\t') << "else";
+
+        if (m.find(n->left) == end(m)) {
+            // not found
+            if (!n->left->isleaf()) {
+                m[n->left] = gcc.NextId();
+            }
+            os << " {\n";
+            GenerateCodeRec(os, n->left, tab + 1, gcc);
             os << string(tab, '\t') << "}\n";
         }
         else {
@@ -144,18 +280,16 @@ bool GenerateDragCode(const string& algorithm_name, ltree& t, std::string prefix
         return false;
     }
 
-    // printed_node keep tracks of the nodes that have already been written in the C++ source code and allows to avoid 
-    // duplicated nodes in the final result. Indeed, the same node can be pointed by multiple nodes in the DAG but it 
-    // will have to appear only once in the final code.
-    std::map<ltree::node*, int> printed_node = { { t.root, 0 } };;
+    // This object wraps all the variables needed by the recursive function GenerateCodeRec and allows to simplify its
+    // following call.
+    GenerateCodeClass gcc(false, prefix, { { t.root, 0 } });
 
-    // nodes_requring_labels keep tracks of the DAG nodes that are pointed by other nodes and thus need to have a label.
-    // This map is populated by the ChekNodesTraversalRec procedure.
-    std::map<ltree::node*, bool> nodes_requiring_labels;
-    CheckNodesTraversalRec(t.root, nodes_requiring_labels);
+    // Populates the nodes_requring_labels to keep tracks of the DAG nodes that are pointed by other nodes and thus need
+    // to have a label
+    CheckNodesTraversalRec(t.root, gcc.GetNodeRequiringLabelsMap());
 
     // This function actually generates and writes in the output stream the C++ source code using pre-calculated data.
-    GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, nodeid(), 2, false, prefix);
+    GenerateCodeRec(os, t.root, 2, gcc);
 
     return true;
 }
