@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,31 +67,31 @@ struct Equivalences {
 using constraints = std::map<std::string, int>;
 
 struct Forest : BaseForest {
-	ltree t_;
-	Equivalences eq_;
+    ltree t_;
+    Equivalences eq_;
 
-	bool separately = false; // Specify if end trees from different groups should be treated separately during Tree2Dag conversion
+    bool separately = false; // Specify if end trees from different groups should be treated separately during Tree2Dag conversion
 
-	std::vector<int> next_tree_; // This vector contains the equivalences between main trees
-	std::vector<ltree> trees_;
+    std::vector<int> next_tree_; // This vector contains the equivalences between main trees
+    std::vector<ltree> trees_;
 
-	std::vector<std::vector<ltree>> end_trees_;
-	std::vector<std::vector<int>> end_next_trees_; // This vector contains the equivalences between end trees
-	std::vector<std::vector<int>> main_trees_end_trees_mapping_; // This is the mapping between main trees and end trees
+    std::vector<std::vector<ltree>> end_trees_;
+    std::vector<std::vector<int>> end_next_trees_; // This vector contains the equivalences between end trees
+    std::vector<std::vector<int>> main_trees_end_trees_mapping_; // This is the mapping between main trees and end trees
 
-	Forest(ltree t, const pixel_set& ps, const constraints& initial_constraints = {}); // Initial_constraints are useful to create particular forests such as the first line forest
+    Forest(ltree t, const pixel_set& ps, const constraints& initial_constraints = {}); // Initial_constraints are useful to create particular forests such as the first line forest
 
     void RemoveUselessConditions();
-	void RemoveEndTreesUselessConditions();
+    void RemoveEndTreesUselessConditions();
 
     void UpdateNext(ltree::node* n);
     bool RemoveEqualTrees();
-	bool RemoveEquivalentTrees();
-	bool RemoveTrees(bool(*FunctionPrt)(const ltree::node* n1, const ltree::node* n2));
+    bool RemoveEquivalentTrees();
+    bool RemoveTrees(bool(*FunctionPrt)(const ltree::node* n1, const ltree::node* n2));
 
-	bool RemoveEqualEndTrees();
-	bool RemoveEquivalentEndTrees();
-	bool RemoveEndTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2));
+    bool RemoveEqualEndTrees();
+    bool RemoveEquivalentEndTrees();
+    bool RemoveEndTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2));
 
 
     void InitNextRec(ltree::node* n);
@@ -103,11 +103,42 @@ struct Forest : BaseForest {
     void CreateReducedTrees(const ltree& t, const constraints& initial_constr);
 
 private:
-	bool RemoveEqualEndTreesSeparately();
-	bool RemoveEqualEndTreesJointly();
+    bool RemoveEqualEndTreesSeparately();
+    bool RemoveEqualEndTreesJointly();
 
-	void RebuildDisjointTrees();
-	void RebuildDisjointEndTrees();
+    void RebuildDisjointTrees();
+    void RebuildDisjointEndTrees();
+};
+
+class GenerateForests {
+    //   "f" is the main forest;
+    // "flf" is the first line forest;
+    // "llf" is the last line forest;
+    // Forest f_, flf, llf;
+    
+    // t is the tree from which generate the forests
+    ltree& t_;
+
+    // ps is the pixel set (i.e. the mask) from which
+    // the tree t generates
+    const pixel_set& ps_;
+
+public:
+
+    GenerateForests(ltree t, const pixel_set& ps) : t_(t), ps_(ps)
+    {}
+
+    Forest GetMainForest() {
+
+    }
+
+    Forest GetFirstLineForest() {
+    
+    }
+
+    Forest GetLastLineForest() {
+    
+    }
 };
 
 #endif // !GRAPHSGEN_FOREST_H_
