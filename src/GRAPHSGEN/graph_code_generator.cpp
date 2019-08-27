@@ -49,7 +49,7 @@ public:
 };
 
 // If leaves have multiple actions only the first one will be considered
-void GenerateCodeRec(std::ostream& os, ltree::node *n, std::map<ltree::node*, int>& visited_nodes, std::map<ltree::node*, pair<int, bool>>& nodes_requiring_labels, nodeid &id, int tab, bool add_gotos, const std::string& prefix) {
+void GenerateCodeRec(std::ostream& os, ltree::node *n, std::map<ltree::node*, int>& visited_nodes, std::map<ltree::node*, bool>& nodes_requiring_labels, nodeid &id, int tab, bool add_gotos, const std::string& prefix) {
     auto& m = visited_nodes;
     auto& ml = nodes_requiring_labels;
     if (n->isleaf()) {
@@ -59,7 +59,7 @@ void GenerateCodeRec(std::ostream& os, ltree::node *n, std::map<ltree::node*, in
             os << string(tab, '\t') << "goto " << prefix << "tree_" << n->data.next << ";\n";
     }
     else {
-        if (ml[n].second) {
+        if (ml[n]) {
             os << string(tab, '\t') << "NODE_" << id.get() << ":\n";
         }
         string condition = n->data.condition;
@@ -101,8 +101,8 @@ void GenerateCodeRec(std::ostream& os, ltree::node *n, std::map<ltree::node*, in
 
 // This procedure check and store (inside the m map) the nodes which will require labels, that are nodes 
 // pointed by other nodes inside the DAG. This allows to handle labels/gotos during the generation of the
-// C++ source code. TODO: nodeid seems to be useless in this case. Remove it to simplify the function.
-void CheckNodesTraversalRec(ltree::node *n, std::map<ltree::node*, pair<int, bool>>& m, nodeid &id) {
+// C++ source code.
+void CheckNodesTraversalRec(ltree::node *n, std::map<ltree::node*, bool>& m) {
     if (n->isleaf()) 
         return;
 
@@ -110,24 +110,24 @@ void CheckNodesTraversalRec(ltree::node *n, std::map<ltree::node*, pair<int, boo
     if (m.find(n->right) == end(m)) {
         // not found
         if (!n->right->isleaf()) {
-            m[n->right] = make_pair(id.next(), false);
+            m[n->right] = false;
         }
-        CheckNodesTraversalRec(n->right, m, id);
+        CheckNodesTraversalRec(n->right, m);
     }
     else {
-        m[n->right].second = true;
+        m[n->right] = true;
     }
 
     // Left children
     if (m.find(n->left) == end(m)) {
         // not found
         if (!n->left->isleaf()) {
-            m[n->left] = make_pair(id.next(), false);
+            m[n->left] = false;
         }
-        CheckNodesTraversalRec(n->left, m, id);
+        CheckNodesTraversalRec(n->left, m);
     }
     else {
-        m[n->left].second = true;
+        m[n->left] = true;
     }
 }
 
@@ -151,8 +151,8 @@ bool GenerateDragCode(const string& algorithm_name, ltree& t, std::string prefix
 
     // nodes_requring_labels keep tracks of the DAG nodes that are pointed by other nodes and thus need to have a label.
     // This map is populated by the ChekNodesTraversalRec procedure.
-    std::map<ltree::node*, pair<int, bool>> nodes_requiring_labels;
-    CheckNodesTraversalRec(t.root, nodes_requiring_labels, nodeid());
+    std::map<ltree::node*, bool> nodes_requiring_labels;
+    CheckNodesTraversalRec(t.root, nodes_requiring_labels);
 
     // This function actually generates and writes in the output stream the C++ source code using pre-calculated data.
     GenerateCodeRec(os, t.root, printed_node, nodes_requiring_labels, nodeid(), 2, false, prefix);
@@ -169,12 +169,12 @@ bool GenerateDragCode(const string& algorithm_name, ltree& t) {
 int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, int start_id) {
 
     std::map<ltree::node*, int> printed_node;
-    std::map<ltree::node*, pair<int, bool>> nodes_requiring_labels;
+    std::map<ltree::node*, bool> nodes_requiring_labels;
     nodeid id;
     for (size_t i = 0; i < f.trees_.size(); ++i) {
         const auto& t = f.trees_[i];
         // printed_node[t.root] = id.next();
-        CheckNodesTraversalRec(t.root, nodes_requiring_labels, id);
+        CheckNodesTraversalRec(t.root, nodes_requiring_labels);
     }
 
     //#define finish_condition(n) if ((c+=2) >= w - 2) { if (c > w - 2) { goto break_0_##n; } else { goto break_1_##n; } }
@@ -191,14 +191,14 @@ int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, in
 
     // Final trees
     std::map<ltree::node*, int> printed_node_end_trees;
-    std::map<ltree::node*, pair<int, bool>> nodes_requiring_labels_end_trees;
+    std::map<ltree::node*, bool> nodes_requiring_labels_end_trees;
     id.Clear();
     for (size_t tg = 0; tg < f.end_trees_.size(); ++tg) {
         const auto& cur_trees = f.end_trees_[tg];
         for (size_t i = 0; i < cur_trees.size(); ++i) {
             const auto& t = cur_trees[i];
             // printed_node_end_trees[t.root] = id.next();
-            CheckNodesTraversalRec(t.root, nodes_requiring_labels_end_trees, id);
+            CheckNodesTraversalRec(t.root, nodes_requiring_labels_end_trees);
         }
     }
 
