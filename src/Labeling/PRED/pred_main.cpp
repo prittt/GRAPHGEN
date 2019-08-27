@@ -40,36 +40,47 @@ int main()
     const string config_file = "config.yaml";
     YAML::Node config;
     try {
-         config = YAML::LoadFile("config.yaml");
+         config = YAML::LoadFile(config_file);
     }
     catch (...) {
-        // TODO add log messages
+        cout << "ERROR: Unable to read configuration file '" << config_file << "'\n";
         exit(EXIT_FAILURE);  
     }
 
-    global_output_path = string(config["paths"]["output"].as<string>());
-
     string algorithm_name = "PRED";
+    global_output_path = filesystem::path(config["paths"]["output"].as<string>()) / filesystem::path(algorithm_name);
+    filesystem::create_directories(global_output_path);
 
     auto rs = GenerateRosenfeld();
 
-    // Call GRAPHSGEN
+    // Call GRAPHSGEN:
+    // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
     ltree t = GetOdt(rs, algorithm_name);
+    
+    // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, t, false, true);
-    PrintStats(t);
-
-    LOG("Making forest",
+    
+    // 3) Generate forests of tree (one for the first row and one for all
+    //    the other rows)
+    LOG(algorithm_name + ": making main forest",
         Forest f(t, rs.ps_);
-        for (size_t i = 0; i < f.trees_.size(); ++i) {
-            DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
-        }
-        for (size_t i = 0; i < f.end_trees_.size(); ++i) {
-            for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
-                DrawDagOnFile(algorithm_name + "_end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], false);
-            }
-        }
     );
+
+    // 4) Draw the trees composing the forests into pdf. A single forest 
+    //    contains trees for all the columns (including the start tree for
+    //    the first column) and special trees for the last column
+    for (size_t i = 0; i < f.trees_.size(); ++i) {
+        DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
+    }
+    for (size_t i = 0; i < f.end_trees_.size(); ++i) {
+        for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
+            DrawDagOnFile(algorithm_name + "_end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], false);
+        }
+    }
+
+    // Optionally, print statistics about nodes and leaves of the generated
+    // forests.
     PrintStats(f);
 
     DrawForestOnFile(algorithm_name + "forest", f, true);

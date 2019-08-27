@@ -54,7 +54,7 @@ int main()
     auto rs = GenerateRosenfeld();
 
     // Call GRAPHSGEN:
-    // 1) Load or generate Optimal Decision Tree 
+    // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
     ltree t = GetOdt(rs, algorithm_name);
 
     // 2) Draw the generated tree to pdf
