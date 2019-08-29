@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -40,11 +40,22 @@
 #include "tree.h"
 #include "utilities.h"
 
-// "output_file": output file name without extension 
-// "t": tree<conact> to draw
-// "verbose": to print messages on standard output
-// return true if the process ends correctly, false otherwise
-bool DrawDagOnFile(const std::string& output_file, const tree<conact> &t, bool with_next = false, bool verbose = false);
+/** @brief Generate a pdf file displaying the specified DRAG.
+
+@param[in] output_file Name that the output file should have (without extension).
+@param[in] t DRAG to be drawn.
+@param[in] with_next Whether to add next tree label inside leaves. Default is false.
+@param[in] verbose Whether to print messages on standard output or not. Default is false.
+@param[in] with_next Whether to remove the source (dot)code used to draw the DAG or not. Default is true.
+
+@return Whether the operation ended correctly (true) or not (false).
+*/
+bool DrawDagOnFile(const std::string& output_file,
+                   const tree<conact> &t,
+                   bool with_next = false,
+                   bool verbose = false,
+                   bool delete_dotcode = true);
+
 bool DrawForestOnFile(const std::string& output_file, const Forest& f, bool save_dotcode = false, bool verbose = false);
 
 #endif // !GRAPHSGEN_OUTPUT_GENERATOR_H_
