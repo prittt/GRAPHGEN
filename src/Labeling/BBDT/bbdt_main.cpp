@@ -66,7 +66,11 @@ int main()
 
     // 4) Generate the C++ source code for pointers, 
     // conditions to check and actions to perform
-    GenerateConditionsActionsCode(algorithm_name, rs);
+    pixel_set block_positions{
+          { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
+          { "S", {-2, +0} },{ "x", {+0, +0} }
+    };
+    GeneratePointersConditionsActionsCode(algorithm_name, rs, block_positions);
 
     return EXIT_SUCCESS;
 }
