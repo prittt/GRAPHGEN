@@ -62,7 +62,7 @@ int main()
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, t, false, true, false);
 
-    struct Sticaz {
+    struct RemoveEqualSubtrees {
         std::unordered_map<std::string, ltree::node*> sp_; // string -> pointer
         std::unordered_map<ltree::node*, std::string> ps_; // pointer -> string
         uint nodes_ = 0, leaves_ = 0;
@@ -113,7 +113,7 @@ int main()
         }
     };
 
-    struct Culo {
+    struct FindOptimalDrag {
         std::vector<ltree::node*> lma_; // leaves with multiple actions
         std::unordered_set<ltree::node*> visited_; // utility set to remember already visited nodes
         ltree t_;
@@ -124,7 +124,7 @@ int main()
         uint best_leaves_ = std::numeric_limits<uint>::max();
 
 
-        Culo(ltree t) : t_{ std::move(t) } {
+        FindOptimalDrag(ltree t) : t_{ std::move(t) } {
             GetLeavesWithMultipleActionsRec(t_.root);
         }
 
@@ -151,7 +151,7 @@ int main()
             if (cur_leaf == lma_.size()) {
                 // We have a tree without multiple actions
                 auto t = t_;
-                Sticaz sc;
+                RemoveEqualSubtrees sc;
                 sc.T2D(t.root);
 
                 if (best_nodes_ > sc.nodes_ || (best_nodes_ == sc.nodes_ && best_leaves_ > sc.leaves_)) {
@@ -180,13 +180,13 @@ int main()
     };
 
     auto t2 = t;
-    Sticaz sc;
+    RemoveEqualSubtrees sc;
     sc.T2D(t2.root);
-    DrawDagOnFile("Sticaz", t2, true);
+    DrawDagOnFile("RemoveEqualSubtrees", t2, true);
 
-    Culo c(t2);
+    FindOptimalDrag c(t2);
     c.GenerateAllTrees();
-    DrawDagOnFile("Culo", c.best_tree_, true);
+    DrawDagOnFile("FindOptimalDrag", c.best_tree_, true);
 
     return 0;
 
