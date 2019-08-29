@@ -66,7 +66,7 @@ int main()
 
     // 4) Generate the C++ source code for pointers, 
     // conditions to check and actions to perform
-    GenerateConditionsActionsCode(algorithm_name, rs);
+    GeneratePointersConditionsActionsCode(algorithm_name, rs);
 
     return EXIT_SUCCESS;
 }

@@ -92,7 +92,7 @@ int main()
     }
 
     // TODO: Update GenerateConditionsActionsCode to generate also conditions without ifs
-    GenerateConditionsActionsCode(algorithm_name, rs);
+    GeneratePointersConditionsActionsCode(algorithm_name, rs);
 
     // Create first line constraints
     constraints first_line_constr;
