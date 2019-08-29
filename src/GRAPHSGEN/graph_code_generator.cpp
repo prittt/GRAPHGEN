@@ -122,8 +122,8 @@ public:
     // This procedure write to the output stream the C++ source exploring recursively the specified DRAG. 
     // When a leaf with multiple actions is found only the first action is considered and write in the
     // output file.
-    void GenerateCodeRec(std::ostream& os, ltree::node *n, int tab) {
-
+    void GenerateCodeRec(std::ostream& os, ltree::node *n, int tab) 
+    {
         // Extract needed data from the GenerateCodeClass
         auto& m = printed_nodes_;
         auto& ml = nodes_requiring_labels_;
@@ -134,84 +134,50 @@ public:
             if (with_gotos_) {
                 os << string(tab, '\t') << "goto " << prefix_ << "tree_" << n->data.next << ";\n";
             }
+            return;
         }
-        else {
+
+        if (m.find(n) == end(m)) {
+            // code not generated yet
             if (ml[n]) {
-                os << string(tab, '\t') << "NODE_" << GetId() << ":\n";
+                // The node will be accessed more than once, so we store its Id in a map to remember that
+                // we already generated the corresponding code
+                m[n] = NextId();
+                os << string(tab, '\t') << "NODE_" << m[n] << ":\n";
             }
             string condition = n->data.condition;
             transform(condition.begin(), condition.end(), condition.begin(), ::toupper);
-            os << string(tab, '\t') << "if (CONDITION_" << condition << ")";
-            if (m.find(n->right) == end(m)) {
-                // not found
-                if (!n->right->isleaf()) {
-                    m[n->right] = NextId();
-                }
-                os << " {\n";
-                GenerateCodeRec(os, n->right, tab + 1);
-                os << string(tab, '\t') << "}\n";
-            }
-            else {
-                // code already exists
-                os << "{\n" << string(tab + 1, '\t') << "goto NODE_" << m[n->right] << ";\n";
-                os << string(tab, '\t') << "}\n";
-            }
-
-            os << string(tab, '\t') << "else";
-
-            if (m.find(n->left) == end(m)) {
-                // not found
-                if (!n->left->isleaf()) {
-                    m[n->left] = NextId();
-                }
-                os << " {\n";
-                GenerateCodeRec(os, n->left, tab + 1);
-                os << string(tab, '\t') << "}\n";
-            }
-            else {
-                // code already exists
-                os << "{\n" << string(tab + 1, '\t') << "goto NODE_" << m[n->left] << ";\n";
-                os << string(tab, '\t') << "}\n";
-            }
+            os << string(tab, '\t') << "if (CONDITION_" << condition << ") {\n";
+            GenerateCodeRec(os, n->right, tab + 1);
+            os << string(tab, '\t') << "}\n";
+            os << string(tab, '\t') << "else {\n";
+            GenerateCodeRec(os, n->left, tab + 1);
+            os << string(tab, '\t') << "}\n";
+        }
+        else {
+            // code already exists
+            os << string(tab, '\t') << "goto NODE_" << m[n] << ";\n";
         }
     }
 
-    // This procedure check and store (inside the m map) the nodes which will require labels, that are nodes 
-    // pointed by other nodes inside the DAG. This allows to handle labels/gotos during the generation of the
-    // C++ source code.
-    void CheckNodesTraversalRec(ltree::node *n) {
-        auto& m = nodes_requiring_labels_;
+    // This procedure checks and stores (inside the nodes_requiring_labels_ map) the nodes which will require labels, 
+    // that are nodes pointed by other nodes inside the DAG. This allows to handle labels/gotos during the generation 
+    // of the C++ source code.
+    void CheckNodesTraversalRec(ltree::node *n) 
+    {
+        auto& ml = nodes_requiring_labels_;
 
         if (n->isleaf())
             return;
 
-        m[n] = m.find(n) != end(m);
-
-        CheckNodesTraversalRec(n->left);
-        CheckNodesTraversalRec(n->right);
-
-    //    // Right child
-    //    if (m.find(n->right) == end(m)) {
-    //        // not found
-    //        if (!n->right->isleaf()) {
-    //        }
-    //        
-    //    }
-    //    else {
-    //        m[n->right] = true;
-    //    }
-
-    //    // Left child
-    //    if (m.find(n->left) == end(m)) {
-    //        // not found
-    //        if (!n->left->isleaf()) {
-    //            m[n->left] = false;
-    //        }
-    //        CheckNodesTraversalRec(n->left);
-    //    }
-    //    else {
-    //        m[n->left] = true;
-    //    }
+        if (ml.find(n) != end(ml)) {
+            ml[n] = true;
+        }
+        else {
+            ml[n] = false;
+            CheckNodesTraversalRec(n->left);
+            CheckNodesTraversalRec(n->right);
+        }
     }
 
 };
