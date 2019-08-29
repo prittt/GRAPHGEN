@@ -80,7 +80,7 @@ add_library(GRAPHSGEN STATIC "${CMAKE_INSTALL_PREFIX}/config.yaml")
 target_include_directories(GRAPHSGEN PUBLIC src/GRAPHSGEN)
 add_subdirectory(src/GRAPHSGEN)
 
-set(LABELING_ALGORITHMS SAUF PRED CACHE INTERNAL ON FORCE)
+set(LABELING_ALGORITHMS SAUF PRED BBDT CACHE INTERNAL ON FORCE)
 foreach(ALGO ${LABELING_ALGORITHMS})
 	add_executable(${ALGO} "")
 	set_target_properties(${ALGO} PROPERTIES FOLDER "Labeling")
