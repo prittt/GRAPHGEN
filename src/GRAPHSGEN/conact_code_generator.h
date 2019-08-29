@@ -30,16 +30,21 @@
 #define GRAPHSGEN_CONACT_CODE_GENERATOR_H_
 
 #include <ostream>
+#include <optional>
 
 #include "conact_tree.h"
 #include "forest.h"
 #include "rule_set.h"
 
 // This function generates code for conditions and actions' macros and rows' pointers
-void GenerateConditionsActionsCode(std::ofstream& os, const rule_set& rs);
-// Overloading function
-bool GenerateConditionsActionsCode(const std::string& algorithm_name, const rule_set& rs);
+//void GenerateConditionsActionsCode(std::ofstream& os, const rule_set& rs);
+//// Overloading function
+// names contains the position in the labels image corresponding to the names used in labeling actions. 
+// It is necessary to handle blocks names and defaults to mask pixel set if not provided. 
+bool GeneratePointersConditionsActionsCode(const std::string& algorithm_name, 
+                                           const rule_set& rs, 
+                                           std::optional<pixel_set> names = std::nullopt);
 
-bool GenerateActionsForCtbe(const std::string& filename, const rule_set& rs);
+//bool GenerateActionsForCtbe(const std::string& filename, const rule_set& rs);
 
 #endif // GRAPHSGEN_CONACT_CODE_GENERATOR_H_
