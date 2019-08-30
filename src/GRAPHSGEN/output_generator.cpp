@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,8 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "output_generator.h"
+
+#include <optional>
 
 using namespace std;
 
@@ -127,6 +129,20 @@ void GenerateDotCodeForDag(std::ostream& os, const tree<conact>& t, bool with_ne
     os << "}\n";
 }
 
+string GetDotCallString(const std::string& code_path, const std::string& output_path = "")
+{
+    string dot_call = "..\\tools\\dot\\dot -Tpdf \"" + code_path + "\"";
+    if(output_path != ""){
+        dot_call += " -o \"" + output_path + "\"";
+    }
+    //std::cout << dot_call;
+    return dot_call;
+}
+
+string GetDotCallString(const filesystem::path& code_path, filesystem::path output_path = "") {
+    return GetDotCallString(code_path.string(), output_path.string());
+}
+
 bool DrawDagOnFile(const string& output_file, const tree<conact> &t, bool with_next, bool verbose, bool delete_dotcode) {
 
     if (verbose) {
@@ -143,7 +159,7 @@ bool DrawDagOnFile(const string& output_file, const tree<conact> &t, bool with_n
     }
     GenerateDotCodeForDag(os, t, with_next);
     os.close();
-    if (0 != system(string("..\\tools\\dot\\dot -Tpdf \"" + code_path.string() + "\" -o \"" + pdf_path.string() + "\"").c_str())) {
+    if (0 != system(GetDotCallString(code_path, pdf_path).c_str())) {
         if (verbose) {
             std::cout << "Unable to generate " + pdf_path.string() + ", stopped\n";
         }
