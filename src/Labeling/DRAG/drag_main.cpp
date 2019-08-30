@@ -31,7 +31,12 @@
 #include "graphsgen.h"
 
 #include "grana_ruleset.h"
+
 #include <unordered_set>
+#include <mutex>
+#include <thread>
+
+#include "pool.h"
 
 using namespace std;
 
@@ -123,6 +128,8 @@ int main()
         uint best_nodes_ = std::numeric_limits<uint>::max();
         uint best_leaves_ = std::numeric_limits<uint>::max();
 
+        std::mutex best_tree_mutex_;
+        thread_pool *pool_ = nullptr;
 
         FindOptimalDrag(ltree t) : t_{ std::move(t) } {
             GetLeavesWithMultipleActionsRec(t_.root);
@@ -146,53 +153,76 @@ int main()
             GetLeavesWithMultipleActionsRec(n->right);
         }
 
-        void GenerateAllTrees(int cur_leaf = 0) 
+        void ReduceAndUpdateBest(ltree t)
+        {
+            RemoveEqualSubtrees sc;
+            sc.T2D(t.root);
+
+            std::lock_guard<std::mutex> lock(best_tree_mutex_);
+            if (best_nodes_ > sc.nodes_ || (best_nodes_ == sc.nodes_ && best_leaves_ > sc.leaves_)) {
+                best_nodes_ = sc.nodes_;
+                best_leaves_ = sc.leaves_;
+                best_tree_ = std::move(t);
+                std::cout << "\rbest_nodes_ = " << best_nodes_ << " - best_leaves_ = " << best_leaves_ << "\n";
+            }
+
+            if (counter_ == 0) {
+                std::cout << "  0%";
+            }
+
+            if (++counter_ % 79626 == 0) {
+                std::cout << "\r" << std::setfill(' ') << std::setw(3) << counter_ / 79626 << "%";
+            }
+        }
+
+        void GenerateAllTreesRec(int cur_leaf) 
         {
             if (cur_leaf == lma_.size()) {
                 // We have a tree without multiple actions
-                auto t = t_;
-                RemoveEqualSubtrees sc;
-                sc.T2D(t.root);
 
-                if (best_nodes_ > sc.nodes_ || (best_nodes_ == sc.nodes_ && best_leaves_ > sc.leaves_)) {
-                    best_nodes_ = sc.nodes_;
-                    best_leaves_ = sc.leaves_;
-                    best_tree_ = std::move(t);
-                }
+                pool_->enqueue_work(&FindOptimalDrag::ReduceAndUpdateBest, this, t_);
 
-                if (++counter_ % 1000 == 0) {
-                    std::cout << "\r" << counter_ / 1000;
-                }
                 return;
             }
 
             auto action_bs = lma_[cur_leaf]->data.action;
             auto actions = lma_[cur_leaf]->data.actions(); // vector of actions ("uint")
+            
             for (size_t i = 0; i < actions.size(); ++i) {
-                // Do the first choice
                 bitset<128> bs;
                 bs.set(actions[i] - 1);
                 lma_[cur_leaf]->data.action = bs;
-                GenerateAllTrees(cur_leaf + 1);
+                GenerateAllTreesRec(cur_leaf + 1);
             }
             lma_[cur_leaf]->data.action = action_bs;
         }
+
+        void GenerateAllTrees()
+        {
+            pool_ = new thread_pool(8, 8);
+            GenerateAllTreesRec(0);
+            delete pool_;
+        }
     };
 
-    auto t2 = t;
-    RemoveEqualSubtrees sc;
-    sc.T2D(t2.root);
-    DrawDagOnFile("RemoveEqualSubtrees", t2, true);
+    TLOG("Creating DRAG using equivalences",
+        std::cout << "\n";
+        auto t2 = t;
+        RemoveEqualSubtrees sc;
+        sc.T2D(t2.root);
+        DrawDagOnFile("RemoveEqualSubtrees", t2, true);
+        std::cout << "After equal subtrees removal: nodes = " << sc.nodes_ << " - leaves = " << sc.leaves_ << "\n";
 
-    FindOptimalDrag c(t2);
-    c.GenerateAllTrees();
-    DrawDagOnFile("FindOptimalDrag", c.best_tree_, true);
-
+        FindOptimalDrag c(t2);
+        c.GenerateAllTrees();
+        DrawDagOnFile("FindOptimalDrag", c.best_tree_, true);
+        std::cout << "\n";
+    );
     return 0;
 
     // 2a) Convert Optimal Decision Tree into Directed Rooted Acyclic Graph
     //     using a exhaustive strategy 
-    LOG("Creating DRAG using identites",
+    TLOG("Creating DRAG using identites",
         Tree2DagUsingIdentities(t);
     );
     string drag_filename = algorithm_name + "_drag_identities";
