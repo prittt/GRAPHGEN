@@ -246,7 +246,7 @@ int main()
 
         void GenerateAllTrees()
         {
-            pool_ = new thread_pool(8, 8);
+            pool_ = new thread_pool();
             GenerateAllTreesRec(0);
             delete pool_;
         }
@@ -304,9 +304,24 @@ int main()
         unsigned length_;
     };
 
-    auto t2 = t;
-    RemoveEqualSubtrees sc;
-    sc.T2D(t2.root);
+    /*TLOG("Creating DRAG using equivalences",*/
+        std::cout << "\n";
+        auto t2 = t;
+        RemoveEqualSubtrees sc;
+        sc.T2D(t2.root);
+        DrawDagOnFile("RemoveEqualSubtrees", t2, false);
+        std::cout << "After equal subtrees removal: nodes = " << sc.nodes_ << " - leaves = " << sc.leaves_ << "\n";
+
+        FindOptimalDrag c(t2);
+        c.GenerateAllTrees();
+        DrawDagOnFile("FindOptimalDrag", c.best_tree_, false);
+        std::cout << "\n";
+    /*);*/
+    return 0;
+
+    //auto t2 = t;
+    //RemoveEqualSubtrees sc;
+    //sc.T2D(t2.root);
 
     MagicOptimizer mo;
     mo.CollectStatsRec(t2.root);
@@ -361,7 +376,7 @@ int main()
                     std::vector<uint> intersection(nsets);
                     // This can be done by hand breaking the loop after finding the first intersection
                     auto it = std::set_intersection(begin(vlt[i].second), end(vlt[i].second), begin(vlt[j].second), end(vlt[j].second), begin(intersection));
-                    std::cout << " ";
+                    // std::cout << " ";
                     if (it != begin(intersection)) {
                         // Non empty intersection
                         ufl.Merge(i, j);
@@ -371,8 +386,30 @@ int main()
         }
     }
     auto nsets_two = ufl.Flatten();
+    // Appartengono tutte alla stessa classe ? :(
 
+    // Vectors of vector of leaves with multiple actions
+    std::vector<std::vector<ltree::node*>> vlma(nsets_two);
+    for (uint i = 0; i < vlt.size(); ++i) {
+        if (vlt[i].first->data.actions().size() > 1) {
+            int leaf_class = ufl.GetSet(i);
+            vlma[leaf_class].push_back(vlt[i].first);
+        }
+    }
 
+    for (uint i = 0; i < vlma.size(); ++i) {
+        if (vlma[i].size() != 0) {
+            FindOptimalDrag tmp(t2); // TODO, change it: Calling this we call useless code that populate the lma_ vector.
+            tmp.lma_ = vlma[i];
+            tmp.GenerateAllTrees();
+            t2 = tmp.best_tree_;
+            DrawDagOnFile("optimal" + to_string(i), t2, false);
+            std::cout << "\n";
+        }
+    }
+
+    DrawDagOnFile("final_simplified_backtrack", t2, false);
+    std::cout << "\n";
 
     return 0;
     /*
