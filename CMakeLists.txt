@@ -89,9 +89,19 @@ foreach(ALGO ${LABELING_ALGORITHMS})
 	target_link_libraries (${ALGO} GRAPHSGEN yaml-cpp)
 endforeach()
 
+set(THINNING_ALGORITHMS ZS CACHE INTERNAL ON FORCE)
+foreach(ALGO ${THINNING_ALGORITHMS})
+	add_executable(${ALGO} "")
+	set_target_properties(${ALGO} PROPERTIES FOLDER "Thinning")
+	include_directories(src/Thinning)
+	add_subdirectory(src/Thinning/${ALGO})
+	target_link_libraries (${ALGO} GRAPHSGEN yaml-cpp)
+endforeach()
+
+
 # Check for c++17 support (TODO check if it actually works)
-set_property(TARGET ${LABELING_ALGORITHMS} GRAPHSGEN PROPERTY CXX_STANDARD 17)
-set_property(TARGET ${LABELING_ALGORITHMS} GRAPHSGEN PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHSGEN PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHSGEN PROPERTY CXX_STANDARD_REQUIRED ON)
 
 #add_definitions(-D_CRT_SECURE_NO_WARNINGS) #To suppress 'fopen' opencv warning/bug  
 # Set configuration file	

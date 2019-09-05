@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,14 +26,12 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "ruleset_generator.h"
-
 #include <string>
 
-using namespace std;
+#include "graphsgen.h"
 
 // First subiteration
-rule_set generate_thin_zs()
+rule_set GenerateZs()
 {
     pixel_set zs_mask {
         { "P9", {-1, -1} }, { "P2", {0, -1} }, { "P3", {+1, -1} },
