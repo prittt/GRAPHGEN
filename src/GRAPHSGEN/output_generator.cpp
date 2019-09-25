@@ -114,9 +114,9 @@ void GenerateDotCodeForDagRec(std::ostream& os, tree<conact>::node *n, std::map<
 
 // All nodes must have both sons! 
 void GenerateDotCodeForDag(std::ostream& os, const tree<conact>& t, bool with_next = false) {
-    os << "digraph dag{\n";
-    os << "\tsubgraph tree{\n";
-
+    os << "digraph dag{\n"
+          "bgcolor=\"transparent\""
+          "\tsubgraph tree{\n";
     std::map<tree<conact>::node*, int> printed_node = { { t.root, 0 } };
     std::vector<std::string> links;
     GenerateDotCodeForDagRec(os, t.root, printed_node, links, nodeid(), with_next, 2);
@@ -131,7 +131,7 @@ void GenerateDotCodeForDag(std::ostream& os, const tree<conact>& t, bool with_ne
 
 string GetDotCallString(const std::string& code_path, const std::string& output_path = "")
 {
-    string dot_call = "..\\tools\\dot\\dot -Tpdf \"" + code_path + "\"";
+    string dot_call = "..\\tools\\dot\\dot -Tsvg \"" + code_path + "\"";
     if(output_path != ""){
         dot_call += " -o \"" + output_path + "\"";
     }
@@ -143,13 +143,15 @@ string GetDotCallString(const filesystem::path& code_path, filesystem::path outp
     return GetDotCallString(code_path.string(), output_path.string());
 }
 
+// TODO eliminare i booleani e farli diventare un singolo parametro
+// TODO parametro per decidere il formato del file di output
 bool DrawDagOnFile(const string& output_file, const tree<conact> &t, bool with_next, bool verbose, bool delete_dotcode) {
 
     if (verbose) {
         std::cout << "Drawing DAG: " << output_file << ".. ";
     }
-    filesystem::path code_path = global_output_path / filesystem::path(output_file + "_dotcode.txt");
-    filesystem::path pdf_path  = global_output_path / filesystem::path(output_file + ".pdf");
+    filesystem::path code_path = conf.GetDotCodePath(output_file);
+    filesystem::path pdf_path = conf.GetDotOutPath(output_file);
     ofstream os(code_path);
     if (!os) {
         if (verbose) {
@@ -178,11 +180,8 @@ bool DrawMainForestOnFile(const string& output_file, const Forest& f, bool save_
     if (verbose) {
         std::cout << "Drawing Main Forest: " << output_file << ".. ";
     }
-    string output_path_lowercase = output_file;
-    std::transform(output_path_lowercase.begin(), output_path_lowercase.end(), output_path_lowercase.begin(), ::tolower);
-    output_path_lowercase = global_output_path.string() + "/" + output_path_lowercase;
-    string code_path = output_path_lowercase + "_dotcode.txt";
-    string pdf_path = output_path_lowercase + ".pdf";
+    filesystem::path code_path = conf.GetDotCodePath(output_file);
+    filesystem::path pdf_path = conf.GetDotOutPath(output_file);
     ofstream os(code_path);
     if (!os) {
         if (verbose) {
@@ -191,8 +190,9 @@ bool DrawMainForestOnFile(const string& output_file, const Forest& f, bool save_
         return false;
     }
     os << "digraph dag{\n"
-        "\tranksep = 1.5;\n"
-        "\tsubgraph tree{\n";
+          "bgcolor=\"transparent\""
+          "\tranksep = 1.5;\n"
+          "\tsubgraph tree{\n";
 
     nodeid id;
     std::map<ltree::node*, int> printed_node;
@@ -218,9 +218,9 @@ bool DrawMainForestOnFile(const string& output_file, const Forest& f, bool save_
     os << "}\n";
 
     os.close();
-    if (0 != system(string("..\\tools\\dot\\dot -Tpdf \"" + code_path + "\" -o \"" + pdf_path + "\"").c_str())) {
+    if (0 != system(GetDotCallString(code_path, pdf_path).c_str())) {
         if (verbose) {
-            std::cout << "Unable to generate " + pdf_path + ", stopped\n";
+            std::cout << "Unable to generate " + pdf_path.string() + ", stopped\n";
         }
         return false;
     }
@@ -229,7 +229,7 @@ bool DrawMainForestOnFile(const string& output_file, const Forest& f, bool save_
     }
 
     if (!save_dotcode) {
-        remove(code_path.c_str());
+        remove(code_path.string().c_str());
     }
     return true;
 }
@@ -239,11 +239,8 @@ bool DrawEndForestOnFile(const string& output_file, const Forest& f, bool save_d
     if (verbose) {
         std::cout << "Drawing End Forest: " << output_file << ".. ";
     }
-    string output_path_lowercase = output_file;
-    std::transform(output_path_lowercase.begin(), output_path_lowercase.end(), output_path_lowercase.begin(), ::tolower);
-    output_path_lowercase = global_output_path.string() + "/" + output_path_lowercase;
-    string code_path = output_path_lowercase + "_dotcode.txt";
-    string pdf_path = output_path_lowercase + ".pdf";
+    filesystem::path code_path = conf.GetDotCodePath(output_file);
+    filesystem::path pdf_path = conf.GetDotOutPath(output_file);
     ofstream os(code_path);
     if (!os) {
         if (verbose) {
@@ -280,9 +277,9 @@ bool DrawEndForestOnFile(const string& output_file, const Forest& f, bool save_d
     os << "}\n";
 
     os.close();
-    if (0 != system(string("..\\tools\\dot\\dot -Tpdf \"" + code_path + "\" -o \"" + pdf_path + "\"").c_str())) {
+    if (0 != system(GetDotCallString(code_path, pdf_path).c_str())) {
         if (verbose) {
-            std::cout << "Unable to generate " + pdf_path + ", stopped\n";
+            std::cout << "Unable to generate " + pdf_path.string() + ", stopped\n";
         }
         return false;
     }
@@ -291,7 +288,7 @@ bool DrawEndForestOnFile(const string& output_file, const Forest& f, bool save_d
     }
 
     if (!save_dotcode) {
-        remove(code_path.c_str());
+        remove(code_path.string().c_str());
     }
     return true;
 }

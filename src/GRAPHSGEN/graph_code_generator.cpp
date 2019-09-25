@@ -188,7 +188,7 @@ public:
 // generation, so it is useless during the code generation of a tree.
 bool GenerateDragCode(const string& algorithm_name, ltree& t, std::string prefix)
 {
-    filesystem::path code_path = global_output_path / filesystem::path(algorithm_name + "_code.inc.h");
+    filesystem::path code_path = conf.treecode_path_;
 
     ofstream os(code_path);
     if (!os) {

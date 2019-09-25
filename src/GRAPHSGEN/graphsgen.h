@@ -1,8 +1,10 @@
 #ifndef GRAPHSGEN_GRAPHSGEN_H_
 #define GRAPHSGEN_GRAPHSGEN_H_
 
+#include "base_ruleset.h"
 #include "conact_code_generator.h"
 #include "conact_tree.h"
+#include "config_data.h"
 #include "connectivity_graph.h"
 #include "drag_statistics.h"
 #include "drag2optimal.h"

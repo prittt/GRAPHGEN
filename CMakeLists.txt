@@ -1,4 +1,4 @@
-# Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
+# Copyright(c) 2018 - 2019 Federico Bolelli, Stefano Allegretti, Costantino Grana
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -72,21 +72,21 @@ add_subdirectory(3rdparty)
 set(CMAKE_FOLDER "")
 # --------------------
 
-
 # --------------------
 # Project
 # --------------------
 add_library(GRAPHSGEN STATIC "${CMAKE_INSTALL_PREFIX}/config.yaml")
 target_include_directories(GRAPHSGEN PUBLIC src/GRAPHSGEN)
 add_subdirectory(src/GRAPHSGEN)
+target_link_libraries(GRAPHSGEN yaml-cpp)
 
-set(LABELING_ALGORITHMS SAUF PRED BBDT DRAG CACHE INTERNAL ON FORCE)
+set(LABELING_ALGORITHMS SAUF PRED BBDT DRAG Tagliatelle CACHE INTERNAL ON FORCE)
 foreach(ALGO ${LABELING_ALGORITHMS})
 	add_executable(${ALGO} "")
 	set_target_properties(${ALGO} PROPERTIES FOLDER "Labeling")
 	include_directories(src/Labeling)
 	add_subdirectory(src/Labeling/${ALGO})
-	target_link_libraries (${ALGO} GRAPHSGEN yaml-cpp)
+	target_link_libraries (${ALGO} GRAPHSGEN)
 endforeach()
 
 set(THINNING_ALGORITHMS ZS CACHE INTERNAL ON FORCE)
@@ -95,7 +95,7 @@ foreach(ALGO ${THINNING_ALGORITHMS})
 	set_target_properties(${ALGO} PROPERTIES FOLDER "Thinning")
 	include_directories(src/Thinning)
 	add_subdirectory(src/Thinning/${ALGO})
-	target_link_libraries (${ALGO} GRAPHSGEN yaml-cpp)
+	target_link_libraries (${ALGO} GRAPHSGEN)
 endforeach()
 
 
