@@ -73,16 +73,20 @@ struct tree {
 
     // Recursive function to copy a tree. This is required by the copy constructor
     // It works for both trees and dags
-    node *MakeCopyRecursive(node *n, std::unordered_map<node*, node*> &copies) {
+    node *MakeCopyRecursive(node *n, std::unordered_map<node*, node*> &copies, std::vector<node*>& tracked_nodes) {
         if (n == nullptr)
             return nullptr;
 
         if (!copies[n]) {
             node *nn = make_node();
             nn->data = n->data;
-            nn->left = MakeCopyRecursive(n->left, copies);
-            nn->right = MakeCopyRecursive(n->right, copies);
+            nn->left = MakeCopyRecursive(n->left, copies, tracked_nodes);
+            nn->right = MakeCopyRecursive(n->right, copies, tracked_nodes);
             copies[n] = nn;
+            auto it = find(begin(tracked_nodes), end(tracked_nodes), n);
+            if (it != end(tracked_nodes)) {
+                *it = nn;
+            }
         }
         return copies[n];
     }
@@ -92,7 +96,12 @@ struct tree {
     // Copy constructor
     tree(const tree& t) {
         std::unordered_map<node*, node*> copies;
-        root = MakeCopyRecursive(t.root, copies);
+        std::vector<node*> tracked_nodes;
+        root = MakeCopyRecursive(t.root, copies, tracked_nodes);
+    }
+    tree(const tree& t, std::vector<node*>& tracked_nodes) { // Allows to track where the nodes in a tree have been copied to
+        std::unordered_map<node*, node*> copies;
+        root = MakeCopyRecursive(t.root, copies, tracked_nodes);
     }
     tree(tree&& t) {
         swap(*this, t);

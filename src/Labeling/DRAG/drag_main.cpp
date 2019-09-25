@@ -91,6 +91,7 @@ int main()
             }
         };
         unordered_map<ltree::node*, STreeProp> np_;
+        unordered_map<ltree::node*, vector<ltree::node*>> parents_;
 
         STreeProp CollectStatsRec(ltree::node * n) {
             auto it = np_.find(n);
@@ -104,6 +105,8 @@ int main()
                 sp.leaves_.push_back(n);
             }
             else {
+                parents_[n->left].push_back(n);
+                parents_[n->right].push_back(n);
                 sp.conditions_ = n->data.condition;
                 sp += CollectStatsRec(n->left);
                 sp += CollectStatsRec(n->right);
@@ -252,58 +255,6 @@ int main()
         }
     };
 
-    // Union-find (UF)
-    class UF {
-        // Maximum number of labels (included background) = 2^(sizeof(unsigned) x 8)
-    public:
-        UF(unsigned length) : length_{ length } {
-            P_ = new unsigned[length];
-            iota(P_, P_ + length, 0);
-        }
-        ~UF() {
-            delete[] P_;
-        }
-        unsigned GetSet(unsigned index) {
-            return P_[index];
-        }
-
-        unsigned Merge(unsigned i, unsigned j)
-        {
-            // FindRoot(i)
-            while (P_[i] < i) {
-                i = P_[i];
-            }
-
-            // FindRoot(j)
-            while (P_[j] < j) {
-                j = P_[j];
-            }
-
-            if (i < j)
-                return P_[j] = i;
-            return P_[i] = j;
-        }
-
-        unsigned Flatten()
-        {
-            unsigned k = 1;
-            for (unsigned i = 1; i < length_; ++i) {
-                if (P_[i] < i) {
-                    P_[i] = P_[P_[i]];
-                }
-                else {
-                    P_[i] = k;
-                    k = k + 1;
-                }
-            }
-            return k;
-        }
-
-    private:
-        unsigned *P_;
-        unsigned length_;
-    };
-
     auto t2 = t;
     RemoveEqualSubtrees sc;
     sc.T2D(t2.root);
@@ -314,83 +265,200 @@ int main()
     for (const auto& x : mo.np_)
         trees.push_back(x.second);
 
-    UF uf(trees.size());
-    for (uint i = 0; i < trees.size(); ++i) {
-        for (uint j = i + 1; j < trees.size(); ++j) {
-            if (trees[i].equivalent(trees[j])) {
-                uf.Merge(i, j);
+    struct Culo {
+        ltree::node* MergeEquivalentTreesRec(ltree::node* a, ltree::node* b, unordered_map<ltree::node*, ltree::node*> &merged)
+        {
+            auto it = merged.find(a);
+            if (it != end(merged))
+                return it->second;
+
+            auto n = new ltree::node(*a);
+            if (a->isleaf()) {
+                n->data.action &= b->data.action;
+            }
+            else {
+                n->left = MergeEquivalentTreesRec(a->left, b->left, merged);
+                n->right = MergeEquivalentTreesRec(a->right, b->right, merged);
+            }
+            merged[a] = n;
+            return n;
+        }
+
+        void DeleteTreeRec(ltree::node* n, unordered_map<ltree::node*, bool> &deleted)
+        {
+            auto it = deleted.find(n);
+            if (it != end(deleted))
+                return;
+            deleted[n] = true;
+
+            if (!n->isleaf()) {
+                DeleteTreeRec(n->left, deleted);
+                DeleteTreeRec(n->right, deleted);
+            }
+            delete n;
+        }
+
+        void PrintTreeRec(ostream& os, ltree::node* n, set<ltree::node*>& visited, int tab = 0) {
+            os << string(tab, '\t');
+
+            auto it = visited.find(n);
+            if (it != end(visited)) {
+                os << " -> " << n << "\n";
+                return;
+            }
+            visited.insert(n);
+
+            if (n->isleaf()) {
+                os << ". ";
+                auto a = n->data.actions();
+                copy(begin(a), end(a), ostream_iterator<int>(os,", "));
+                os << "\n";
+            }
+            else {
+                os << n->data.condition << "\n";
+                PrintTreeRec(os, n->left, visited, tab + 1);
+                PrintTreeRec(os, n->right, visited, tab + 1);
+            }
+
+        }
+
+        void MergeEquivalentTreesAndUpdateRec(ltree::node* a, ltree::node* b, unordered_map<ltree::node*, vector<ltree::node*>>& parents, unordered_set<ltree::node*>& visited)
+        {
+            auto it = visited.find(a);
+            if (it != end(visited))
+                return;
+            visited.insert(a);
+
+            for (auto& x : parents[b]) {
+                if (x->left == b)
+                    x->left = a;
+                else
+                    x->right = a;
+            }
+
+            if (a->isleaf()) {
+                a->data.action &= b->data.action;
+            }
+            else {
+                MergeEquivalentTreesAndUpdateRec(a->left, b->left, parents, visited);
+                MergeEquivalentTreesAndUpdateRec(a->right, b->right, parents, visited);
             }
         }
-    }
-    auto nsets = uf.Flatten();
 
-    // This map stores for each leaf the set (integer number given by 
-    // the previous UF) of trees from which it belongs to.
-    map<ltree::node*, std::set<uint>> lt;
+        int count = 0;
+        int best_nodes = numeric_limits<int>::max();
+        int best_leaves = numeric_limits<int>::max();
+        void FaiTutto(ltree& t)
+        {
+            MagicOptimizer mo;
+            mo.CollectStatsRec(t.root);
+            vector<MagicOptimizer::STreeProp> trees;
+            for (const auto& x : mo.np_)
+                trees.push_back(x.second);
 
-    // The following nested loops populate the lt map. 
-    // For each tree
-    for (uint i = 0; i < trees.size(); ++i) {
-        // For each leaf 
-        auto& t = trees[i];
-        for (uint j = 0; j < t.leaves_.size(); ++j) {
-            auto& l = t.leaves_[j];
-            lt[l].insert(uf.GetSet(i));
-        }
-    }
+            for (size_t i = 0; i < trees.size(); ) {
+                if (trees[i].conditions_==".") {
+                    trees.erase(begin(trees) + i);
+                    continue;
+                }
+                bool eq = false;
+                for (size_t j = 0; j < trees.size(); ++j) {
+                    if (i != j && trees[i].equivalent(trees[j])) {
+                        eq = true;
+                        break;
+                    }
+                }
+                if (!eq) {
+                    trees.erase(begin(trees) + i);
+                }
+                else {
+                    ++i;
+                }
+            }
 
-    std::vector<pair<ltree::node*, std::set<uint>>> vlt;
-    for (const auto& x : lt) {
-        vlt.push_back(make_pair(x.first, x.second));
-    }
+            sort(begin(trees), end(trees), [](const MagicOptimizer::STreeProp& a, const MagicOptimizer::STreeProp& b) {
+                return a.conditions_.size() > b.conditions_.size();
+            });
 
-    //// FindOptimalDrag here is exploited just to find the vector of leaves with
-    //// multiple actions, no more. 
-    //FindOptimalDrag fod(t2);
-    //auto& leaves = fod.lma_; // vector of leaves with multiple actions
+            bool no_eq = true;
+            for (size_t i = 0; i < trees.size(); ++i) {
+                bool eq = false;
+                size_t j;
+                for (j = i + 1; j < trees.size(); ++j) {
+                    if (trees[i].equivalent(trees[j])) {
+                        no_eq = false;
 
-    UF ufl(vlt.size());
-    // For each leaf look to all the other leaves and if they belong both
-    // to at least one (same) set of trees they must be in the same uf class
-    // all the leaves belonging to the same set will be used to run the 
-    // backtracking approach of the FindOptimalDrag (once per set separately).
-    for (uint i = 0; i < vlt.size(); ++i) {
-        if (vlt[i].first->data.actions().size() > 1) {
-            for (uint j = i + 1; j < vlt.size(); ++j) {
-                if (vlt[j].first->data.actions().size() > 1) {
-                    std::vector<uint> intersection(nsets);
-                    // This can be done by hand breaking the loop after finding the first intersection
-                    auto it = std::set_intersection(begin(vlt[i].second), end(vlt[i].second), begin(vlt[j].second), end(vlt[j].second), begin(intersection));
-                    std::cout << " ";
-                    if (it != begin(intersection)) {
-                        // Non empty intersection
-                        ufl.Merge(i, j);
+                        //DrawDagOnFile("Before", t, true);
+
+                        vector<ltree::node*> tracked_nodes{ trees[i].n_, trees[j].n_ };
+                        ltree t_copy(t, tracked_nodes);
+                        MagicOptimizer mo;
+                        mo.CollectStatsRec(t_copy.root);
+
+                        unordered_set<ltree::node*> visited;
+                        MergeEquivalentTreesAndUpdateRec(tracked_nodes[0], tracked_nodes[1], mo.parents_, visited);
+                        RemoveEqualSubtrees sc;
+                        sc.T2D(t_copy.root);
+
+                        //{ ofstream os("after.txt"); set<ltree::node*> visited; PrintTreeRec(os, t_copy.root, visited); }
+                        //DrawDagOnFile("After", t_copy, true);
+                        FaiTutto(t_copy);
                     }
                 }
             }
+            if (no_eq) {
+                ++count;
+                if (count % 1000 == 0)
+                    cout << "\r" << count;
+                DragStatistics ds(t);
+                if (ds.Nodes() < best_nodes || (ds.Nodes() == best_nodes) && ds.Leaves() < best_leaves) {
+                    best_nodes = ds.Nodes();
+                    best_leaves = ds.Leaves();
+                    DrawDagOnFile("Culo" + zerostr(count, 4), t, true);
+                    cout << count << " - nodes: " << ds.Nodes() << " - leaves: " << ds.Leaves() << "\n";
+                }
+            }
         }
-    }
-    auto nsets_two = ufl.Flatten();
+    };
+
+    Culo c;
+    c.FaiTutto(t2);
+    cout << "Done\n";
+
+    //for (size_t i = 0; i < trees.size(); ) {
+    //    bool eq = false;
+    //    for (size_t j = 0; j < trees.size(); ++j) {
+    //        if (i != j && trees[i].equivalent(trees[j])) {
+    //            eq = true;
+    //            break;
+    //        }
+    //    }
+    //    if (!eq) {
+    //        trees.erase(begin(trees) + i);
+    //    }
+    //    else {
+    //        ++i;
+    //    }
+    //}
 
 
-
-    return 0;
-    /*
+    {
         TLOG("Creating DRAG using equivalences",
             std::cout << "\n";
-            auto t2 = t;
-            RemoveEqualSubtrees sc;
-            sc.T2D(t2.root);
-            DrawDagOnFile("RemoveEqualSubtrees", t2, true);
-            std::cout << "After equal subtrees removal: nodes = " << sc.nodes_ << " - leaves = " << sc.leaves_ << "\n";
+        auto t2 = t;
+        RemoveEqualSubtrees sc;
+        sc.T2D(t2.root);
+        DrawDagOnFile("RemoveEqualSubtrees", t2, true);
+        std::cout << "After equal subtrees removal: nodes = " << sc.nodes_ << " - leaves = " << sc.leaves_ << "\n";
 
-            FindOptimalDrag c(t2);
-            c.GenerateAllTrees();
-            DrawDagOnFile("FindOptimalDrag", c.best_tree_, true);
-            std::cout << "\n";
+        FindOptimalDrag c(t2);
+        c.GenerateAllTrees();
+        DrawDagOnFile("FindOptimalDrag", c.best_tree_, true);
+        std::cout << "\n";
         );
-        return 0;
-
+    }
+    return 0;
+    /*
         // 2a) Convert Optimal Decision Tree into Directed Rooted Acyclic Graph
         //     using a exhaustive strategy
         TLOG("Creating DRAG using identites",
