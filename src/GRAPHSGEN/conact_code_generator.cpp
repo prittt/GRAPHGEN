@@ -289,9 +289,9 @@ void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& name
 
 // Overloading function
 bool GeneratePointersConditionsActionsCode(const string& algorithm_name, const rule_set& rs, std::optional<pixel_set> names) {
-    filesystem::path code_path = global_output_path / filesystem::path(algorithm_name + "_code.cpp");
+    //filesystem::path code_path = global_output_path / filesystem::path(algorithm_name + "_code.cpp");
 
-    ofstream os(code_path);
+    ofstream os(conf.code_path_);
     if (!os) {
         return false;
     }

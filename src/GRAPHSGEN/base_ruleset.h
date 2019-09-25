@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,39 +26,64 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef GRAPHSGEN_BASE_RULESET_H_
+#define GRAPHSGEN_BASE_RULESET_H_
+
+#include <fstream>
+#include <filesystem>
+#include <string>
+#include <utility>
+
 #include "yaml-cpp/yaml.h"
 
-#include "graphsgen.h"
+#include "rule_set.h"
 
-#include "grana_ruleset.h"
+class BaseRuleSet {
+    std::filesystem::path p_;
+    bool force_;
+    rule_set rs_;
 
-using namespace std;
+    bool LoadRuleSet() {
 
-int main()
-{
-    string algorithm_name = "BBDT";
-    conf = ConfigData(algorithm_name);
+        YAML::Node rs_node;
+        try {
+            rs_node = YAML::LoadFile(p_.string());
+        }
+        catch (...){
+            return false;
+        }
 
-    auto rs = GenerateGrana();
+        rs_ = rule_set(rs_node);
+        return true;
+    }
 
-    // Call GRAPHSGEN:
-    // 1) Load or generate Optimal Decision Tree based on Grana mask
-    ltree t = GetOdt(rs, algorithm_name);
+    void SaveRuleSet() {
+        std::ofstream os(p_.string());
+        if (os) {
+            YAML::Node n = rs_.Serialize();
+            YAML::Emitter emitter(os);
+            emitter.SetSeqFormat(YAML::EMITTER_MANIP::Flow);
+            emitter << n;
+        }
+    }
 
-    // 2) Draw the generated tree to pdf
-    string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, false, true, false);
+public:
 
-    // 3) Generate the C++ source code for the ODT
-    GenerateDragCode(algorithm_name, t);
+    BaseRuleSet(bool force_generation = false) : force_{ force_generation }
+    {
+        p_ = conf.rstable_path_;
+    }
 
-    // 4) Generate the C++ source code for pointers, 
-    // conditions to check and actions to perform
-    pixel_set block_positions{
-          { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
-          { "S", {-2, +0} },{ "x", {+0, +0} }
-    };
-    GeneratePointersConditionsActionsCode(algorithm_name, rs, block_positions);
+    rule_set GetRuleSet() {
+        if (force_ || !LoadRuleSet()) {
+            rs_ = GenerateRuleSet();
+            SaveRuleSet();
+        }
+        return rs_;
+    }
 
-    return EXIT_SUCCESS;
-}
+    virtual rule_set GenerateRuleSet() = 0;
+
+};
+
+#endif //GRAPHSGEN_BASE_RULESET_H_

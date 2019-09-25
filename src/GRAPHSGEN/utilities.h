@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,9 +35,10 @@
 #include <sstream>
 #include <filesystem>
 
+#include "config_data.h"
 #include "performance_evaluator.h"
 
-extern std::filesystem::path global_output_path;
+extern ConfigData conf;
 
 using uint = uint32_t;
 

@@ -470,7 +470,7 @@ void Forest::CreateReducedTreesRec(const ltree::node* n, const constraints& cons
 	}
 }
 
-// Creates forest of trees pruning original tree. The pruning is performed as follow: the original 
+// Creates forest of trees pruning original tree. The pruning is performed as follows: the original 
 // tree is recursively explored and constraints (different on each branch) are defined using equivalences 
 // between pixels (i.e. pixels which remain in the mask when it moves). When a leaf is reached the 
 // original tree is reduced using current branch's constraints. 

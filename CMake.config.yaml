@@ -6,6 +6,11 @@
 
 paths: {input: "", output: "${GRAPHSGEN_OUTPUT_PATH}"}
 
+# Currently supported output formats are "pdf", "png", and "svg"
+# The background can be one of the color supported by dot, such 
+# as "white", "red", "turquoise", "sienna", "transparent", etc 
+dot: {out_format: "svg", bakground: "transparent" }
+
 ############################################
 # This is the GRAPHSGEN configuration file #
 ############################################

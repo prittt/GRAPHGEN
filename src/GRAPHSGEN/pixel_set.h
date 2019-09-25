@@ -32,13 +32,23 @@
 #include <algorithm>
 #include <cassert>
 #include <fstream>
+#include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
+
+#include "yaml-cpp/yaml.h"
+
+#include "utilities.h"
 
 struct pixel {
 	std::vector<int> coords_;
 	std::string name_;
 
+    pixel() {}
+    pixel(YAML::Node& node) {
+        Deserialize(node);
+    }
 	pixel(std::string name, std::vector<int> coords) : name_{ std::move(name) }, coords_{ std::move(coords) } {}
 
 	auto size() const { return coords_.size(); }
@@ -64,6 +74,23 @@ struct pixel {
 		coords_[0] += s;
 	}
 
+    YAML::Node Serialize() const {
+        YAML::Node pixel_node;
+        pixel_node["name"] = name_;
+
+        for (const auto& c : coords_) {
+            pixel_node["coords"].push_back(std::to_string(c));
+        }
+
+        return pixel_node;
+    }
+
+    void Deserialize(YAML::Node& node) {
+        name_ = node["name"].as<std::string>();
+        for (unsigned i = 0; i < node["coords"].size(); ++i) {
+            coords_.push_back(node["coords"][i].as<int>());
+        }
+    }
 };
 
 // This function return the ChebyshevDistance between the two pixels p1 and p2. 
@@ -83,7 +110,13 @@ struct pixel_set {
     std::vector<pixel> pixels_;
     std::vector<uint8_t> shifts_;
 
-    pixel_set() {}
+    pixel_set() 
+    {}
+    pixel_set(YAML::Node& ps_node) {
+        Deserialize(ps_node);
+    }
+    pixel_set(std::initializer_list<pixel> il, std::vector<uint8_t> shifts) : pixels_{ il }, shifts_{std::move(shifts)}
+    {}
     pixel_set(std::initializer_list<pixel> il) : pixels_{ il } {
         shifts_.resize(pixels_.front().size());
         for (size_t i = 0; i < pixels_.front().size(); ++i)
@@ -121,6 +154,85 @@ struct pixel_set {
 
 	// Metodi provvisori per adattare il pixel_set al vecchio codice specifico per il 2D
 	int GetShiftX() const { return shifts_[0]; }
+
+    YAML::Node Serialize() const {
+        YAML::Node ps_node;
+
+        for (const auto& p : pixels_) {
+            ps_node["pixels"].push_back(p.Serialize());
+        }
+
+        for (const auto& s : shifts_) {
+            ps_node["shifts"].push_back(static_cast<int>(s));
+        }
+        return ps_node;
+    }
+
+    void Deserialize(YAML::Node& node) {
+        for (unsigned i = 0; i < node["shifts"].size(); ++i) {
+            shifts_.push_back(node["shifts"][i].as<int>());
+        }
+
+        for (unsigned i = 0; i < node["pixels"].size(); ++i) {
+            pixels_.push_back(pixel(node["pixels"][i]));
+        }
+    }
+
+    //friend std::ostream& operator<<(std::ostream& os, const pixel_set& ps);
+    //friend std::istream& operator>>(std::istream& is, pixel_set& ps);
 };
+
+//inline std::ostream& operator<<(std::ostream& os, const pixel_set& ps) {
+//    os << "pixels: ";
+//    for (unsigned i = 0; i < ps.pixels_.size(); ++i) {
+//        os << ps.pixels_[i];
+//        if (i < ps.pixels_.size() - 1) {
+//            os << "; ";
+//        }
+//    }
+//    os << "\nshifts: ";
+//    for (unsigned i = 0; i < ps.shifts_.size(); ++i) {
+//        os << (int)ps.shifts_[i];
+//        if (i < ps.shifts_.size() - 1) {
+//            os << ", ";
+//        }
+//    }
+//    os << "\n";
+//    return os;
+//}
+//
+//inline std::istream& operator>>(std::istream& is, pixel_set& ps) {
+//    std::string pixels_id = "pixels:";
+//    std::string ps_line; 
+//    getline(is, ps_line);
+//    if (ps_line.substr(0, pixels_id.size()) != pixels_id) {
+//        throw std::runtime_error("Bad Rule Set File Format!");
+//    }
+//
+//    std::vector<std::string> pixels_str;
+//    StringSplit(ps_line, pixels_str, ';');
+//
+//    ps.pixels_ = std::vector<pixel>(pixels_str.size());
+//    for (unsigned i = 0; i < pixels_str.size(); ++i) {
+//        
+//        unsigned begin_n = pixels_str[i].find_first_of("\"");
+//        unsigned end_n   = pixels_str[i].find_last_of("\"");
+//
+//        ps.pixels_[i].name_ = pixels_str[i].substr(begin_n + 1, end_n - begin_n - 1);
+//        pixels_str[i] = pixels_str[i].substr(end_n);
+//
+//        std::vector<std::string> coords;
+//        unsigned begin_p = pixels_str[i].find_first_of("{");
+//        unsigned end_p   = pixels_str[i].find_first_of("}");
+//        pixels_str[i] = pixels_str[i].substr(begin_p + 1, end_p - begin_p - 1);
+//        StringSplit(pixels_str[i], coords, ',');
+//        
+//        for (unsigned j = 0; j < coords.size(); ++j) {
+//            ps.pixels_[i].coords_.push_back(std::stoi(coords[j]));
+//        }
+//    }
+//
+//    return is;
+//}
 
 #endif //GRAPHSGEN_PIXEL_SET_H_

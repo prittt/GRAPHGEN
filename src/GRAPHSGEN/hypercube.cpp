@@ -218,7 +218,8 @@ ltree GenerateOdt(const rule_set& rs, const string& filename)
 }
 
 ltree GetOdt(const rule_set& rs, const string& algorithm_name, bool force_generation) {
-    string odt_filename = global_output_path.string() + "/" + algorithm_name + "_odt.txt";
+    //string odt_filename = global_output_path.string() + "/" + algorithm_name + "_odt.txt";
+    string odt_filename = conf.odt_path_.string();
     ltree t;
     if (force_generation || !LoadConactTree(t, odt_filename)) {
         t = GenerateOdt(rs, odt_filename);

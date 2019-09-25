@@ -28,7 +28,7 @@
 
 #include "utilities.h"
 
-std::filesystem::path global_output_path;
+ConfigData conf;
 
 std::string binary(uint u, uint nbits) {
     std::string s;

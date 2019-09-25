@@ -30,74 +30,81 @@
 
 #include "graphsgen.h"
 
-#include "rosenfeld_ruleset.h"
+#include "zangsuen_ruleset.h"
 
 using namespace std;
 
 int main()
 {
-    string algorithm_name = "PRED";
+    string algorithm_name = "ZS";
     conf = ConfigData(algorithm_name);
 
-    auto rs = GenerateRosenfeld();
+    ZangSuen zs;
+    auto rs = zs.GetRuleSet();
 
     // Call GRAPHSGEN:
-    // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
+    // 1) Load or generate Optimal Decision Tree based on Zang-Suen mask
     ltree t = GetOdt(rs, algorithm_name);
-    
-    // 2) Draw the generated tree to pdf
+
     string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, false, true);
-    
-    // 3) Generate forests of tree (one for the first row and one for all
-    //    the other rows)
-    LOG(algorithm_name + ": making main forest",
+    DrawDagOnFile(tree_filename, t, false, true, false);
+    PrintStats(t);
+
+    //string tree_code_filename = global_output_path + algorithm_name + "tree_code.txt";
+    //GenerateCode(tree_code_filename, t);
+
+    LOG("Making forest",
         Forest f(t, rs.ps_);
     );
-
-    // 4) Draw the trees composing the forests into pdf. A single forest 
-    //    contains trees for all the columns (including the start tree for
-    //    the first column) and special trees for the last column
     for (size_t i = 0; i < f.trees_.size(); ++i) {
         DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
     }
+    PrintStats(f);
+
+    string forest_code_nodag = conf.global_output_path_.string() + algorithm_name + "_forest_nodag_frequencies_code.txt";
+    {
+        ofstream os(forest_code_nodag);
+        GenerateForestCode(os, f);
+    }
+
     for (size_t i = 0; i < f.end_trees_.size(); ++i) {
         for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
             DrawDagOnFile(algorithm_name + "_end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], false);
         }
     }
 
-    // Optionally, print statistics about nodes and leaves of the generated
-    // forests.
+    LOG("Converting forest to dag",
+        Forest2Dag x(f);
+        for (size_t i = 0; i < f.trees_.size(); ++i) {
+            DrawDagOnFile(algorithm_name + "drag" + zerostr(i, 4), f.trees_[i], true);
+        }
+        );
     PrintStats(f);
 
     DrawForestOnFile(algorithm_name + "forest", f, true);
 
-    filesystem::path forest_code_nodag = conf.forestcode_path_;
+    string forest_code = conf.global_output_path_.string() + algorithm_name + "_forest_identities_code.txt";
     {
-        ofstream os(forest_code_nodag);
+        ofstream os(forest_code);
         GenerateForestCode(os, f);
     }
 
-    // TODO: Update GenerateConditionsActionsCode to generate also conditions without ifs
-    GeneratePointersConditionsActionsCode(algorithm_name, rs);
+    //ltree t = GetOdt(rs, algorithm_name);
 
-    // Create first line constraints
-    constraints first_line_constr;
-    using namespace std;
-    for (const auto& p : rs.ps_) {
-        if (p.GetDy() < 0)
-            first_line_constr[p.name_] = 0;
-    }
+    //// 2) Draw the generated tree to pdf
+    //string tree_filename = algorithm_name + "_tree";
+    //DrawDagOnFile(tree_filename, t, false, true, false);
 
-    Forest flf(t, rs.ps_, first_line_constr);
-    DrawForestOnFile(algorithm_name + "_first_line_original", flf, true, true);
+    //// 3) Generate the C++ source code for the ODT
+    //GenerateDragCode(algorithm_name, t);
 
-    string first_line_forest_reduced_code = conf.global_output_path_.string() + "/" + algorithm_name + "_first_line_forest_reduced_code.txt";
-    {
-        ofstream os(first_line_forest_reduced_code);
-        GenerateForestCode(os, flf);
-    }
+    //// 4) Generate the C++ source code for pointers, 
+    //// conditions to check and actions to perform
+    //pixel_set block_positions{
+    //      { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
+    //      { "S", {-2, +0} },{ "x", {+0, +0} }
+    //};
+    //GeneratePointersConditionsActionsCode(algorithm_name, rs, block_positions);
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

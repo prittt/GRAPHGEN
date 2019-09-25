@@ -26,6 +26,7 @@ target_sources(GRAPHSGEN PRIVATE
 	utilities.cpp
 	utilities.h
 	base_forest.h
+    base_ruleset.h
 	conact_tree.cpp
 	conact_tree.h
 	condition_action.h
@@ -36,4 +37,5 @@ target_sources(GRAPHSGEN PRIVATE
 	conact_code_generator.cpp
 	conact_code_generator.h
 	graph_code_generator.cpp
+    config_data.h
 )
