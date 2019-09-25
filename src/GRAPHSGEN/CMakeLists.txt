@@ -38,4 +38,13 @@ target_sources(GRAPHSGEN PRIVATE
 	conact_code_generator.h
 	graph_code_generator.cpp
     config_data.h
+    
+    culo.h
+    magic_optimizer.h
+    remove_equal_subtrees.h
+    find_optimal_drag.h
+    
+    queue.h
+    semaphore.h
+    pool.h
 )
