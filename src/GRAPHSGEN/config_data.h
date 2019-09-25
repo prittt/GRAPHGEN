@@ -119,7 +119,7 @@ struct ConfigData {
         }
 
         if (config["dot"]["out_format"]) {
-            dot_output_format_ = "." + config["dot"]["background"].as<std::string>();
+            dot_output_format_ = "." + config["dot"]["out_format"].as<std::string>();
         }
         else {
             std::cout << "WARNING: missing output file format, 'pdf' will be used.\n";
