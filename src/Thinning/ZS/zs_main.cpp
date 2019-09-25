@@ -36,27 +36,11 @@ using namespace std;
 
 int main()
 {
-    // Read yaml configuration file
-    string config_file = "config.yaml";
-    YAML::Node config;
-    try {
-        config = YAML::LoadFile(config_file);
-    }
-    catch (...) {
-        cout << "ERROR: Unable to read configuration file '" << config_file << "'\n";
-        exit(EXIT_FAILURE);
-    }
-
     string algorithm_name = "ZS";
-    global_output_path = filesystem::path(config["paths"]["output"].as<string>()) / filesystem::path(algorithm_name);
-    filesystem::create_directories(global_output_path);
+    conf = ConfigData(algorithm_name);
 
-    auto rs = GenerateZs();
-
-    ofstream os("zs_rules.txt");
-    if (!os) 
-        return 1;
-    rs.print_rules(os);
+    ZangSuen zs;
+    auto rs = zs.GetRuleSet();
 
     // Call GRAPHSGEN:
     // 1) Load or generate Optimal Decision Tree based on Zang-Suen mask
@@ -77,7 +61,7 @@ int main()
     }
     PrintStats(f);
 
-    string forest_code_nodag = global_output_path.string() + algorithm_name + "_forest_nodag_frequencies_code.txt";
+    string forest_code_nodag = conf.global_output_path_.string() + algorithm_name + "_forest_nodag_frequencies_code.txt";
     {
         ofstream os(forest_code_nodag);
         GenerateForestCode(os, f);
@@ -99,7 +83,7 @@ int main()
 
     DrawForestOnFile(algorithm_name + "forest", f, true);
 
-    string forest_code = global_output_path.string() + algorithm_name + "_forest_identities_code.txt";
+    string forest_code = conf.global_output_path_.string() + algorithm_name + "_forest_identities_code.txt";
     {
         ofstream os(forest_code);
         GenerateForestCode(os, f);

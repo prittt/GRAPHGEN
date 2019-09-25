@@ -36,20 +36,8 @@ using namespace std;
 
 int main()
 {
-    // Read yaml configuration file
-    string config_file = "config.yaml";
-    YAML::Node config;
-    try {
-        config = YAML::LoadFile(config_file);
-    }
-    catch (...) {
-        cout << "ERROR: Unable to read configuration file '" << config_file << "'\n";
-        exit(EXIT_FAILURE);
-    }
-
     string algorithm_name = "BBDT";
-    global_output_path = filesystem::path(config["paths"]["output"].as<string>()) / filesystem::path(algorithm_name);
-    filesystem::create_directories(global_output_path);
+    conf = ConfigData(algorithm_name);
 
     auto rs = GenerateGrana();
 
