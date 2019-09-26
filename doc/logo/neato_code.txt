@@ -1,0 +1,15 @@
+  digraph {
+    graph [pad="0.212,0.055" bgcolor=gray]
+    node [style=filled color=white]
+    a [fillcolor="#ffffff" pos="0,0!" shape=circle]
+    b [fillcolor="#ffffff" pos="-2,0!" shape=circle]
+    c [fillcolor="#ffffff" pos="-2,-3!" shape=circle]
+    d [fillcolor="#ffffff" pos="0,-3!" shape=circle]
+    e [fillcolor="#ffffff" pos="0,-2!" shape=circle]
+    f [label="1" fillcolor="#ffffff" pos="-1,-1.5!" shape="box"]
+    a -> b [color=white penwidth=15 arrowhead=none]
+    b -> c [color=white penwidth=15 arrowhead=none]
+    c -> d [color=white penwidth=15 arrowhead=none]
+    d -> e [color=white penwidth=15 arrowhead=none]
+    e -> f [color=white penwidth=15 arrowhead=none]
+  }
