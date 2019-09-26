@@ -39,7 +39,8 @@ int main()
     string algorithm_name = "BBDT";
     conf = ConfigData(algorithm_name);
 
-    auto rs = GenerateGrana();
+    GranaRS g_rs;
+    auto rs = g_rs.GetRuleSet();
 
     // Call GRAPHSGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask

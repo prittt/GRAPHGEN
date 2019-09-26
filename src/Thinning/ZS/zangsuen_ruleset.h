@@ -30,7 +30,7 @@
 
 #include "graphsgen.h"
 
-class ZangSuen : public BaseRuleSet {
+class ZangSuenRS : public BaseRuleSet {
 
 public:
 

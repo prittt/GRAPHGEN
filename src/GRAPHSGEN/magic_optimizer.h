@@ -60,6 +60,10 @@ struct MagicOptimizer {
     std::unordered_map<ltree::node*, STreeProp> np_;
     std::unordered_map<ltree::node*, std::vector<ltree::node*>> parents_;
 
+    MagicOptimizer(ltree::node * n) {
+        CollectStatsRec(n);
+    }
+
     STreeProp CollectStatsRec(ltree::node * n) {
         auto it = np_.find(n);
         if (it != end(np_))

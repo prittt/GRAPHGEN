@@ -78,8 +78,7 @@ struct FindOptimalDrag {
 
     void ReduceAndUpdateBest(ltree t)
     {
-        RemoveEqualSubtrees sc;
-        sc.T2D(t.root);
+        RemoveEqualSubtrees sc(t.root);
 
         std::lock_guard<std::mutex> lock(best_tree_mutex_);
         if (best_nodes_ > sc.nodes_ || (best_nodes_ == sc.nodes_ && best_leaves_ > sc.leaves_)) {

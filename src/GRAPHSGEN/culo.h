@@ -97,36 +97,50 @@ struct Culo {
 
     }
 
-    void MergeEquivalentTreesAndUpdateRec(ltree::node* a, ltree::node* b, std::unordered_map<ltree::node*, std::vector<ltree::node*>>& parents, std::unordered_set<ltree::node*>& visited)
-    {
-        auto it = visited.find(a);
-        if (it != end(visited))
-            return;
-        visited.insert(a);
+    struct MergeEquivalentTreesAndUpdate {
+        std::unordered_set<ltree::node*> visited_;
+        std::unordered_map<ltree::node*, std::vector<ltree::node*>>& parents_;
 
-        for (auto& x : parents[b]) {
-            if (x->left == b)
-                x->left = a;
-            else
-                x->right = a;
+        MergeEquivalentTreesAndUpdate(ltree::node* a, ltree::node* b, std::unordered_map<ltree::node*, std::vector<ltree::node*>>& parents) :
+            parents_{ parents } 
+        {
+            MergeEquivalentTreesAndUpdateRec(a, b);
         }
 
-        if (a->isleaf()) {
-            a->data.action &= b->data.action;
+        void MergeEquivalentTreesAndUpdateRec(ltree::node* a, ltree::node* b)
+        {
+            auto it = visited_.find(a);
+            if (it != end(visited_))
+                return;
+            visited_.insert(a);
+
+            for (auto& x : parents_[b]) {
+                if (x->left == b)
+                    x->left = a;
+                else
+                    x->right = a;
+            }
+
+            if (a->isleaf()) {
+                a->data.action &= b->data.action;
+            }
+            else {
+                MergeEquivalentTreesAndUpdateRec(a->left, b->left);
+                MergeEquivalentTreesAndUpdateRec(a->right, b->right);
+            }
         }
-        else {
-            MergeEquivalentTreesAndUpdateRec(a->left, b->left, parents, visited);
-            MergeEquivalentTreesAndUpdateRec(a->right, b->right, parents, visited);
-        }
+    };
+
+    Culo(ltree& t) {
+        FaiTuttoRec(t);
     }
 
     int count = 0;
     int best_nodes = std::numeric_limits<int>::max();
     int best_leaves = std::numeric_limits<int>::max();
-    void FaiTutto(ltree& t)
+    void FaiTuttoRec(ltree& t)
     {
-        MagicOptimizer mo;
-        mo.CollectStatsRec(t.root);
+        MagicOptimizer mo(t.root);
         std::vector<MagicOptimizer::STreeProp> trees;
         for (const auto& x : mo.np_)
             trees.push_back(x.second);
@@ -167,17 +181,16 @@ struct Culo {
 
                     std::vector<ltree::node*> tracked_nodes{ trees[i].n_, trees[j].n_ };
                     ltree t_copy(t, tracked_nodes);
-                    MagicOptimizer mo;
-                    mo.CollectStatsRec(t_copy.root);
+                    
+                    MagicOptimizer mo(t_copy.root);
 
-                    std::unordered_set<ltree::node*> visited;
-                    MergeEquivalentTreesAndUpdateRec(tracked_nodes[0], tracked_nodes[1], mo.parents_, visited);
-                    RemoveEqualSubtrees sc;
-                    sc.T2D(t_copy.root);
+                    MergeEquivalentTreesAndUpdate(tracked_nodes[0], tracked_nodes[1], mo.parents_);
+
+                    RemoveEqualSubtrees(t_copy.root);
 
                     //{ ofstream os("after.txt"); set<ltree::node*> visited; PrintTreeRec(os, t_copy.root, visited); }
                     //DrawDagOnFile("After", t_copy, true);
-                    FaiTutto(t_copy);
+                    FaiTuttoRec(t_copy);
                 }
             }
         }

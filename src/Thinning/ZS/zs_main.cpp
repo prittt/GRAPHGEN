@@ -39,8 +39,8 @@ int main()
     string algorithm_name = "ZS";
     conf = ConfigData(algorithm_name);
 
-    ZangSuen zs;
-    auto rs = zs.GetRuleSet();
+    ZangSuenRS zs_rs;
+    auto rs = zs_rs.GetRuleSet();
 
     // Call GRAPHSGEN:
     // 1) Load or generate Optimal Decision Tree based on Zang-Suen mask
