@@ -56,6 +56,10 @@ struct ConfigData {
     std::string odt_suffix_ = "_odt.txt";
     std::filesystem::path odt_path_;
 
+	// HDT
+	std::string hdt_suffix_ = "_hdt.txt";
+	std::filesystem::path hdt_path_;
+
     // Code
     std::string code_suffix_ = "_code.cpp";
     std::filesystem::path code_path_;
@@ -93,6 +97,9 @@ struct ConfigData {
 
             // ODT
             odt_path_ = global_output_path_ / std::filesystem::path(algorithm_name + odt_suffix_);
+
+			// HDT
+			hdt_path_ = global_output_path_ / std::filesystem::path(algorithm_name + hdt_suffix_);
 
             // Code
             code_path_ = global_output_path_ / std::filesystem::path(algorithm_name + code_suffix_);

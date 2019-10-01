@@ -171,6 +171,8 @@ struct VHyperCube {
 ltree GenerateOdt(const rule_set& rs);
 ltree GenerateOdt(const rule_set& rs, const std::string& filename);
 
+ltree GenerateHdt(const rule_set& rs);
+ltree GenerateHdt(const rule_set& rs, const std::string& filename);
 
 /** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
 
@@ -186,5 +188,7 @@ is always regenerated. The loaded/generated tree is then returned.
 @return The optimal decision tree associated to the specified rule set.
 */
 ltree GetOdt(const rule_set& rs, const std::string& algorithm_name, bool force_generation = false);
+
+ltree GetHdt(const rule_set& rs, const std::string& algorithm_name, bool force_generation = false);
 
 #endif // !GRAPHSGEN_CONACT_TREE_H_

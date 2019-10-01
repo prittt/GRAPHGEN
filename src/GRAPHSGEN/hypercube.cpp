@@ -226,3 +226,33 @@ ltree GetOdt(const rule_set& rs, const string& algorithm_name, bool force_genera
     }
     return t;
 }
+
+
+ltree GenerateHdt(const rule_set& rs) {
+	TLOG("Allocating hypercube",
+		VHyperCube hcube(rs);
+	);
+
+	TLOG("Optimizing rules",
+		auto t = hcube.optimize(false);
+	);
+
+	return t;
+}
+
+ltree GenerateHdt(const rule_set& rs, const string& filename)
+{
+	auto t = GenerateHdt(rs);
+	WriteConactTree(t, filename);
+	return t;
+}
+
+ltree GetHdt(const rule_set& rs, const string& algorithm_name, bool force_generation) {
+	//string hdt_filename = global_output_path.string() + "/" + algorithm_name + "_hdt.txt";
+	string hdt_filename = conf.hdt_path_.string();
+	ltree t;
+	if (force_generation || !LoadConactTree(t, hdt_filename)) {
+		t = GenerateHdt(rs, hdt_filename);
+	}
+	return t;
+}
