@@ -239,8 +239,11 @@ bool violates_set_conditions(int rule_index, std::map<std::string, int>& set_con
 	return false;
 }
 
-std::string find_greedy_definitive_option(std::vector<std::string> conditions, std::map<std::string, int>& set_conditions, const rule_set& rs, ltree& tree, ltree::node* parent) {
+void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::string, int> set_conditions, const rule_set& rs, ltree& tree, ltree::node* parent) {
 	std::unordered_map<string, std::array<std::unordered_map<std::bitset<128>, int>, 2>> action_occurence_map;
+	std::map<std::string, int> total_probable_action_occurences;
+
+
 	for (auto c : conditions) {
 		int power = pow(2, rs.conditions_pos.at(c));
 		for (int i = 0; i < rs.rules.size(); ++i) {
@@ -248,12 +251,29 @@ std::string find_greedy_definitive_option(std::vector<std::string> conditions, s
 				continue;
 			}
 			int bit_value = ((i / power) % 2) == 1;
-			for (int b = 0; b < 32; b++) {
+			for (int b = 0; b < 128; b++) {
 				if (rs.rules[i].actions.test(b)) {
-					action_occurence_map[c][bit_value][b]++;
+					action_occurence_map[c][bit_value][rs.rules[i].actions]++;
 					std::cout << "Condition: " << c << " Bit Value: " << bit_value << " Bitmapped Action: " << rs.rules[i].actions.to_ulong() << " Natural Action: " << b << std::endl;
 				}
 			}
+		}
+
+		// Case 3: Both childs are leafs, end of recursion
+		if (conditions.size() == 1) {
+			parent->data.t = conact::type::CONDITION;
+			parent->data.condition = conditions[0];
+			auto leftNode = tree.make_node();
+			auto rightNode = tree.make_node();
+			parent->left = leftNode;
+			parent->right = rightNode;
+			auto leftAction = action_occurence_map.at(conditions[0])[0].begin()->first;
+			leftNode->data.t = conact::type::ACTION;
+			leftNode->data.action = leftAction;
+			auto rightAction = action_occurence_map.at(conditions[0])[1].begin()->first;
+			rightNode->data.t = conact::type::ACTION;
+			rightNode->data.action = rightAction;
+			return;
 		}
 
 		for (int bit_value = 0; bit_value < 2; bit_value++) {
@@ -265,24 +285,53 @@ std::string find_greedy_definitive_option(std::vector<std::string> conditions, s
 					most_probable_action_occurences = x.second;
 				}
 			}
-
+			total_probable_action_occurences[c] += most_probable_action_occurences;
+			// Case 1: Definitive Action in one child = 1 leaf/action; other one is condition
 			if (most_probable_action_occurences == pow(2, conditions.size() - 1)) {
-				auto n = tree.make_node();
-				n->data.t = conact::type::ACTION;
-				n->data.action = most_probable_action;
+				auto actionNode = tree.make_node();
+				auto newParent = tree.make_node();
+				actionNode->data.t = conact::type::ACTION;
+				actionNode->data.action = most_probable_action;
 				parent->data.t = conact::type::CONDITION;
 				parent->data.condition = c;
 				if (bit_value == 0) {
-					parent->left = n;
+					parent->left = actionNode;
+					parent->right = newParent;
 				} else {
-					parent->right = n;
+					parent->left = newParent;
+					parent->right = actionNode;
 				}
+
+				conditions.erase(std::remove(conditions.begin(), conditions.end(), c), conditions.end());
 				set_conditions[c] = bit_value;
-				return c;
+				return FindHdtRecursively(conditions, set_conditions, rs, tree, newParent);
 			}
 		}
 	}
-	return "";
+
+	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
+	std::string splitCandidate;
+	int max = 0;
+	for (auto& x : conditions) {
+		if (total_probable_action_occurences[x] > max) {
+			max = total_probable_action_occurences[x];
+			splitCandidate = x;
+		}
+	}
+	conditions.erase(std::remove(conditions.begin(), conditions.end(), splitCandidate), conditions.end());
+
+	parent->data.t = conact::type::CONDITION;
+	parent->data.condition = splitCandidate;
+	auto leftNode = tree.make_node();
+	auto rightNode = tree.make_node();
+	parent->left = leftNode;
+	parent->right = rightNode;
+	auto conditionsForLeft = set_conditions;
+	conditionsForLeft[splitCandidate] = 0;
+	auto conditionsForRight = set_conditions;
+	conditionsForRight[splitCandidate] = 1;
+	FindHdtRecursively(conditions, conditionsForLeft, rs, tree, leftNode);
+	FindHdtRecursively(conditions, conditionsForRight, rs, tree, rightNode);
 }
 
 ltree GenerateHdt(const rule_set& rs) {
@@ -292,22 +341,7 @@ ltree GenerateHdt(const rule_set& rs) {
 	std::vector<std::string> remaining_conditions = rs.conditions; // copy
 	std::map<std::string, int> set_conditions = std::map<std::string, int>();
 
-	while (remaining_conditions.size() > 0) {
-		std::string removed_condition = find_greedy_definitive_option(remaining_conditions, set_conditions, rs, t, parent);
-		if (removed_condition == "") {
-			std::cout << "no definitive option found" << std::endl;
-			break;
-		}
-		auto node = t.make_node();
-		if (parent->left) {
-			parent->right = node;
-		} else {
-			parent->left = node;
-		}
-		parent = node;
-		remaining_conditions.erase(std::remove(remaining_conditions.begin(), remaining_conditions.end(), removed_condition), remaining_conditions.end());
-	}
-
+	FindHdtRecursively(remaining_conditions, set_conditions, rs, t, parent);
 	return t;
 }
 
