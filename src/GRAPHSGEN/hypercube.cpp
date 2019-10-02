@@ -230,7 +230,7 @@ ltree GetOdt(const rule_set& rs, const string& algorithm_name, bool force_genera
 bool violates_set_conditions(int rule_index, std::map<std::string, int>& set_conditions, const rule_set& rs) {
 	for (auto& f : set_conditions) {
 		std::string tested_condition_char = f.first;
-		int tested_condition_power = pow(2, rs.conditions_pos.at(tested_condition_char));
+		int tested_condition_power = 1 << rs.conditions_pos.at(tested_condition_char);
 		int tested_condition_index = ((rule_index / tested_condition_power) % 2) == 1;
 		if (tested_condition_index == f.second) {
 			return true;
@@ -245,7 +245,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 
 
 	for (auto c : conditions) {
-		int power = pow(2, rs.conditions_pos.at(c));
+		int power = 1 << rs.conditions_pos.at(c);
 		for (int i = 0; i < rs.rules.size(); ++i) {
 			if (violates_set_conditions(i, set_conditions, rs)) {
 				continue;
@@ -253,7 +253,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 			int bit_value = ((i / power) % 2) == 1;
 			for (int b = 0; b < 128; b++) {
 				if (rs.rules[i].actions.test(b)) {
-					action_occurence_map[c][bit_value][rs.rules[i].actions]++;
+					action_occurence_map[c][bit_value][b + 1]++;
 					std::cout << "Condition: " << c << " Bit Value: " << bit_value << " Bitmapped Action: " << rs.rules[i].actions.to_ulong() << " Natural Action: " << b << std::endl;
 				}
 			}
@@ -287,7 +287,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 			}
 			total_probable_action_occurences[c] += most_probable_action_occurences;
 			// Case 1: Definitive Action in one child = 1 leaf/action; other one is condition
-			if (most_probable_action_occurences == pow(2, conditions.size() - 1)) {
+			if (most_probable_action_occurences >= (1 << (conditions.size() - 1))) {
 				auto actionNode = tree.make_node();
 				auto newParent = tree.make_node();
 				actionNode->data.t = conact::type::ACTION;
