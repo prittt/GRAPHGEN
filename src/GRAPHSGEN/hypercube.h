@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <numeric>
 
 #include "conact_tree.h"
 #include "rule_set.h"

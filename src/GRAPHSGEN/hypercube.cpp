@@ -227,15 +227,86 @@ ltree GetOdt(const rule_set& rs, const string& algorithm_name, bool force_genera
     return t;
 }
 
+bool violates_set_conditions(int rule_index, std::map<std::string, int>& set_conditions, const rule_set& rs) {
+	for (auto& f : set_conditions) {
+		std::string tested_condition_char = f.first;
+		int tested_condition_power = pow(2, rs.conditions_pos.at(tested_condition_char));
+		int tested_condition_index = ((rule_index / tested_condition_power) % 2) == 1;
+		if (tested_condition_index == f.second) {
+			return true;
+		}
+	}
+	return false;
+}
+
+std::string find_greedy_definitive_option(std::vector<std::string> conditions, std::map<std::string, int>& set_conditions, const rule_set& rs, ltree& tree, ltree::node* parent) {
+	std::unordered_map<string, std::array<std::unordered_map<std::bitset<128>, int>, 2>> action_occurence_map;
+	for (auto c : conditions) {
+		int power = pow(2, rs.conditions_pos.at(c));
+		for (int i = 0; i < rs.rules.size(); ++i) {
+			if (violates_set_conditions(i, set_conditions, rs)) {
+				continue;
+			}
+			int bit_value = ((i / power) % 2) == 1;
+			for (int b = 0; b < 32; b++) {
+				if (rs.rules[i].actions.test(b)) {
+					action_occurence_map[c][bit_value][b]++;
+					std::cout << "Condition: " << c << " Bit Value: " << bit_value << " Bitmapped Action: " << rs.rules[i].actions.to_ulong() << " Natural Action: " << b << std::endl;
+				}
+			}
+		}
+
+		for (int bit_value = 0; bit_value < 2; bit_value++) {
+			std::bitset<128> most_probable_action;
+			int most_probable_action_occurences = 0;
+			for (auto& x : action_occurence_map[c][bit_value]) {
+				if (x.second > most_probable_action_occurences) {
+					most_probable_action = x.first;
+					most_probable_action_occurences = x.second;
+				}
+			}
+
+			if (most_probable_action_occurences == pow(2, conditions.size() - 1)) {
+				auto n = tree.make_node();
+				n->data.t = conact::type::ACTION;
+				n->data.action = most_probable_action;
+				parent->data.t = conact::type::CONDITION;
+				parent->data.condition = c;
+				if (bit_value == 0) {
+					parent->left = n;
+				} else {
+					parent->right = n;
+				}
+				set_conditions[c] = bit_value;
+				return c;
+			}
+		}
+	}
+	return "";
+}
 
 ltree GenerateHdt(const rule_set& rs) {
-	TLOG("Allocating hypercube",
-		VHyperCube hcube(rs);
-	);
+	ltree t;
+	auto parent = t.make_root();
 
-	TLOG("Optimizing rules",
-		auto t = hcube.optimize(false);
-	);
+	std::vector<std::string> remaining_conditions = rs.conditions; // copy
+	std::map<std::string, int> set_conditions = std::map<std::string, int>();
+
+	while (remaining_conditions.size() > 0) {
+		std::string removed_condition = find_greedy_definitive_option(remaining_conditions, set_conditions, rs, t, parent);
+		if (removed_condition == "") {
+			std::cout << "no definitive option found" << std::endl;
+			break;
+		}
+		auto node = t.make_node();
+		if (parent->left) {
+			parent->right = node;
+		} else {
+			parent->left = node;
+		}
+		parent = node;
+		remaining_conditions.erase(std::remove(remaining_conditions.begin(), remaining_conditions.end(), removed_condition), remaining_conditions.end());
+	}
 
 	return t;
 }
