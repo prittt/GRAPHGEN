@@ -101,7 +101,7 @@ bool graph::Write(const std::string& filename)
 // Less operator for bitset
 template<size_t N>
 struct less {
-    bool operator()(const std::bitset<N>& lhs, const std::bitset<N>& rhs) {
+    bool operator()(const std::bitset<N>& lhs, const std::bitset<N>& rhs) const {
         return lhs.to_string() < rhs.to_string();
     }
 };
