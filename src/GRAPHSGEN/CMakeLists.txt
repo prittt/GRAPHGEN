@@ -1,5 +1,5 @@
 target_sources(GRAPHSGEN PRIVATE
-	drag_statistics.cpp
+    drag_statistics.cpp
 	drag_statistics.h
 	drag2optimal.cpp
 	drag2optimal.h
@@ -39,7 +39,7 @@ target_sources(GRAPHSGEN PRIVATE
 	graph_code_generator.cpp
     config_data.h
     
-    culo.h
+    fast_drag_optimizer.h
     magic_optimizer.h
     remove_equal_subtrees.h
     find_optimal_drag.h
@@ -47,4 +47,6 @@ target_sources(GRAPHSGEN PRIVATE
     queue.h
     semaphore.h
     pool.h
+    
+    drag.h
 )
