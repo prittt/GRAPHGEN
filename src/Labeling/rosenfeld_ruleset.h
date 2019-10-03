@@ -33,55 +33,62 @@
 
 #include "graphsgen.h"
 
-rule_set GenerateRosenfeld()
-{
-    pixel_set rosenfeld_mask{
-        { "p", {-1, -1} }, { "q", {0, -1} }, { "r", {+1, -1} },
-        { "s", {-1, +0} }, { "x", {0, +0} },
-    };
+class RosenfeldRS : public BaseRuleSet {
 
-    rule_set labeling;
-    labeling.InitConditions(rosenfeld_mask);
+public:
 
-    graph ag = MakeAdjacencies(rosenfeld_mask);
-    auto actions = GenerateAllPossibleLabelingActions(ag);
-    labeling.InitActions(actions);
+    using BaseRuleSet::BaseRuleSet;
 
-    labeling.generate_rules([&](rule_set& rs, uint i) {
-        rule_wrapper r(rs, i);
+    rule_set GenerateRuleSet()
+    {
+        pixel_set rosenfeld_mask{
+            { "p", {-1, -1} }, { "q", {0, -1} }, { "r", {+1, -1} },
+            { "s", {-1, +0} }, { "x", {0, +0} },
+        };
 
-        if (!r["x"]) {
-            r << "nothing";
-            return;
-        }
+        rule_set labeling;
+        labeling.InitConditions(rosenfeld_mask);
 
-        auto lag = ag;
-        for (size_t j = 0; j < lag.size(); ++j) {
-            if (((i >> j) & 1) == 0)
-                lag.DetachNode(j);
-        }
-        graph cg = MakeConnectivities(lag);
+        graph ag = MakeAdjacencies(rosenfeld_mask);
+        auto actions = GenerateAllPossibleLabelingActions(ag);
+        labeling.InitActions(actions);
 
-        connectivity_mat con(rs.conditions);
-        con.data_ = cg.arcs_;
+        labeling.generate_rules([&](rule_set& rs, uint i) {
+            rule_wrapper r(rs, i);
 
-        MergeSet ms(con);
-        ms.BuildMergeSet();
-
-        for (const auto& s : ms.mergesets_) {
-            std::string action = "x<-";
-            if (s.empty())
-                action += "newlabel";
-            else {
-                action += s[0];
-                for (size_t i = 1; i < s.size(); ++i)
-                    action += "+" + s[i];
+            if (!r["x"]) {
+                r << "nothing";
+                return;
             }
-            r << action;
-        }
-    });
 
-    return labeling;
-}
+            auto lag = ag;
+            for (size_t j = 0; j < lag.size(); ++j) {
+                if (((i >> j) & 1) == 0)
+                    lag.DetachNode(j);
+            }
+            graph cg = MakeConnectivities(lag);
+
+            connectivity_mat con(rs.conditions);
+            con.data_ = cg.arcs_;
+
+            MergeSet ms(con);
+            ms.BuildMergeSet();
+
+            for (const auto& s : ms.mergesets_) {
+                std::string action = "x<-";
+                if (s.empty())
+                    action += "newlabel";
+                else {
+                    action += s[0];
+                    for (size_t i = 1; i < s.size(); ++i)
+                        action += "+" + s[i];
+                }
+                r << action;
+            }
+        });
+
+        return labeling;
+    }
+};
 
 #endif // GRAPHSGEN_ROSENFELD_RULESET_H_

@@ -39,7 +39,8 @@ int main()
     string algorithm_name = "SAUF";
     conf = ConfigData(algorithm_name);
 
-    auto rs = GenerateRosenfeld();
+    RosenfeldRS r_rs;
+    auto rs = r_rs.GetRuleSet();
 
     // Call GRAPHSGEN:
     // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
