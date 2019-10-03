@@ -253,7 +253,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 			int bit_value = ((i / power) % 2) == 1;
 			for (int b = 0; b < 128; b++) {
 				if (rs.rules[i].actions.test(b)) {
-					action_occurence_map[c][bit_value][b + 1]++;
+					action_occurence_map[c][bit_value][b]++;
 					std::cout << "Condition: " << c << " Bit Value: " << bit_value << " Bitmapped Action: " << rs.rules[i].actions.to_ulong() << " Natural Action: " << b << std::endl;
 				}
 			}
@@ -269,10 +269,11 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 			parent->right = rightNode;
 			auto leftAction = action_occurence_map.at(conditions[0])[0].begin()->first;
 			leftNode->data.t = conact::type::ACTION;
-			leftNode->data.action = leftAction;
+			leftNode->data.action = std::bitset<128>().set(leftAction.to_ulong());
 			auto rightAction = action_occurence_map.at(conditions[0])[1].begin()->first;
 			rightNode->data.t = conact::type::ACTION;
-			rightNode->data.action = rightAction;
+			rightNode->data.action = std::bitset<128>().set(rightAction.to_ulong());
+			std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
 			return;
 		}
 
@@ -291,7 +292,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 				auto actionNode = tree.make_node();
 				auto newParent = tree.make_node();
 				actionNode->data.t = conact::type::ACTION;
-				actionNode->data.action = most_probable_action;
+				actionNode->data.action = std::bitset<128>().set(most_probable_action.to_ulong());
 				parent->data.t = conact::type::CONDITION;
 				parent->data.condition = c;
 				if (bit_value == 0) {
@@ -304,6 +305,8 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 
 				conditions.erase(std::remove(conditions.begin(), conditions.end(), c), conditions.end());
 				set_conditions[c] = bit_value;
+				std::cout << "Case 1: Definitive Action in one child; 1 leaf/action, 1 node/condition as children. Condition: " << c << " Action: " << most_probable_action.to_ulong() << std::endl;
+
 				return FindHdtRecursively(conditions, set_conditions, rs, tree, newParent);
 			}
 		}
@@ -330,6 +333,8 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	conditionsForLeft[splitCandidate] = 0;
 	auto conditionsForRight = set_conditions;
 	conditionsForRight[splitCandidate] = 1;
+	std::cout << "Case 2: Take best guess, both children are conditions/nodes. Split Condition: " << splitCandidate << std::endl;
+
 	FindHdtRecursively(conditions, conditionsForLeft, rs, tree, leftNode);
 	FindHdtRecursively(conditions, conditionsForRight, rs, tree, rightNode);
 }
