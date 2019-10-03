@@ -52,39 +52,30 @@ int main()
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, t, false, true, false);
 
-    ltree t2 = t;
-    RemoveEqualSubtrees(t2.root);
+    RemoveEqualSubtrees(t.GetRoot());
+    DrawDagOnFile("RemoveEqualSubtrees", t, true);
 
-    MagicOptimizer mo(t2.root);
+    MagicOptimizer mo(t.GetRoot());
     vector<MagicOptimizer::STreeProp> trees;
     for (const auto& x : mo.np_)
         trees.push_back(x.second);
 
-    Culo c(t2);
+    FastDragOptimizer fdo(t);
     cout << "Done\n";
-
-    //for (size_t i = 0; i < trees.size(); ) {
-    //    bool eq = false;
-    //    for (size_t j = 0; j < trees.size(); ++j) {
-    //        if (i != j && trees[i].equivalent(trees[j])) {
-    //            eq = true;
-    //            break;
-    //        }
-    //    }
-    //    if (!eq) {
-    //        trees.erase(begin(trees) + i);
-    //    }
-    //    else {
-    //        ++i;
-    //    }
-    //}
-
-
-    {
+    
+    DrawDagOnFile("FastDragOptimizer", fdo.best_tree, true);
+    GenerateDragCode(algorithm_name, fdo.best_tree);
+    pixel_set block_positions{
+           { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
+           { "S", {-2, +0} },{ "x", {+0, +0} }
+    };
+    GeneratePointersConditionsActionsCode(algorithm_name, rs, block_positions);
+        
+    /*{
         TLOG("Creating DRAG using equivalences",
             std::cout << "\n";
             auto t2 = t;
-            RemoveEqualSubtrees sc(t2.root);
+            RemoveEqualSubtrees sc(t2.GetRoot());
             DrawDagOnFile("RemoveEqualSubtrees", t2, true);
             std::cout << "After equal subtrees removal: nodes = " << sc.nodes_ << " - leaves = " << sc.leaves_ << "\n";
 
@@ -93,7 +84,7 @@ int main()
             DrawDagOnFile("FindOptimalDrag", c.best_tree_, true);
             std::cout << "\n";
             );
-    }
+    }*/
     return 0;
     /*
         // 2a) Convert Optimal Decision Tree into Directed Rooted Acyclic Graph

@@ -58,6 +58,7 @@ string Forest2Dag::Tree2String(ltree::node* n) {
 // and explore its subtrees. For each subtree, if there is an equal subtree (i.e. sp_ hash table
 // contains the tree identifier string) the function updates the link, otherwise it updates the 
 // hash table with the "new" subtree. This must be repeated for every root of the forest (see Forest2Dag) 
+// TODO sistemare la funzione evitando la ripetizione sinistra/destra.
 void Forest2Dag::FindAndLink(ltree::node* n) {
 	if (!n->isleaf()) {
 		auto s = Tree2String(n->left);
@@ -88,7 +89,7 @@ void Forest2Dag::FindAndLink(ltree::node* n) {
 Forest2Dag::Forest2Dag(Forest& f) : f_(f) {
 	// Conversion to DAG for the main forest
 	for (auto& t : f_.trees_) {
-		FindAndLink(t.root);
+		FindAndLink(t.GetRoot());
 	}
 
 	// Clean memoizing data structures
@@ -105,7 +106,7 @@ Forest2Dag::Forest2Dag(Forest& f) : f_(f) {
 		}
 
 		for (auto& et : etg) {
-			FindAndLink(et.root);
+			FindAndLink(et.GetRoot());
 		}
 	}
 }

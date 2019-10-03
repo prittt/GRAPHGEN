@@ -46,7 +46,7 @@ void FindAndLinkIdentiesRec(ltree::node* n1, ltree::node* n2) {
 }
 
 void Tree2DagUsingIdentitiesRec(ltree::node *n, ltree& t) {
-    FindAndLinkIdentiesRec(n, t.root);
+    FindAndLinkIdentiesRec(n, t.GetRoot());
 
     if (!n->isleaf()) {
         Tree2DagUsingIdentitiesRec(n->left, t);
@@ -56,5 +56,5 @@ void Tree2DagUsingIdentitiesRec(ltree::node *n, ltree& t) {
 
 // Converts a tree into dag considering only equal subtrees
 void Tree2DagUsingIdentities(ltree& t) {
-    Tree2DagUsingIdentitiesRec(t.root, t);
+    Tree2DagUsingIdentitiesRec(t.GetRoot(), t);
 }

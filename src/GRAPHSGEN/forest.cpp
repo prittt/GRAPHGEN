@@ -37,7 +37,7 @@ using namespace std;
 
 Forest::Forest(ltree t, const pixel_set& ps, const constraints& initial_constraints) : /*t_(std::move(t)),*/ eq_(ps) {
 	next_tree_.push_back(0); // Setup next_tree_ for holding a reference to the start tree in first position
-	t_.root = Reduce(t.root, t_, initial_constraints);
+	t_.SetRoot(Reduce(t.GetRoot(), t_, initial_constraints));
 	InitNext(t_);
 
 	// Create start tree constraints and add start tree in position 0 of the tree_ array
@@ -49,7 +49,7 @@ Forest::Forest(ltree t, const pixel_set& ps, const constraints& initial_constrai
 				start_constr[p.name_] = 0;
 		}
 		ltree t;
-		t.root = Reduce(t_.root, t, start_constr);
+		t.SetRoot(Reduce(t_.GetRoot(), t, start_constr));
 		trees_.emplace_back(t);
 	}
 
@@ -122,7 +122,7 @@ Forest::Forest(ltree t, const pixel_set& ps, const constraints& initial_constrai
 
 			for (const auto& t : trees_) {
 				ltree tr;
-				tr.root = Reduce(t.root, tr, end_constr);
+				tr.SetRoot(Reduce(t.GetRoot(), tr, end_constr));
 				end_trees_.back().emplace_back(tr);
 			}
 
@@ -174,7 +174,7 @@ void Forest::RebuildDisjointTrees() {
 	for (auto& t : trees_) {
 		// Here Reduce() is used just to recreate trees 
 		ltree new_t;
-		new_t.root = Reduce(t.root, new_t, {});
+		new_t.SetRoot(Reduce(t.GetRoot(), new_t, {}));
 		new_trees.push_back(move(new_t));
 	}
 
@@ -189,14 +189,13 @@ void Forest::RebuildDisjointEndTrees() {
 		for (auto& t : tg) {
 			// Here Reduce() is used just to recreate trees 
 			ltree new_t;
-			new_t.root = Reduce(t.root, new_t, {});
+			new_t.SetRoot(Reduce(t.GetRoot(), new_t, {}));
 			new_trees.back().push_back(move(new_t));
 		}
 	}
 	end_trees_ = new_trees;
 
 }
-
 
 // See RemoveUselessConditions
 void RemoveUselessConditionsRec(ltree::node* n, bool& changed) {
@@ -230,7 +229,7 @@ void Forest::RemoveUselessConditions() {
 	do {
 		changed = false;
 		for (auto& t : trees_) {
-			RemoveUselessConditionsRec(t.root, changed);
+			RemoveUselessConditionsRec(t.GetRoot(), changed);
 		}
 	} while (changed);
 }
@@ -240,7 +239,7 @@ void Forest::RemoveEndTreesUselessConditions() {
 		changed = false;
 		for (auto& tg : end_trees_) {
 			for (auto& t : tg) {
-				RemoveUselessConditionsRec(t.root, changed);
+				RemoveUselessConditionsRec(t.GetRoot(), changed);
 			}
 		}
 	} while (changed);
@@ -267,11 +266,11 @@ bool Forest::RemoveEndTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltre
 			if (cur_equal[i] == i) {
 				for (size_t j = i + 1; j < cur_trees.size(); ++j) {
 					if (cur_equal[j] == j) {
-						if (FunctionPtr(cur_trees[i].root, cur_trees[j].root)) {
+						if (FunctionPtr(cur_trees[i].GetRoot(), cur_trees[j].GetRoot())) {
 							cur_equal[j] = i;
 							found = true;
 							if (FunctionPtr == equivalent_trees) {
-								IntersectTrees(cur_trees[i].root, cur_trees[j].root);
+								IntersectTrees(cur_trees[i].GetRoot(), cur_trees[j].GetRoot());
 							}
 						}
 					}
@@ -357,7 +356,6 @@ bool Forest::RemoveEqualTrees() {
 	return RemoveTrees(EqualTrees);
 }
 
-
 // Removes duplicate trees inside the forest
 bool Forest::RemoveTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2)) {
 	// Find which trees are identical and mark them in next_tree
@@ -366,11 +364,11 @@ bool Forest::RemoveTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::
 		if (next_tree_[i] == i) {
 			for (size_t j = i + 1; j < next_tree_.size(); ++j) {
 				if (next_tree_[j] == j) {
-					if (FunctionPtr(trees_[i].root, trees_[j].root)) {
+					if (FunctionPtr(trees_[i].GetRoot(), trees_[j].GetRoot())) {
 						next_tree_[j] = i;
 						found = true;
 						if (FunctionPtr == equivalent_trees) {
-							IntersectTrees(trees_[i].root, trees_[j].root);
+							IntersectTrees(trees_[i].GetRoot(), trees_[j].GetRoot());
 						}
 					}
 				}
@@ -404,7 +402,7 @@ bool Forest::RemoveTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::
 	trees_ = move(trees);
 
 	for (auto& t : trees_) {
-		UpdateNext(t.root);
+		UpdateNext(t.GetRoot());
 	}
 
 	next_tree_.resize(trees_.size());
@@ -428,7 +426,7 @@ void Forest::InitNextRec(ltree::node* n) {
 
 // Initializes leave's next trees with sequential values
 void Forest::InitNext(ltree& t) {
-	InitNextRec(t_.root);
+	InitNextRec(t_.GetRoot());
 }
 
 // Perform tree pruning by removing useless nodes. Useless nodes are identified looking at given constraints 
@@ -455,7 +453,7 @@ void Forest::CreateReducedTreesRec(const ltree::node* n, const constraints& cons
 	if (n->isleaf()) {
 		// Create a reduced version of the tree based on what we learned on the path to this leaf        
 		ltree t;
-		t.root = Reduce(t_.root, t, constr);
+		t.SetRoot(Reduce(t_.GetRoot(), t, constr));
 		trees_.emplace_back(t);
 	}
 	else {
@@ -475,5 +473,5 @@ void Forest::CreateReducedTreesRec(const ltree::node* n, const constraints& cons
 // between pixels (i.e. pixels which remain in the mask when it moves). When a leaf is reached the 
 // original tree is reduced using current branch's constraints. 
 void Forest::CreateReducedTrees(const ltree& t, const constraints& initial_constr) {
-	CreateReducedTreesRec(t_.root, initial_constr);
+	CreateReducedTreesRec(t_.GetRoot(), initial_constr);
 }

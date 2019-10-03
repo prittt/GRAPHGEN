@@ -82,6 +82,35 @@ struct Forest {
     std::vector<std::vector<int>> end_next_trees_; // This vector contains the equivalences between end trees
     std::vector<std::vector<int>> main_trees_end_trees_mapping_; // This is the mapping between main trees and end trees
 
+    Forest(const Forest& f, std::vector<ltree::node*>& tracked_nodes) {
+        t_ = f.t_;
+        eq_ = f.eq_;
+
+        separately = f.separately;
+
+        next_tree_ = f.next_tree_;
+
+        std::unordered_map<ltree::node*, ltree::node*> copies;
+        trees_.reserve(f.trees_.size()); // Avoid reallocation on emplace back
+        for (const auto& t : f.trees_) {
+            trees_.emplace_back();
+            trees_.back().SetRoot(trees_.back().MakeCopyRecursive(t.GetRoot(), copies, tracked_nodes));
+        }
+
+        end_trees_.reserve(f.end_trees_.size()); // Avoid reallocation on resize
+        for (const auto& vt : f.end_trees_) {
+            end_trees_.resize(end_trees_.size() + 1);
+            std::unordered_map<ltree::node*, ltree::node*> copies;
+            end_trees_.back().reserve(vt.size()); // Avoid reallocation on emplace back
+            for (const auto& t : vt) {
+                end_trees_.back().emplace_back();
+                end_trees_.back().back().SetRoot(end_trees_.back().back().MakeCopyRecursive(t.GetRoot(), copies, tracked_nodes));
+            }
+        }
+        end_next_trees_ = f.end_next_trees_;
+        main_trees_end_trees_mapping_ = f.main_trees_end_trees_mapping_;
+    }
+
     Forest() {}
     Forest(ltree t, const pixel_set& ps, const constraints& initial_constraints = {}); // Initial_constraints are useful to create particular forests such as the first line forest
 
@@ -96,8 +125,7 @@ struct Forest {
     bool RemoveEqualEndTrees();
     bool RemoveEquivalentEndTrees();
     bool RemoveEndTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2));
-
-
+    
     void InitNextRec(ltree::node* n);
     void InitNext(ltree& t);
 

@@ -34,7 +34,11 @@
 
 #include "conact_tree.h"
 
+// This class serves to efficiently collect information about each node/subtree of a tree starting from a node
+// it both stores properties of each subtree (as string) and all the parents of each node.
 struct MagicOptimizer {
+
+    // Utility class to calculate and store (sub)trees properties
     struct STreeProp {
         std::string conditions_;
         std::vector<ltree::node*> leaves_;
@@ -57,13 +61,15 @@ struct MagicOptimizer {
             return true;
         }
     };
-    std::unordered_map<ltree::node*, STreeProp> np_;
-    std::unordered_map<ltree::node*, std::vector<ltree::node*>> parents_;
+    std::unordered_map<ltree::node*, STreeProp> np_; // Associate to each tree node its properties (STreeProp)
+    std::unordered_map<ltree::node*, std::vector<ltree::node*>> parents_; // Associate to each tree node its parents (vector of nodes)
 
+    MagicOptimizer() {}
     MagicOptimizer(ltree::node * n) {
         CollectStatsRec(n);
     }
 
+    // Collect information about each node/subtree of a tree starting from a node
     STreeProp CollectStatsRec(ltree::node * n) {
         auto it = np_.find(n);
         if (it != end(np_))

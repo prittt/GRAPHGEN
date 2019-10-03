@@ -160,8 +160,8 @@ struct STree {
 		for (size_t i = 0; i < f_.trees_.size(); ++i) {
 			const auto& t = f_.trees_[i];
 			// To avoid finding of equal trees that optimizer cannot compress
-			CollectStatsRec(t.root->right);
-			CollectStatsRec(t.root->left);
+			CollectStatsRec(t.GetRoot()->right);
+			CollectStatsRec(t.GetRoot()->left);
 		}
 
 		vector<STreeProp> vec;
@@ -225,11 +225,11 @@ struct STree {
 			auto& t = f_.trees_[k];
 			// Era un viaggio che poi è deviato verso un altro viaggio
 			//// Whole trees can be equivalent too
-			//if (t.root == vec[0].n_) {
-			//	t.root = vec[j].n_;
+			//if (t.GetRoot() == vec[0].n_) {
+			//	t.GetRoot() = vec[j].n_;
 			//}
 			/////////////////////////////////////
-			FindAndReplace(t.root, vec[0].n_, vec[j].n_);
+			FindAndReplace(t.GetRoot(), vec[0].n_, vec[j].n_);
 		}
 		return true;
 	}
@@ -242,8 +242,8 @@ struct STree {
 			for (size_t i = 0; i < cur_trees.size(); ++i) {
 				const auto t = cur_trees[i];
 				// To avoid finding of equal trees that optimizer cannot compress
-				CollectStatsRec(t->root->right);
-				CollectStatsRec(t->root->left);
+				CollectStatsRec(t->GetRoot()->right);
+				CollectStatsRec(t->GetRoot()->left);
 			}
 		}
 
@@ -314,7 +314,7 @@ struct STree {
 					t->root = vec[j].n_;
 				}*/
 				///////////////////////////////////
-				FindAndReplace(t->root, vec[0].n_, vec[j].n_);
+				FindAndReplace(t->GetRoot(), vec[0].n_, vec[j].n_);
 			}
 		}
 

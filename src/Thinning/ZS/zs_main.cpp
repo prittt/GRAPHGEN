@@ -32,6 +32,8 @@
 
 #include "zangsuen_ruleset.h"
 
+#include "drag.h"
+
 using namespace std;
 
 int main()
@@ -64,6 +66,9 @@ int main()
     string forest_code_nodag = conf.global_output_path_.string() + algorithm_name + "_forest_nodag_frequencies_code.txt";
     {
         ofstream os(forest_code_nodag);
+        if (!os) {
+            throw;
+        }
         GenerateForestCode(os, f);
     }
 
@@ -87,6 +92,28 @@ int main()
     {
         ofstream os(forest_code);
         GenerateForestCode(os, f);
+    }
+
+    // First line constraints
+    constraints first_line_constr;
+    using namespace std;
+    for (const auto& p : rs.ps_) {
+        if (p.GetDy() < 0)
+            first_line_constr[p.name_] = 0;
+    }
+
+    LOG("Making forest",
+        Forest flf(t, rs.ps_, first_line_constr);
+    );
+    
+    LOG("Converting forest to dag",
+        Forest2Dag x2(flf);
+    );
+
+    string fl_forest_code = conf.global_output_path_.string() + algorithm_name + "_flf_forest_identities_code.txt";
+    {
+        ofstream os(fl_forest_code);
+        GenerateForestCode(os, flf);
     }
 
     //ltree t = GetOdt(rs, algorithm_name);

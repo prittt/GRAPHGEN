@@ -63,11 +63,25 @@ struct tree {
         return nodes.back().get();
     }
 
-    node *root = nullptr;
+private:
+    node *root_ = nullptr;
+public:
+
+    node* GetRoot() const {
+        return root_;
+    }
+
+    node* GetRoot() {
+        return root_;
+    }
+
+    void SetRoot(node *root) {
+        root_ = root;
+    }
 
     friend void swap(tree& t1, tree& t2) {
         using std::swap;
-        swap(t1.root, t2.root);
+        swap(t1.root_, t2.root_);
         swap(t1.nodes, t2.nodes);
     }
 
@@ -97,11 +111,11 @@ struct tree {
     tree(const tree& t) {
         std::unordered_map<node*, node*> copies;
         std::vector<node*> tracked_nodes;
-        root = MakeCopyRecursive(t.root, copies, tracked_nodes);
+        root_ = MakeCopyRecursive(t.root_, copies, tracked_nodes);
     }
     tree(const tree& t, std::vector<node*>& tracked_nodes) { // Allows to track where the nodes in a tree have been copied to
         std::unordered_map<node*, node*> copies;
-        root = MakeCopyRecursive(t.root, copies, tracked_nodes);
+        root_ = MakeCopyRecursive(t.root_, copies, tracked_nodes);
     }
     tree(tree&& t) {
         swap(*this, t);
@@ -112,27 +126,7 @@ struct tree {
         return *this;
     }
 
-    node* make_root() { return root = make_node(); }
-
-    template<typename fn>
-    void preorder_rec(node *n, fn& f, int i) {
-        if (n == nullptr)
-            return;
-        node *left = n->left, *right = n->right;
-        f(n, i);
-        preorder_rec(left, f, i + 1);
-        preorder_rec(right, f, i + 1);
-    }
-
-    template<typename fn>
-    void preorder(fn& f) {
-        preorder_rec(root, f, 0);
-    }
-
-    void clear() {
-        nodes.clear();
-        root = nullptr;
-    }
+    node* make_root() { return root_ = make_node(); }
 };
 
 #endif // !GRAPHSGEN_TREE_H_

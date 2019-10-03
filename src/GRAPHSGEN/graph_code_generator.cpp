@@ -197,14 +197,14 @@ bool GenerateDragCode(const string& algorithm_name, ltree& t, std::string prefix
 
     // This object wraps all the variables needed by the recursive function GenerateCodeRec and allows to simplify its
     // following call.
-    GenerateCodeClass gcc(false, prefix, /*{ { t.root, 0 } }*/{});
+    GenerateCodeClass gcc(false, prefix, /*{ { t.GetRoot(), 0 } }*/{});
 
     // Populates the nodes_requring_labels to keep tracks of the DAG nodes that are pointed by other nodes and thus need
     // to have a label
-    gcc.CheckNodesTraversalRec(t.root);
+    gcc.CheckNodesTraversalRec(t.GetRoot());
 
     // This function actually generates and writes in the output stream the C++ source code using pre-calculated data.
-    gcc.GenerateCodeRec(os, t.root, 2);
+    gcc.GenerateCodeRec(os, t.GetRoot(), 2);
 
     return true;
 }
@@ -222,7 +222,7 @@ int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, in
     
     for (size_t i = 0; i < f.trees_.size(); ++i) {
         const auto& t = f.trees_[i];
-        gcc_main.CheckNodesTraversalRec(t.root);
+        gcc_main.CheckNodesTraversalRec(t.GetRoot());
     }
 
     // TODO questa versione è specifica per BBDT, bisogna trovare un modo per generalizzare rispetto allo shift della maschera!!
@@ -240,7 +240,7 @@ int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, in
                 "break_0_" << f.main_trees_end_trees_mapping_[0][i] << "; } else { goto " << prefix << 
                 "break_1_" << f.main_trees_end_trees_mapping_[1][i] << "; } } \n";
         }
-        gcc_main.GenerateCodeRec(os, t.root, 2);
+        gcc_main.GenerateCodeRec(os, t.GetRoot(), 2);
     }
 
     // End trees
@@ -250,7 +250,7 @@ int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, in
         const auto& cur_trees = f.end_trees_[tg];
         for (size_t i = 0; i < cur_trees.size(); ++i) {
             const auto& t = cur_trees[i];
-            gcc_end.CheckNodesTraversalRec(t.root);
+            gcc_end.CheckNodesTraversalRec(t.GetRoot());
         }
     }
 
@@ -259,7 +259,7 @@ int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, in
         const auto& cur_trees = f.end_trees_[tg];
         for (size_t i = 0; i < cur_trees.size(); ++i) {
             os << prefix << "break_" << tg << "_" << i << ":\n";
-            gcc_end.GenerateCodeRec(os, cur_trees[i].root, 2);
+            gcc_end.GenerateCodeRec(os, cur_trees[i].GetRoot(), 2);
             os << string(2, '\t') << "continue;\n";
         }
     }

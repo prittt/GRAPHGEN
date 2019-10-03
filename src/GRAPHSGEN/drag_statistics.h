@@ -60,7 +60,7 @@ public:
 	* @param [in] t: DRAG on which calculate statistics. Note that simple tree are also DRAG.
 	*/
     DragStatistics(const ltree& t) {
-        PerformStatistics(t.root);
+        PerformStatistics(t.GetRoot());
     }
 
 	/**

@@ -54,7 +54,7 @@ void FindAndLinkIdentiesDagRec(ltree::node* n1, ltree::node* n2, std::map<ltree:
 // Recursive auxiliary function for the conversion of a DAG into DAG with no equivalent subgraphs
 void Dag2DagUsingIdentiesRec(ltree::node *n, ltree& t, std::map<ltree::node*, bool> &visited_n) {
     std::map<ltree::node*, bool> visited_fl;
-    FindAndLinkIdentiesDagRec(n, t.root, visited_fl);
+    FindAndLinkIdentiesDagRec(n, t.GetRoot(), visited_fl);
     visited_n[n] = true;
 
     if (!n->isleaf()) {
@@ -68,7 +68,7 @@ void Dag2DagUsingIdentiesRec(ltree::node *n, ltree& t, std::map<ltree::node*, bo
 // Converts dag to dag using identies between subtrees
 void Dag2DagUsingIdenties(ltree& t) {
 	std::map<ltree::node*, bool> visited_n;
-	Dag2DagUsingIdentiesRec(t.root, t, visited_n);
+	Dag2DagUsingIdentiesRec(t.GetRoot(), t, visited_n);
 }
 
 // TODO: 
@@ -98,7 +98,7 @@ void Dag2DagUsingEquivalencesRec(ltree::node *n, ltree& t, std::map<ltree::node*
 	std::map<ltree::node*, bool> visited_fl;
 	
 	if (!n->isleaf() || considering_leaves) {
-		FindAndLinkEquivalencesDagRec(n, t.root, visited_fl);
+		FindAndLinkEquivalencesDagRec(n, t.GetRoot(), visited_fl);
 	}
 	visited_n[n] = true;
 
@@ -113,7 +113,7 @@ void Dag2DagUsingEquivalencesRec(ltree::node *n, ltree& t, std::map<ltree::node*
 // Converts dag to dag using equivalences between subtrees
 void Dag2DagUsingEquivalences(ltree& t, bool considering_leaves) {
 	std::map<ltree::node*, bool> visited_n;
-	Dag2DagUsingEquivalencesRec(t.root, t, visited_n, considering_leaves);
+	Dag2DagUsingEquivalencesRec(t.GetRoot(), t, visited_n, considering_leaves);
 }
 
 // Given a dag with multiple actions on leaves this function generate all possible dags with only one action per leaf
@@ -129,7 +129,7 @@ void Dag2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_no
                 n->data.action = 0;
                 n->data.action.set(actions_list[i] - 1);
                 nt = t;
-                Dag2OptimalDagRec(nt, nt.root, best_tree, best_nodes, best_leaves, visited_node_cur, counter);
+                Dag2OptimalDagRec(nt, nt.GetRoot(), best_tree, best_nodes, best_leaves, visited_node_cur, counter);
             }
             n->data.action = 0;
             n->data.action.set(actions_list[actions_list.size() - 1] - 1);
@@ -149,7 +149,7 @@ void Dag2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_no
         Dag2OptimalDagRec(t, n->right, best_tree, best_nodes, best_leaves, visited_n, counter);
     }
 
-    if (t.root == n) {
+    if (t.GetRoot() == n) {
         counter++;
         ltree dag = t;
         Dag2DagUsingIdenties(dag);
@@ -182,7 +182,7 @@ void Dag2OptimalDag(ltree& t) {
     uint counter = 0;
     uint best_nodes = std::numeric_limits<uint>::max();
     uint best_leaves = std::numeric_limits<uint>::max();
-    Dag2OptimalDagRec(t, t.root, best_tree, best_nodes, best_leaves, visited_nodes, counter);
+    Dag2OptimalDagRec(t, t.GetRoot(), best_tree, best_nodes, best_leaves, visited_nodes, counter);
     std::cout << "** Vector size:" << counter << " **\n";
     std::cout << "** Counter:" << counter << " **\n";
 

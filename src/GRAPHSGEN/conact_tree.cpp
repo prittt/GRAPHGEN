@@ -72,7 +72,7 @@ bool LoadConactTree(ltree& t, const string& filename)
         return false;
     }
 
-    t.root = LoadConactTreeRec(t, is);
+    t.SetRoot(LoadConactTreeRec(t, is));
     return true;
 }
 
@@ -100,7 +100,7 @@ bool WriteConactTree(const ltree& t, const string& filename)
     ofstream os(filename);
     if (!os)
         return false;
-    WriteConactTreeRec(t.root, os);
+    WriteConactTreeRec(t.GetRoot(), os);
     return true;
 }
 

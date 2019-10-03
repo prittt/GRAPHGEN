@@ -68,13 +68,13 @@ public:
 	ForestStatistics(const Forest& f) {
 		// Internal trees statistics
 		for (const auto& t : f.trees_) {
-			PerformStatistics(t.root);
+			PerformStatistics(t.GetRoot());
 		}
 
 		// End trees statistics
 		for (const auto& g : f.end_trees_) {
 			for (const auto& t : g) {
-				PerformEndStatistics(t.root);
+				PerformEndStatistics(t.GetRoot());
 			}
 		}
 	}

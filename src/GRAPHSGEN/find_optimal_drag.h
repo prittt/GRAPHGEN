@@ -55,7 +55,7 @@ struct FindOptimalDrag {
     thread_pool *pool_ = nullptr;
 
     FindOptimalDrag(ltree t) : t_{ std::move(t) } {
-        GetLeavesWithMultipleActionsRec(t_.root);
+        GetLeavesWithMultipleActionsRec(t_.GetRoot());
     }
 
     // This method fill the lma_ variable with all the leaves that have multiple actions. This
@@ -78,7 +78,7 @@ struct FindOptimalDrag {
 
     void ReduceAndUpdateBest(ltree t)
     {
-        RemoveEqualSubtrees sc(t.root);
+        RemoveEqualSubtrees sc(t.GetRoot());
 
         std::lock_guard<std::mutex> lock(best_tree_mutex_);
         if (best_nodes_ > sc.nodes_ || (best_nodes_ == sc.nodes_ && best_leaves_ > sc.leaves_)) {

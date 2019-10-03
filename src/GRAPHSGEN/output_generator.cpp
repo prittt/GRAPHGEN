@@ -117,9 +117,9 @@ void GenerateDotCodeForDag(std::ostream& os, const tree<conact>& t, bool with_ne
     os << "digraph dag{\n"
           "bgcolor=\"transparent\""
           "\tsubgraph tree{\n";
-    std::map<tree<conact>::node*, int> printed_node = { { t.root, 0 } };
+    std::map<tree<conact>::node*, int> printed_node = { { t.GetRoot(), 0 } };
     std::vector<std::string> links;
-    GenerateDotCodeForDagRec(os, t.root, printed_node, links, nodeid(), with_next, 2);
+    GenerateDotCodeForDagRec(os, t.GetRoot(), printed_node, links, nodeid(), with_next, 2);
 
     os << "\t}\n";
     for (size_t i = 0; i < links.size(); ++i) {
@@ -131,7 +131,7 @@ void GenerateDotCodeForDag(std::ostream& os, const tree<conact>& t, bool with_ne
 
 string GetDotCallString(const std::string& code_path, const std::string& output_path = "")
 {
-    string dot_call = "..\\tools\\dot\\dot -Tsvg \"" + code_path + "\"";
+    string dot_call = "..\\tools\\dot\\dot -T" + conf.dot_output_format_.substr(1) + " \"" + code_path + "\"";
     if(output_path != ""){
         dot_call += " -o \"" + output_path + "\"";
     }
@@ -199,15 +199,15 @@ bool DrawMainForestOnFile(const string& output_file, const Forest& f, bool save_
     std::vector<std::string> links;
     for (size_t i = 0; i < f.trees_.size(); ++i) {
         const auto& t = f.trees_[i];
-        string tmp = t.root->data.condition;
+        string tmp = t.GetRoot()->data.condition;
         if (i == 0)
-            t.root->data.condition = "!" + tmp; // "! -> identifies the root of the start tree"
+            t.GetRoot()->data.condition = "!" + tmp; // "! -> identifies the root of the start tree"
         else
-            t.root->data.condition = "?" + to_string(i) + " - " + tmp; // "?" -> identifies tree's root
-        printed_node[t.root] = id.next();
-        GenerateDotCodeForDagRec(os, t.root, printed_node, links, id, true, 2);
+            t.GetRoot()->data.condition = "?" + to_string(i) + " - " + tmp; // "?" -> identifies tree's root
+        printed_node[t.GetRoot()] = id.next();
+        GenerateDotCodeForDagRec(os, t.GetRoot(), printed_node, links, id, true, 2);
         // Turn the condition back to its original value
-        t.root->data.condition = tmp;
+        t.GetRoot()->data.condition = tmp;
     }
 
     os << "\t}\n";
@@ -260,12 +260,12 @@ bool DrawEndForestOnFile(const string& output_file, const Forest& f, bool save_d
         for (size_t i = 0; i < cur_trees.size(); ++i) {
             const auto& t = cur_trees[i];
             // In order to easily distinguish roots we change the condition string
-            string tmp = t.root->data.condition;
-            t.root->data.condition = "?" + to_string(tg) + "," + to_string(i) + " - " + tmp; // "?" -> identifies tree's root
-            printed_node[t.root] = id.next();
-            GenerateDotCodeForDagRec(os, t.root, printed_node, links, id, false, 2);
+            string tmp = t.GetRoot()->data.condition;
+            t.GetRoot()->data.condition = "?" + to_string(tg) + "," + to_string(i) + " - " + tmp; // "?" -> identifies tree's root
+            printed_node[t.GetRoot()] = id.next();
+            GenerateDotCodeForDagRec(os, t.GetRoot(), printed_node, links, id, false, 2);
             // Turn the condition back to its original value
-            t.root->data.condition = tmp;
+            t.GetRoot()->data.condition = tmp;
         }
     }
 

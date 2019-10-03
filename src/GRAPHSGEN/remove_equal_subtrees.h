@@ -39,11 +39,11 @@ struct RemoveEqualSubtrees {
     std::unordered_map<ltree::node*, std::string> ps_; // pointer -> string
     uint nodes_ = 0, leaves_ = 0;
 
-    RemoveEqualSubtrees(ltree::node*& n) {
+    RemoveEqualSubtrees(ltree::node* n) {
         T2D(n);
     }
 
-    std::string T2D(ltree::node*& n)
+    std::string T2D(ltree::node* n)
     {
         // Did we already find this node?
         auto itps = ps_.find(n);
