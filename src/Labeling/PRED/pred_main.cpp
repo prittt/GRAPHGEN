@@ -48,7 +48,7 @@ int main()
     
     // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, false, true);
+    DrawDagOnFile(tree_filename, t);
     
     // 3) Generate forests of tree (one for the first row and one for all
     //    the other rows)

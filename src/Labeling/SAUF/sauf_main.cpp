@@ -48,10 +48,13 @@ int main()
 
     // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, false, true, false);
+    DrawDagOnFile(tree_filename, t);
 
     // 3) Generate the C++ source code for the ODT
-    GenerateDragCode(algorithm_name, t);
+    ofstream os(conf.treecode_path_);
+    if (os){
+        GenerateDragCode(os, t, false);
+    }
 
     // 4) Generate the C++ source code for pointers, 
     // conditions to check and actions to perform

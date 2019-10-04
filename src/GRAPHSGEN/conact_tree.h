@@ -34,7 +34,10 @@
 #include "condition_action.h"
 #include "tree.h"
 
-using ltree = tree<conact>;
+#include "drag.h"
+//using ltree = tree<conact>;
+using ltree = BinaryDrag<conact>;
+
 
 /**
 * Load tree from file. The tree must be saved in a file with the following structure:

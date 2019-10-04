@@ -32,7 +32,7 @@
 
 using namespace std;
 
-void print_node(tree<conact>::node *n, int i)
+void print_node(BinaryDrag<conact>::node *n, int i)
 {
     std::cout << std::string(i, '\t');
     if (n->data.t == conact::type::CONDITION) {
@@ -68,7 +68,7 @@ string GetNodeCode(const string& condition) {
     return " [label = \"" + real_condition + "\"" + GetShape(condition[0]) + "];\n";
 }
 
-void GenerateDotCodeForDagRec(std::ostream& os, tree<conact>::node *n, std::map<tree<conact>::node*, int>& printed_node, std::vector<std::string>& links, nodeid &id, bool with_next, int tab) {
+void GenerateDotCodeForDagRec(std::ostream& os, BinaryDrag<conact>::node *n, std::map<BinaryDrag<conact>::node*, int>& printed_node, std::vector<std::string>& links, nodeid &id, bool with_next, int tab) {
     os << std::string(tab, '\t') << "node" << id.get();
     if (n->isleaf()) {
         // print leaf
@@ -113,13 +113,24 @@ void GenerateDotCodeForDagRec(std::ostream& os, tree<conact>::node *n, std::map<
 }
 
 // All nodes must have both sons! 
-void GenerateDotCodeForDag(std::ostream& os, const tree<conact>& t, bool with_next = false) {
+void GenerateDotCodeForDag(std::ostream& os, const BinaryDrag<conact>& t, bool with_next = false) {
     os << "digraph dag{\n"
           "bgcolor=\"transparent\""
           "\tsubgraph tree{\n";
-    std::map<tree<conact>::node*, int> printed_node = { { t.GetRoot(), 0 } };
+    nodeid id;
+    std::map<BinaryDrag<conact>::node*, int> printed_node = { { t.GetRoot(), 0 } };
     std::vector<std::string> links;
-    GenerateDotCodeForDagRec(os, t.GetRoot(), printed_node, links, nodeid(), with_next, 2);
+    for (size_t i = 0; i < t.roots_.size(); ++i) {
+        string tmp = t.GetRoot()->data.condition;
+        if (i == 0)
+            t.roots_[i]->data.condition = "!" + tmp; // "! -> identifies the root of the start tree"
+        else
+            t.roots_[i]->data.condition = "?" + to_string(i) + " - " + tmp; // "?" -> identifies tree's root
+        printed_node[t.roots_[i]] = id.next();
+        GenerateDotCodeForDagRec(os, t.roots_[i], printed_node, links, id, with_next, 2);
+        // Turn the condition back to its original value
+        t.roots_[i]->data.condition = tmp;
+    }
 
     os << "\t}\n";
     for (size_t i = 0; i < links.size(); ++i) {
@@ -143,10 +154,24 @@ string GetDotCallString(const filesystem::path& code_path, filesystem::path outp
     return GetDotCallString(code_path.string(), output_path.string());
 }
 
-// TODO eliminare i booleani e farli diventare un singolo parametro
-// TODO parametro per decidere il formato del file di output
-bool DrawDagOnFile(const string& output_file, const tree<conact> &t, bool with_next, bool verbose, bool delete_dotcode) {
+bool DrawDagOnFile(const string& output_file, const BinaryDrag<conact> &t, int flags) {
 
+    bool with_next = false;
+    bool verbose = false; 
+    bool delete_dotcode = false;
+
+    if (flags & DrawDagFlags::WITH_NEXT) {
+        bool with_next = true;
+    }
+
+    if (flags & DrawDagFlags::VERBOSE) {
+        bool verbose = true;
+    }
+
+    if (flags & DrawDagFlags::DELETE_DOTCODE) {
+         bool delete_dotcode = true;
+    }
+    
     if (verbose) {
         std::cout << "Drawing DAG: " << output_file << ".. ";
     }

@@ -34,6 +34,9 @@
 
 using namespace std;
 
+std::string DefaultBefore(int i, const std::string& prefix) { return std::string(); }
+std::string DefaultAfter(int i, const std::string& prefix) { return std::string(); }
+
 // This class allows to sum-up all the data required by the recursive functions that generate
 // the DRAG source code, thus simplifying its signature/call.
 class GenerateCodeClass {
@@ -120,14 +123,14 @@ public:
     }
 
     // This procedure write to the output stream the C++ source exploring recursively the specified DRAG. 
-    // When a leaf with multiple actions is found only the first action is considered and write in the
+    // When a leaf with multiple actions is found only the first action is considered and written in the
     // output file.
-    void GenerateCodeRec(std::ostream& os, ltree::node *n, int tab) 
+    void GenerateCodeRec(std::ostream& os, ltree::node *n, int tab)
     {
         // Extract needed data from the GenerateCodeClass
         auto& m = printed_nodes_;
         auto& ml = nodes_requiring_labels_;
-        
+
         if (n->isleaf()) {
             vector<uint> actions = n->data.actions();
             os << string(tab, '\t') << "ACTION_" << actions[0] << "\n";
@@ -163,7 +166,7 @@ public:
     // This procedure checks and stores (inside the nodes_requiring_labels_ map) the nodes which will require labels, 
     // that are nodes pointed by other nodes inside the DAG. This allows to handle labels/gotos during the generation 
     // of the C++ source code.
-    void CheckNodesTraversalRec(ltree::node *n) 
+    void CheckNodesTraversalRec(ltree::node *n)
     {
         auto& ml = nodes_requiring_labels_;
 
@@ -210,16 +213,17 @@ bool GenerateDragCode(const string& algorithm_name, ltree& t, std::string prefix
 }
 
 // GenerateDragCode public interface.
-bool GenerateDragCode(const string& algorithm_name, ltree& t) 
+bool GenerateDragCode(const string& algorithm_name, ltree& t)
 {
     return GenerateDragCode(algorithm_name, t, "");
 }
 
 // This function generates forest code using numerical labels starting from start_id and returns the last used_id
-int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, int start_id, int mask_shift) 
+// This function generates forest code using numerical labels starting from start_id and returns the last used_id
+int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, int start_id, int mask_shift)
 {
-    GenerateCodeClass gcc_main(true, prefix, {{}});
-    
+    GenerateCodeClass gcc_main(true, prefix, { {} });
+
     for (size_t i = 0; i < f.trees_.size(); ++i) {
         const auto& t = f.trees_[i];
         gcc_main.CheckNodesTraversalRec(t.GetRoot());
@@ -231,13 +235,13 @@ int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, in
         const auto& t = f.trees_[i];
         if (mask_shift == 1) {
             // Thinning, PRED, SAUF, CTB 
-            os << prefix << "tree_" << i << ": if ((c+=1) >= w - 1) goto " << prefix << 
+            os << prefix << "tree_" << i << ": if ((c+=1) >= w - 1) goto " << prefix <<
                 "break_0_" << f.main_trees_end_trees_mapping_[0][i] << ";\n";
         }
         else if (mask_shift == 2) {
             // BBDT, DRAG, SPAGHETTI
-            os << prefix << "tree_" << i << ": if ((c+=2) >= w - 2) { if (c > w - 2) { goto " << prefix << 
-                "break_0_" << f.main_trees_end_trees_mapping_[0][i] << "; } else { goto " << prefix << 
+            os << prefix << "tree_" << i << ": if ((c+=2) >= w - 2) { if (c > w - 2) { goto " << prefix <<
+                "break_0_" << f.main_trees_end_trees_mapping_[0][i] << "; } else { goto " << prefix <<
                 "break_1_" << f.main_trees_end_trees_mapping_[1][i] << "; } } \n";
         }
         gcc_main.GenerateCodeRec(os, t.GetRoot(), 2);
@@ -265,4 +269,30 @@ int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, in
     }
 
     return gcc_end.GetId();
+}
+
+
+
+
+int GenerateDragCode(std::ostream& os, 
+                     const BinaryDrag<conact>& bd, 
+                     bool with_gotos,
+                     std::string before(int i, const std::string& prefix), 
+                     std::string after(int i, const std::string& prefix),
+                     std::string prefix,
+                     int start_id)
+{
+    GenerateCodeClass gcc(with_gotos, prefix, { {} });
+
+    for (size_t i = 0; i < bd.roots_.size(); ++i) {
+        gcc.CheckNodesTraversalRec(bd.roots_[i]);
+    }
+
+    gcc.SetId(start_id);
+    for (size_t i = 0; i < bd.roots_.size(); ++i) {        
+        os << before(i, prefix);        
+        gcc.GenerateCodeRec(os, bd.roots_[i], 2);
+    }
+
+    return gcc.GetId();
 }

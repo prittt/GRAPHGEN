@@ -40,21 +40,27 @@
 #include "tree.h"
 #include "utilities.h"
 
-/** @brief Generate a pdf file displaying the specified DRAG.
+/** @brief Flags for the DrawDagOnFile function
+*/
+enum DrawDagFlags {
+    WITH_NEXT      = 1, /**< @brief Whether to handle next tress or not */
+    VERBOSE        = 2, /**< @brief Whether to display output messages or not */
+    DELETE_DOTCODE = 4, /**< @brief Whether to delete or not the dot code used to generate the image */
+};
+
+/** @brief Generate a file displaying the specified DRAG. The output format will be the 
+one set in the general yaml configuration file
 
 @param[in] output_file Name that the output file should have (without extension).
-@param[in] t DRAG to be drawn.
-@param[in] with_next Whether to add next tree label inside leaves. Default is false.
-@param[in] verbose Whether to print messages on standard output or not. Default is false.
-@param[in] with_next Whether to remove the source (dot)code used to draw the DAG or not. Default is true.
+@param[in] dt DRAG (BinaryDrag<conact>) to be drawn.
+@param[in] flags Function flags, see DrawDagFlags.
 
 @return Whether the operation ended correctly (true) or not (false).
 */
 bool DrawDagOnFile(const std::string& output_file,
-                   const tree<conact> &t,
-                   bool with_next = false,
-                   bool verbose = false,
-                   bool delete_dotcode = true);
+                   const BinaryDrag<conact> &dt,
+                   int flags = DrawDagFlags::DELETE_DOTCODE);
+
 
 bool DrawForestOnFile(const std::string& output_file, const Forest& f, bool save_dotcode = false, bool verbose = false);
 

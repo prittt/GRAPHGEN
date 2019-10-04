@@ -53,21 +53,29 @@ struct BinaryDrag {
     };
 
     // Vector of unique pointers to tree nodes. This is useful to free memory when the tree is converted to DAG 
-    std::vector<std::unique_ptr<node>> nodes;
+    std::vector<std::unique_ptr<node>> nodes_;
 
     // Creates and returns new node updating the nodes vector
     template<typename... Args>
     node* make_node(Args&&... args) {
-        nodes.emplace_back(std::make_unique<node>(std::forward<Args>(args)...));
-        return nodes.back().get();
+        nodes_.emplace_back(std::make_unique<node>(std::forward<Args>(args)...));
+        return nodes_.back().get();
     }
 
-    std::vector<node *> roots;
+    std::vector<node *> roots_;
+
+    node* GetRoot() const {
+        return roots_.front();
+    }
+
+    void SetRoot(node *root) {
+        roots_.push_back(root);
+    }
 
     friend void swap(BinaryDrag& bd1, BinaryDrag& bd2) {
         using std::swap;
-        swap(bd1.roots, bd2.roots);
-        swap(bd1.nodes, bd2.nodes);
+        swap(bd1.roots_, bd2.roots_);
+        swap(bd1.nodes_, bd2.nodes_);
     }
 
     // Recursive function to copy a tree. This is required by the copy constructor
@@ -91,10 +99,10 @@ struct BinaryDrag {
     // Copy constructor
     BinaryDrag(const BinaryDrag& bd) {
         std::unordered_map<node*, node*> copies;
-        for (const auto& x : bd.roots) {
-            roots.push_back(MakeCopyRecursive(x, copies));
+        for (const auto& x : bd.roots_) {
+            roots_.push_back(MakeCopyRecursive(x, copies));
         }
-        for (const auto& n : bd.nodes) {
+        for (const auto& n : bd.nodes_) {
             auto& nn = copies[n.get()];
             for (const auto& p : n->parents_) {
                 nn->parents_.push_back(copies[p]);
@@ -104,10 +112,10 @@ struct BinaryDrag {
     
     BinaryDrag(const BinaryDrag& bd, std::vector<node*>& tracked_nodes) { // Allows to track where the nodes in a tree have been copied to
         std::unordered_map<node*, node*> copies;
-        for (const auto& x : bd.roots) {
-            roots.push_back(MakeCopyRecursive(x, copies));
+        for (const auto& x : bd.roots_) {
+            roots_.push_back(MakeCopyRecursive(x, copies));
         }
-        for (const auto& n : bd.nodes) {
+        for (const auto& n : bd.nodes_) {
             auto& nn = copies[n.get()];
             for (const auto& p : n->parents_) {
                 nn->parents_.push_back(copies[p]);
@@ -128,8 +136,8 @@ struct BinaryDrag {
     }
 
     node* make_root() { 
-        roots.push_back(make_node());
-        return roots.back();
+        roots_.push_back(make_node());
+        return roots_.back();
     }
 };
 
