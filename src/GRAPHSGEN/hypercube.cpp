@@ -176,7 +176,7 @@ ltree VHyperCube::optimize(bool bVerbose)
 				if (arrPosIndifference[i] < m_iDim) {
 					// Ci stanno le altre indifferenze?
 					if (m_iDim - 1 - arrPosIndifference[i] >= iNumIndifference - 1 - i) {
-						// La posizione è valida, ci stanno le altre, allora sistemo 
+						// La posizione ï¿½ valida, ci stanno le altre, allora sistemo 
 						// le indifferenze successive
 						iPos = arrPosIndifference[i] + 1;
 						for (size_t j = i + 1; j < iNumIndifference; j++) {
@@ -253,7 +253,13 @@ void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<
 void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::string, int> set_conditions, const rule_set& rs, ltree& tree, ltree::node* parent) 
 {
 	std::unordered_map<string, std::array<std::unordered_map<std::bitset<128>, int>, 2>> action_occurence_map;
-	std::map<std::string, int> total_probable_action_occurences;
+	std::map<std::string, std::array<std::bitset<128>, 2>> most_probable_action;
+	std::map<std::string, std::array<int, 2>> most_probable_action_occurences;
+
+	
+	if (c++ % 100 == 0) {
+		std::cout << "\r" << c;
+	}
 
 	for (auto c : conditions) {
 		int power = 1 << rs.conditions_pos.at(c);
@@ -265,7 +271,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 			for (int b = 0; b < 128; b++) {
 				if (rs.rules[i].actions.test(b)) {
 					action_occurence_map[c][bit_value][std::bitset<128>().set(b)]++;
-					std::cout << "Condition: " << c << " Bit Value: " << bit_value << " Bitmapped Action: " << rs.rules[i].actions.to_ulong() << " Natural Action: " << b+1 << std::endl;
+					//std::cout << "Condition: " << c << " Bit Value: " << bit_value << " Bitmapped Action: " << rs.rules[i].actions.to_ulong() << " Natural Action: " << b+1 << std::endl;
 				}
 			}
 		}
@@ -284,72 +290,66 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 			auto rightAction = action_occurence_map.at(conditions[0])[1].begin()->first;
 			rightNode->data.t = conact::type::ACTION;
 			rightNode->data.action = rightAction;
-			std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
+			//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
 			return;
 		}
 
 		for (int bit_value = 0; bit_value < 2; bit_value++) {
-			std::bitset<128> most_probable_action;
-			int most_probable_action_occurences = 0;
 			for (auto& x : action_occurence_map[c][bit_value]) {
-				if (x.second > most_probable_action_occurences) {
-					most_probable_action = x.first;
-					most_probable_action_occurences = x.second;
+				if (x.second > most_probable_action_occurences[c][bit_value]) {
+					most_probable_action[c][bit_value] = x.first;
+					most_probable_action_occurences[c][bit_value] = x.second;
 				}
-			}
-			total_probable_action_occurences[c] += most_probable_action_occurences;
-
-			// Case 1: Definitive Action in one child = 1 leaf/action; other one is condition
-			if (most_probable_action_occurences >= (1 << (conditions.size() - 1))) {
-				auto actionNode = tree.make_node();
-				auto newParent = tree.make_node();
-				actionNode->data.t = conact::type::ACTION;
-				actionNode->data.action = most_probable_action;
-				parent->data.t = conact::type::CONDITION;
-				parent->data.condition = c;
-				if (bit_value == 0) {
-					parent->left = actionNode;
-					parent->right = newParent;
-				} else {
-					parent->left = newParent;
-					parent->right = actionNode;
-				}
-
-				conditions.erase(std::remove(conditions.begin(), conditions.end(), c), conditions.end());
-				set_conditions[c] = bit_value;
-				std::cout << "Case 1: Definitive Action in one child; 1 leaf/action, 1 node/condition as children. Condition: " << c << " Action: " << most_probable_action.to_ulong() << std::endl;
-
-				return FindHdtRecursively(conditions, set_conditions, rs, tree, newParent);
 			}
 		}
 	}
-	PrintOccurenceMap(action_occurence_map);
+	//PrintOccurenceMap(action_occurence_map);
 
 	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
 	std::string splitCandidate;
 	int max = 0;
 	for (auto& x : conditions) {
-		if (total_probable_action_occurences[x] > max) {
-			max = total_probable_action_occurences[x];
+		bool LeftIsAction = most_probable_action_occurences[x][0] == (1 << (conditions.size() - 1));
+		int left_push = LeftIsAction * (1 << (conditions.size() - 1));
+		bool RightIsAction = most_probable_action_occurences[x][1] == (1 << (conditions.size() - 1));
+		int right_push = RightIsAction * (1 << (conditions.size() - 1));
+		if (left_push + right_push + most_probable_action_occurences[x][0] + most_probable_action_occurences[x][1] > max) {
+			max = left_push + right_push + most_probable_action_occurences[x][0] + most_probable_action_occurences[x][1];
 			splitCandidate = x;
 		}
 	}
+
+	bool LeftIsAction = most_probable_action_occurences[splitCandidate][0] == (1 << (conditions.size() - 1));
+	bool RightIsAction = most_probable_action_occurences[splitCandidate][1] == (1 << (conditions.size() - 1));
+	
 	conditions.erase(std::remove(conditions.begin(), conditions.end(), splitCandidate), conditions.end());
 
 	parent->data.t = conact::type::CONDITION;
 	parent->data.condition = splitCandidate;
-	auto leftNode = tree.make_node();
-	auto rightNode = tree.make_node();
-	parent->left = leftNode;
-	parent->right = rightNode;
-	auto conditionsForLeft = set_conditions;
-	conditionsForLeft[splitCandidate] = 1;
-	auto conditionsForRight = set_conditions;
-	conditionsForRight[splitCandidate] = 0;
-	std::cout << "Case 2: Take best guess, both children are conditions/nodes. Split Condition: " << splitCandidate << std::endl;
 
-	FindHdtRecursively(conditions, conditionsForLeft, rs, tree, leftNode);
-	FindHdtRecursively(conditions, conditionsForRight, rs, tree, rightNode);
+	if (LeftIsAction) {
+		parent->left = tree.make_node();
+		parent->left->data.t = conact::type::ACTION;
+		parent->left->data.action = most_probable_action[splitCandidate][0];
+	}
+	else {
+		parent->left = tree.make_node();
+		auto conditionsForLeft = set_conditions;
+		conditionsForLeft[splitCandidate] = 1;
+		FindHdtRecursively(conditions, conditionsForLeft, rs, tree, parent->left);
+	}
+
+	if (RightIsAction) {
+		parent->right = tree.make_node();
+		parent->right->data.t = conact::type::ACTION;
+		parent->right->data.action = most_probable_action[splitCandidate][1];
+	}
+	else {
+		parent->right = tree.make_node();
+		auto conditionsForRight = set_conditions;
+		conditionsForRight[splitCandidate] = 0;
+		FindHdtRecursively(conditions, conditionsForRight, rs, tree, parent->right);
+	}
 }
 
 ltree GenerateHdt(const rule_set& rs) {

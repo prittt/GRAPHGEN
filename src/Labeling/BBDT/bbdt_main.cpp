@@ -44,7 +44,7 @@ int main()
 
     // Call GRAPHSGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
-    ltree t = GetOdt(rs, algorithm_name);
+    ltree t = GetHdt(rs, algorithm_name, true);
 
     // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
