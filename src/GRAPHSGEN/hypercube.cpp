@@ -256,10 +256,6 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	std::map<std::string, std::array<std::bitset<128>, 2>> most_probable_action;
 	std::map<std::string, std::array<int, 2>> most_probable_action_occurences;
 
-	
-	if (c++ % 100 == 0) {
-		std::cout << "\r" << c;
-	}
 
 	for (auto c : conditions) {
 		int power = 1 << rs.conditions_pos.at(c);
