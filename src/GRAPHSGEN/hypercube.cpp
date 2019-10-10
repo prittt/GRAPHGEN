@@ -27,7 +27,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hypercube.h"
-
+#include <math.h>
 #include "utilities.h"
 
 using namespace std;
@@ -227,6 +227,15 @@ ltree GetOdt(const rule_set& rs, const string& algorithm_name, bool force_genera
     return t;
 }
 
+double entropy(std::unordered_map<int, int> map) {
+	double s = 0, h = 0;
+	for (const auto& x : map) {
+		s += x.second;
+		h += x.second * log2(x.second);
+	}
+	return log2(s) - h / s;
+}
+
 bool ViolatesSetConditions(int rule_index, std::map<std::string, int>& set_conditions, const rule_set& rs) {
 	for (auto& f : set_conditions) {
 		std::string tested_condition_char = f.first;
@@ -237,6 +246,40 @@ bool ViolatesSetConditions(int rule_index, std::map<std::string, int>& set_condi
 		}
 	}
 	return false;
+}
+
+std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<std::bitset<128>> combined_actions, const int maxActions, const rule_set& rs) {
+	std::unordered_map<int, int> single_actions;
+	std::vector<std::pair<int, int>> singleActionCount;
+
+	for (int i = 0; i < maxActions; i++) {
+		singleActionCount.push_back(std::pair(i, 0));
+	}
+
+	for (int i = 0; i < combined_actions.size(); i++) {
+		for (int bit = 0; bit < maxActions; bit++) {
+			if (combined_actions[i].test(bit)) {
+				singleActionCount[bit].second++;
+			}
+		}
+	}
+	sort(singleActionCount.begin(), singleActionCount.end(),
+		[](const std::pair<int, int> & a, const std::pair<int, int> & b) -> bool
+	{
+		return a.second > b.second;
+	});
+	
+	for (auto& r : combined_actions) {
+		for (auto& x : singleActionCount) {
+			if (r.test(x.first)) {
+				single_actions[x.first]++;
+				break;
+			}
+		}
+	}
+
+
+	return single_actions;
 }
 
 void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<std::bitset<128>, int>, 2>>  &action_occurence_map) 
@@ -252,10 +295,11 @@ void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<
 
 void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::string, int> set_conditions, const rule_set& rs, ltree& tree, ltree::node* parent) 
 {
-	std::unordered_map<string, std::array<std::unordered_map<std::bitset<128>, int>, 2>> action_occurence_map;
-	std::map<std::string, std::array<std::bitset<128>, 2>> most_probable_action;
+	std::unordered_map<string, std::array<std::vector<std::bitset<128>>, 2>> combined_actions;
+	std::unordered_map<string, std::array<std::unordered_map<int, int>, 2>> single_actions_counted;
+	std::unordered_map<int, int> total_map;
+	std::map<std::string, std::array<int, 2>> most_probable_action;
 	std::map<std::string, std::array<int, 2>> most_probable_action_occurences;
-
 
 	for (auto c : conditions) {
 		int power = 1 << rs.conditions_pos.at(c);
@@ -264,12 +308,13 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 				continue;
 			}
 			int bit_value = ((i / power) % 2);
-			for (int b = 0; b < 128; b++) {
-				if (rs.rules[i].actions.test(b)) {
-					action_occurence_map[c][bit_value][std::bitset<128>().set(b)]++;
-					//std::cout << "Condition: " << c << " Bit Value: " << bit_value << " Bitmapped Action: " << rs.rules[i].actions.to_ulong() << " Natural Action: " << b+1 << std::endl;
-				}
-			}
+			combined_actions[c][bit_value].push_back(rs.rules[i].actions);
+		}
+
+		for (int bit_value = 0; bit_value < 2; ++bit_value) {
+			single_actions_counted[c][bit_value] = FindBestSingleActionCombination(combined_actions[c][bit_value], rs.actions.size(), rs);
+			most_probable_action[c][bit_value] = single_actions_counted[c][bit_value].begin()->first;
+			most_probable_action_occurences[c][bit_value] = single_actions_counted[c][bit_value].begin()->second;
 		}
 
 		// Case 3: Both childs are leafs, end of recursion
@@ -280,39 +325,45 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 			auto rightNode = tree.make_node();
 			parent->left = leftNode;
 			parent->right = rightNode;
-			auto leftAction = action_occurence_map.at(conditions[0])[0].begin()->first;
+			auto leftAction = std::bitset<128>().set(single_actions_counted.at(conditions[0])[0].begin()->first);
 			leftNode->data.t = conact::type::ACTION;
 			leftNode->data.action = leftAction;
-			auto rightAction = action_occurence_map.at(conditions[0])[1].begin()->first;
+			auto rightAction = std::bitset<128>().set(single_actions_counted.at(conditions[0])[1].begin()->first);
 			rightNode->data.t = conact::type::ACTION;
 			rightNode->data.action = rightAction;
 			//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
 			return;
 		}
 
-		for (int bit_value = 0; bit_value < 2; bit_value++) {
-			for (auto& x : action_occurence_map[c][bit_value]) {
-				if (x.second > most_probable_action_occurences[c][bit_value]) {
-					most_probable_action[c][bit_value] = x.first;
-					most_probable_action_occurences[c][bit_value] = x.second;
-				}
-			}
-		}
 	}
 	//PrintOccurenceMap(action_occurence_map);
 
 	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
 	std::string splitCandidate;
 	int max = 0;
+
+	std::vector<std::bitset<128>> total_combined_actions;
+	total_combined_actions.reserve(combined_actions[conditions[0]][0].size() + combined_actions[conditions[0]][1].size()); 
+	total_combined_actions.insert(total_combined_actions.end(), combined_actions[conditions[0]][0].begin(), combined_actions[conditions[0]][0].end());
+	total_combined_actions.insert(total_combined_actions.end(), combined_actions[conditions[0]][1].begin(), combined_actions[conditions[0]][1].end());
+	
+	// TODO: put entropy as parameter into next recursive calls since its the same
+	total_map = FindBestSingleActionCombination(total_combined_actions, rs.actions.size(), rs);
+
+	float baseEntropy = entropy(total_map);
+	//std::cout << "Base Entropy: " << baseEntropy << std::endl;
+
 	for (auto& x : conditions) {
-		bool LeftIsAction = most_probable_action_occurences[x][0] == (1 << (conditions.size() - 1));
-		int left_push = LeftIsAction * (1 << (conditions.size() - 1));
-		bool RightIsAction = most_probable_action_occurences[x][1] == (1 << (conditions.size() - 1));
-		int right_push = RightIsAction * (1 << (conditions.size() - 1));
-		if (left_push + right_push + most_probable_action_occurences[x][0] + most_probable_action_occurences[x][1] > max) {
-			max = left_push + right_push + most_probable_action_occurences[x][0] + most_probable_action_occurences[x][1];
+		float leftEntropy = entropy(single_actions_counted[x][0]);
+		float rightEntropy = entropy(single_actions_counted[x][1]);
+
+		float informationGain = fmaxf((baseEntropy - leftEntropy), (baseEntropy - rightEntropy));
+
+		if (informationGain > max) {
+			max = informationGain;
 			splitCandidate = x;
 		}
+		//std::cout << "Condition: " << x << " Max information gain: "<< informationGain << " Entropy Left (0): " << leftEntropy << " Entropy Right (1): " << rightEntropy << std::endl;
 	}
 
 	bool LeftIsAction = most_probable_action_occurences[splitCandidate][0] == (1 << (conditions.size() - 1));
@@ -326,7 +377,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	if (LeftIsAction) {
 		parent->left = tree.make_node();
 		parent->left->data.t = conact::type::ACTION;
-		parent->left->data.action = most_probable_action[splitCandidate][0];
+		parent->left->data.action = std::bitset<128>().set(most_probable_action[splitCandidate][0]);
 	}
 	else {
 		parent->left = tree.make_node();
@@ -338,7 +389,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	if (RightIsAction) {
 		parent->right = tree.make_node();
 		parent->right->data.t = conact::type::ACTION;
-		parent->right->data.action = most_probable_action[splitCandidate][1];
+		parent->right->data.action = std::bitset<128>().set(most_probable_action[splitCandidate][1]);
 	}
 	else {
 		parent->right = tree.make_node();
