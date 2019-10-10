@@ -29,6 +29,7 @@
 #include "hypercube.h"
 #include <math.h>
 #include "utilities.h"
+#include <random>
 
 using namespace std;
 
@@ -248,6 +249,14 @@ bool ViolatesSetConditions(int rule_index, std::map<std::string, int>& set_condi
 	return false;
 }
 
+enum Classifier {
+	Popularity,
+	GreedyAscending,
+	Random,
+};
+
+Classifier currentClassifier = Classifier::Random;
+
 std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<std::bitset<128>> combined_actions, const int maxActions, const rule_set& rs) {
 	std::unordered_map<int, int> single_actions;
 	std::vector<std::pair<int, int>> singleActionCount;
@@ -256,18 +265,29 @@ std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<std::bi
 		singleActionCount.push_back(std::pair(i, 0));
 	}
 
-	for (int i = 0; i < combined_actions.size(); i++) {
-		for (int bit = 0; bit < maxActions; bit++) {
-			if (combined_actions[i].test(bit)) {
-				singleActionCount[bit].second++;
+	if (currentClassifier == Classifier::Popularity) {
+		for (int i = 0; i < combined_actions.size(); i++) {
+			for (int bit = 0; bit < maxActions; bit++) {
+				if (combined_actions[i].test(bit)) {
+					singleActionCount[bit].second++;
+				}
 			}
 		}
+		sort(singleActionCount.begin(), singleActionCount.end(),
+			[](const std::pair<int, int> & a, const std::pair<int, int> & b) -> bool
+		{
+			return a.second > b.second;
+		});
 	}
-	sort(singleActionCount.begin(), singleActionCount.end(),
-		[](const std::pair<int, int> & a, const std::pair<int, int> & b) -> bool
-	{
-		return a.second > b.second;
-	});
+
+	if (currentClassifier == Classifier::Random) {
+		auto rng = std::mt19937(std::time(nullptr));
+		std::shuffle(singleActionCount.begin(), singleActionCount.end(), rng);
+	}
+
+	if (currentClassifier == Classifier::GreedyAscending) {
+		// do nothing
+	}
 	
 	for (auto& r : combined_actions) {
 		for (auto& x : singleActionCount) {
@@ -312,6 +332,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 		}
 
 		for (int bit_value = 0; bit_value < 2; ++bit_value) {
+			// TODO: do both bit values in one function call
 			single_actions_counted[c][bit_value] = FindBestSingleActionCombination(combined_actions[c][bit_value], rs.actions.size(), rs);
 			most_probable_action[c][bit_value] = single_actions_counted[c][bit_value].begin()->first;
 			most_probable_action_occurences[c][bit_value] = single_actions_counted[c][bit_value].begin()->second;
@@ -339,7 +360,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	//PrintOccurenceMap(action_occurence_map);
 
 	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
-	std::string splitCandidate;
+	std::string splitCandidate = conditions[0];
 	int max = 0;
 
 	std::vector<std::bitset<128>> total_combined_actions;
