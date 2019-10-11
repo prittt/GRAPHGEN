@@ -30,6 +30,7 @@
 #include <math.h>
 #include "utilities.h"
 #include <random>
+#include "drag_statistics.h"
 
 using namespace std;
 
@@ -313,7 +314,7 @@ void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<
 	}
 }
 
-void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::string, int> set_conditions, const rule_set& rs, ltree& tree, ltree::node* parent) 
+void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::string, int> set_conditions, const rule_set& rs, ltree& tree, ltree::node* parent, float blockConditionsEntropyFactor)
 {
 	std::unordered_map<string, std::array<std::vector<std::bitset<128>>, 2>> combined_actions;
 	std::unordered_map<string, std::array<std::unordered_map<int, int>, 2>> single_actions_counted;
@@ -374,12 +375,15 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	float baseEntropy = entropy(total_map);
 	//std::cout << "Base Entropy: " << baseEntropy << std::endl;
 
-	for (auto& x : conditions) {
+	for (auto x : conditions) {
 		float leftEntropy = entropy(single_actions_counted[x][0]);
 		float rightEntropy = entropy(single_actions_counted[x][1]);
 
 		float informationGain = std::max((baseEntropy - leftEntropy), (baseEntropy - rightEntropy));
 
+		if (x == "o" || x == "s" || x == "t" || x == "p") {
+			informationGain *= blockConditionsEntropyFactor;
+		}
 
 		if (informationGain > maximum_information_gain) {
 			maximum_information_gain = informationGain;
@@ -405,7 +409,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 		parent->left = tree.make_node();
 		auto conditionsForLeft = set_conditions;
 		conditionsForLeft[splitCandidate] = 1;
-		FindHdtRecursively(conditions, conditionsForLeft, rs, tree, parent->left);
+		FindHdtRecursively(conditions, conditionsForLeft, rs, tree, parent->left, blockConditionsEntropyFactor);
 	}
 
 	if (RightIsAction) {
@@ -417,19 +421,25 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 		parent->right = tree.make_node();
 		auto conditionsForRight = set_conditions;
 		conditionsForRight[splitCandidate] = 0;
-		FindHdtRecursively(conditions, conditionsForRight, rs, tree, parent->right);
+		FindHdtRecursively(conditions, conditionsForRight, rs, tree, parent->right, blockConditionsEntropyFactor);
 	}
 }
 
 ltree GenerateHdt(const rule_set& rs) {
-	ltree t;
-	auto parent = t.make_root();
+	for (int i = 150; i < 1300; i += 5) {
+		ltree t;
+		auto parent = t.make_root();
 
-	std::vector<std::string> remaining_conditions = rs.conditions; // copy
-	std::map<std::string, int> set_conditions = std::map<std::string, int>();
+		std::vector<std::string> remaining_conditions = rs.conditions; // copy
+		std::map<std::string, int> set_conditions = std::map<std::string, int>();
 
-	FindHdtRecursively(remaining_conditions, set_conditions, rs, t, parent);
-	return t;
+		FindHdtRecursively(remaining_conditions, set_conditions, rs, t, parent, i / 100.0f);
+		DragStatistics ds(t);
+		std::cout << "Tree with " << i << "% factor on block conditions. Nodes: " << ds.Nodes() << std::endl;
+		if (i > 1200) {
+			return t;
+		}
+	}
 }
 
 ltree GenerateHdt(const rule_set& rs, const string& filename)
