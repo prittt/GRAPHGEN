@@ -255,7 +255,7 @@ enum Classifier {
 	Random,
 };
 
-Classifier currentClassifier = Classifier::Random;
+Classifier currentClassifier = Classifier::Popularity;
 
 std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<std::bitset<128>> combined_actions, const int maxActions, const rule_set& rs) {
 	std::unordered_map<int, int> single_actions;
@@ -361,7 +361,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 
 	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
 	std::string splitCandidate = conditions[0];
-	int max = 0;
+	float maximum_information_gain = 0;
 
 	std::vector<std::bitset<128>> total_combined_actions;
 	total_combined_actions.reserve(combined_actions[conditions[0]][0].size() + combined_actions[conditions[0]][1].size()); 
@@ -378,10 +378,11 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 		float leftEntropy = entropy(single_actions_counted[x][0]);
 		float rightEntropy = entropy(single_actions_counted[x][1]);
 
-		float informationGain = fmaxf((baseEntropy - leftEntropy), (baseEntropy - rightEntropy));
+		float informationGain = std::max((baseEntropy - leftEntropy), (baseEntropy - rightEntropy));
 
-		if (informationGain > max) {
-			max = informationGain;
+
+		if (informationGain > maximum_information_gain) {
+			maximum_information_gain = informationGain;
 			splitCandidate = x;
 		}
 		//std::cout << "Condition: " << x << " Max information gain: "<< informationGain << " Entropy Left (0): " << leftEntropy << " Entropy Right (1): " << rightEntropy << std::endl;
