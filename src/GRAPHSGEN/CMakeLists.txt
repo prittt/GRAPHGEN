@@ -6,6 +6,7 @@ target_sources(GRAPHSGEN PRIVATE
 	end_forest.h
 	forest.cpp
 	forest.h
+    forest_handler.h
 	forest_optimizer.h
 	forest_statistics.cpp
 	forest_statistics.h

@@ -301,13 +301,13 @@ struct FastDragOptimizer {
                     if (false) {
                         ForestStatistics fs(f_copy);
                         std::cout << "ForestBeforeMerge" << count << " - nodes: " << fs.nodes() << " - leaves: " << fs.leaves() << "\n";
-                        DrawForestOnFile("ForestBeforeMerge" + zerostr(count, 4), f_copy);
+                        //DrawForestOnFile("ForestBeforeMerge" + zerostr(count, 4), f_copy);
                     }
                     MergeEquivalentTreesAndUpdate(tracked_nodes[0], tracked_nodes[1], mo.parents_);
                     if (false) {
                         ForestStatistics fs(f_copy);
                         std::cout << "ForestAfterMerge" << count << " - nodes: " << fs.nodes() << " - leaves: " << fs.leaves() << "\n";
-                        DrawForestOnFile("ForestAfterMerge" + zerostr(count, 4), f_copy);
+                        //DrawForestOnFile("ForestAfterMerge" + zerostr(count, 4), f_copy);
                     }
 
                     Forest2Dag f2d(f_copy);
@@ -326,12 +326,12 @@ struct FastDragOptimizer {
             if (fs.nodes() < best_nodes || (fs.nodes() == best_nodes) && fs.leaves() < best_leaves) {
                 best_nodes = fs.nodes();
                 best_leaves = fs.leaves();
-                DrawForestOnFile("BestForest" + zerostr(count, 4), f);
+                //DrawForestOnFile("BestForest" + zerostr(count, 4), f);
                 std::cout << count << " - nodes: " << fs.nodes() << " - leaves: " << fs.leaves() << "\n";
 
                 {
                     std::ofstream os("stocazzo.txt");
-                    GenerateForestCode(os, f, "", 0, 2);
+                    // GenerateForestCode(os, f, "", 0, 2);
                 }
 
                 FastDragOptimizerRec(f, false);

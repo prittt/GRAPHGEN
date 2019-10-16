@@ -100,7 +100,7 @@ struct ConfigData {
             // Rule Set / Decision Table
             rstable_path_ = global_output_path_ / std::filesystem::path(algorithm_name + rstable_suffix_);
             
-            // Tree / Forest / Dag (.inc)
+            // Tree / Forest / Dag (.inc) // TODO the following variables are probably useless
             treecode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + treecode_suffix_);
             forestcode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + forestcode_suffix_);
             treedagcode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + treedagcode_suffix_);
@@ -126,15 +126,21 @@ struct ConfigData {
         }
     }
 
-    // DotCode
+    // Dot code
     std::filesystem::path GetDotCodePath(const std::string& out_base_name) {
         return global_output_path_ / std::filesystem::path(out_base_name + dotcode_suffix_);
     }
 
-    // Output dot
+    // Dot output
     std::filesystem::path GetDotOutPath(const std::string& out_base_name) {
         return global_output_path_ / std::filesystem::path(out_base_name + dot_output_format_);
     }
+
+    // Forest code
+    std::filesystem::path GetForestCodePath(const std::string& out_base_name) {
+        return global_output_path_ / std::filesystem::path(algorithm_name_ + "_" + out_base_name + forestcode_suffix_);
+    }
+
 };
 
 #endif // GRAPGHSGEN_CONFIG_DATA_H_

@@ -238,7 +238,7 @@ void GeneratePointersCode(ofstream& os, const rule_set& rs) {
     os << global_ss.str();
 }
 
-void GenerateConditionsCode(ofstream& os, const rule_set& rs) 
+void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditions) 
 {
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
     unsigned n_dims = shifts.size(); // Here we get how many dims image has
@@ -251,13 +251,15 @@ void GenerateConditionsCode(ofstream& os, const rule_set& rs)
         string uppercase_name(p.name_);
         transform(p.name_.begin(), p.name_.end(), uppercase_name.begin(), ::toupper);
         os << "#define CONDITION_" + uppercase_name + " ";
-        stringstream col;
-        for (size_t i = 0; i < n_dims; ++i) {
-            if (p.coords_[i] < 0) {
-                os << counters_names[i] << " > " << -p.coords_[i] - 1 << " && ";
-            }
-            else if (p.coords_[i] > 0) {
-                os << counters_names[i] << " < " << sizes_names[i] << " - " << p.coords_[i] << " && ";
+        // stringstream col;
+        if (with_conditions) {
+            for (size_t i = 0; i < n_dims; ++i) {
+                if (p.coords_[i] < 0) {
+                    os << counters_names[i] << " > " << -p.coords_[i] - 1 << " && ";
+                }
+                else if (p.coords_[i] > 0) {
+                    os << counters_names[i] << " < " << sizes_names[i] << " - " << p.coords_[i] << " && ";
+                }
             }
         }
 
@@ -265,8 +267,7 @@ void GenerateConditionsCode(ofstream& os, const rule_set& rs)
     }
 }
 
-
-// This function .. it works only for 2d and 3d images
+// This function .. it works only for 2d and 3d images TODO description.
 void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& names) 
 {
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
@@ -288,9 +289,7 @@ void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& name
 }
 
 // Overloading function
-bool GeneratePointersConditionsActionsCode(const string& algorithm_name, const rule_set& rs, std::optional<pixel_set> names) {
-    //filesystem::path code_path = global_output_path / filesystem::path(algorithm_name + "_code.cpp");
-
+bool GeneratePointersConditionsActionsCode(const rule_set& rs, bool actions_with_conditions, std::optional<pixel_set> names) {
     ofstream os(conf.code_path_);
     if (!os) {
         return false;
@@ -301,7 +300,7 @@ bool GeneratePointersConditionsActionsCode(const string& algorithm_name, const r
     }
 
     GeneratePointersCode(os, rs);
-    GenerateConditionsCode(os, rs);
+    GenerateConditionsCode(os, rs, actions_with_conditions);
     GenerateActionsCode(os, rs, names.value());
 
     return true;

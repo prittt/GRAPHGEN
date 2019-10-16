@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,8 @@
 
 #include "forest.h"
 
+#include <optional>
+
 #include <cassert>
 
 #include "Forest2dag.h"
@@ -35,12 +37,31 @@
 
 using namespace std;
 
-Forest::Forest(ltree t, const pixel_set& ps, const constraints& initial_constraints) : /*t_(std::move(t)),*/ eq_(ps) {
-    next_tree_.push_back(0); // Setup next_tree_ for holding a reference to the start tree in first position
-    t_.SetRoot(Reduce(t.GetRoot(), t_, initial_constraints));
-    InitNext(t_);
+LineForestHandler::LineForestHandler(const BinaryDrag<conact>& bd,
+    const pixel_set& ps,
+    const constraints& initial_constraints) {
+    // The input BinaryDrag should have just one root!
+    if (bd.roots_.size() > 1) {
+        throw;
+    }
 
-    // Create start tree constraints and add start tree in position 0 of the tree_ array
+    // Setup next_tree_ for holding a reference to the start tree in first position
+    next_tree_.push_back(0);
+
+    // Apply predefined constraints
+    BinaryDrag<conact> tmp;
+    tmp.AddRoot(Reduce(bd.roots_[0], tmp, initial_constraints));
+
+    // Initialize next trees indexes in each leaf with sequential values.
+    InitNextRec(tmp.roots_[0]);
+
+    /*********************
+     *  START LINE TREE  *
+     *********************/
+
+     // Create start tree constraints and add it to the drag f_. 
+     // The root of the start tree will be the first one in the 
+     // BinaryDrag vector of roots.
     {
         constraints start_constr;
         using namespace std;
@@ -48,122 +69,109 @@ Forest::Forest(ltree t, const pixel_set& ps, const constraints& initial_constrai
             if (p.GetDx() < 0)
                 start_constr[p.name_] = 0;
         }
-        ltree t;
-        t.SetRoot(Reduce(t_.GetRoot(), t, start_constr));
-        trees_.emplace_back(t);
+        f_.AddRoot(Reduce(tmp.GetRoot(), f_, start_constr));
     }
+    // Note that the start line tree is generated in a different
+    // way but it is part of the main forest. 
 
-    CreateReducedTrees(t_, {});
+    /********************
+     *    MAIN TREES    *
+     ********************/
 
-    // Vecchio metodo
+     // Create all the possible reduced trees storing them into f_
+    CreateReducedDrag(tmp, f_, ps);
+
+    // Remove duplicate trees and then useless conditions until convergence
     while (RemoveEqualTrees()) {
         RemoveUselessConditions();
     }
 
-    //////Nuovo Metodo
-    ////do {
-    ////	while (RemoveEquivalentTrees()) {
-    ////		RemoveUselessConditions();
-    ////	}
-    ////	Forest2Dag f2d(*this);
-    ////	STree st(*this);
-    ////	RemoveUselessConditions();		
-    ////	RebuildDisjointTrees();
-    ////} while (RemoveEquivalentTrees());
+    /********************
+     *  END LINE TREES  *
+     ********************/
 
+     // For each tree we need to create at least one end tree with end line constraints.
+     // With BBDT for example we need two end trees for each tree for example. This is 
+     // explained below representing borderline cases:
+     //
+     //             -4  -3  -2  -1 | w
+     //                            |
+     //     +-------+-------+-------+
+     //	   | a   b | c   d | e   f |
+     //	   | g   h | i   j | k   l |
+     // A:  +-------+-------+-------+               c = w - 4 (No problem)
+     //	   | m   n | o   p |       |
+     //	   | q   r | s   t |       |
+     //	   +-------+-------+       |
+     //                            |
+     //        +-------+-------+---|---+
+     //	       | a   b | c   d | e | f |
+     //	       | g   h | i   j | k | l |
+     // B:     +-------+-------+---|---+           c = w - 3 (No problem)
+     //	       | m   n | o   p |   |
+     //	       | q   r | s   t |   |
+     //	       +-------+-------+   |
+     //                            |
+     //            +-------+-------+-------+
+     //	           | a   b | c   d | e   f |
+     //	           | g   h | i   j | k   l |
+     // C:         +-------+-------+-------+       c = w - 2 (This requires one group of end-trees)
+     //	           | m   n | o   p |   
+     //	           | q   r | s   t |   
+     //	           +-------+-------+   
+     //                            |
+     //                +-------+---|---+-------+
+     //	               | a   b | c | d | e   f |
+     //	               | g   h | i | j | k   l |
+     // D:             +-------+---|---+-------+   c = w - 1 (This requires one group of end-trees)
+     //	               | m   n | o | p |   
+     //	               | q   r | s | t |   
+     //	               +-------+---|---+   
+     //                            |
+    {
+        for (int out_offset = 1;; ++out_offset) {
+            // Create constraints for the last n-th column (n = out_offset)
+            constraints end_constr;
+            for (const auto& p : ps) {
+                if (p.GetDx() >= out_offset)
+                    end_constr[p.name_] = 0;
+            }
+            if (end_constr.empty()) {
+                break;
+            }
 
-    //// For each tree creates end trees with end line constraints
-    //// BBDT example (borderline cases): 
-    ////              -4  -3  -2  -1 | w
-    ////				    		   |
-    ////     +-------+-------+-------+
-    ////	   | a   b | c   d | e   f |
-    ////	   | g   h | i   j | k   l |
-    //// A:  +-------+-------+-------+				c = w - 4 (No problem)
-    ////	   | m   n | o   p |       |
-    ////	   | q   r | s   t |       |
-    ////	   +-------+-------+       |
-    ////                             |
-    ////         +-------+-------+---|---+
-    ////	       | a   b | c   d | e | f |
-    ////	       | g   h | i   j | k | l |
-    //// B:      +-------+-------+---|---+			c = w - 3 (No problem)
-    ////	       | m   n | o   p |   |
-    ////	       | q   r | s   t |   |
-    ////	       +-------+-------+   |
-    ////                             |
-    ////             +-------+-------+-------+
-    ////	           | a   b | c   d | e   f |
-    ////	           | g   h | i   j | k   l |
-    //// C:          +-------+-------+-------+		c = w - 2 (This requires one group of end-trees)
-    ////	           | m   n | o   p |   
-    ////	           | q   r | s   t |   
-    ////	           +-------+-------+   
-    ////                             |
-    ////                 +-------+---|---+-------+
-    ////	               | a   b | c | d | e   f |
-    ////	               | g   h | i | j | k   l |
-    //// D:              +-------+---|---+-------+	c = w - 1 (This requires one group of end-trees)
-    ////	               | m   n | o | p |   
-    ////	               | q   r | s | t |   
-    ////	               +-------+---|---+   
-    ////                             |
-    //{
-    //    for (int out_offset = 1;; ++out_offset) {
-    //        constraints end_constr;
-    //        for (const auto& p : ps) {
-    //            if (p.GetDx() >= out_offset)
-    //                end_constr[p.name_] = 0;
-    //        }
-    //        if (end_constr.empty())
-    //            break;
+            end_forests_.push_back(BinaryDrag<conact>());
 
-    //        end_trees_.emplace_back(vector<ltree>());
+            for (const auto& t : f_.roots_) {
+                end_forests_.back().AddRoot(Reduce(t, end_forests_.back(), end_constr));
+            }
 
-    //        for (const auto& t : trees_) {
-    //            ltree tr;
-    //            tr.SetRoot(Reduce(t.GetRoot(), tr, end_constr));
-    //            end_trees_.back().emplace_back(tr);
-    //        }
+            assert(f_.roots_.size() == end_forests_.back().roots_.size());
+        }
 
-    //        assert(trees_.size() == end_trees_[end_trees_.size() - 1].size());
-    //    }
+        // Initialize the mapping between main trees (including the start line tree) and end trees 
+        main_end_tree_mapping_ = vector<vector<int>>(end_forests_.size(), vector<int>(f_.roots_.size()));
+        for (auto& etm : main_end_tree_mapping_) {
+            iota(etm.begin(), etm.end(), 0);
+        }
+        end_next_tree_ = main_end_tree_mapping_;
 
-    //    // Init trees_ - end_trees_ mapping
-    //    main_trees_end_trees_mapping_ = vector<vector<int>>(end_trees_.size(), vector<int>(trees_.size()));
-    //    for (auto& etm : main_trees_end_trees_mapping_) {
-    //        iota(etm.begin(), etm.end(), 0);
-    //    }
-    //    end_next_trees_ = main_trees_end_trees_mapping_;
+        // For each tree in the end forests the value of the next tree is set to uint32_t max value 
+        // max value can be replaced with any value, but all end trees must share the same fake next
+        // to be able to delete equal (useless) end trees.
+        for (auto& f : end_forests_) { // For each end forest
+            for (auto& n : f.nodes_) { // For each node of the forest
+                if (n->isleaf()) {
+                    n->data.next = numeric_limits<uint32_t>::max();
+                }
+            }
+        }
+    }
 
-    //    // Set end_trees_'s next_trees to uint32_t max value (max value can be replaced with any value, but all end trees must share the same fake next)
-    //    for (auto& t_a : end_trees_) { // foreach group of end trees
-    //        for (auto& t_b : t_a) {	// foreach tree in a group
-    //            for (auto& n : t_b.nodes_) { // foreach node in a tree
-    //                if (n->isleaf()) {
-    //                    n->data.next = numeric_limits<uint32_t>::max();
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-
-    //// Removes useless conditions and then possible duplicate end-trees until convergence
-    //// Vecchio metodo ( se non lo metto non va un cazzo, perchè? )
-    //while (RemoveEqualEndTrees()) {
-    //    RemoveEndTreesUselessConditions();
-    //}
-
-    ////// Nuovo metodo
-    ////do {
-    ////	while (RemoveEquivalentEndTrees()) {
-    ////		RemoveEndTreesUselessConditions();
-    ////	}
-    ////	Forest2Dag f2d(*this);
-    ////	STree st(*this);
-    ////	RemoveEndTreesUselessConditions();
-    ////	RebuildDisjointEndTrees();
-    ////} while (RemoveEquivalentEndTrees());
+    // Removes duplicate end-trees and then useless conditions until convergence
+    while (RemoveEqualEndTrees()) {
+        RemoveEndTreesUselessConditions();
+    }
 }
 
 void Forest::RebuildDisjointTrees() {
@@ -227,8 +235,8 @@ void Forest::RemoveUselessConditions() {
     bool changed;
     do {
         changed = false;
-        for (auto& t : trees_) {
-            RemoveUselessConditionsRec(t.GetRoot(), changed);
+        for (auto& r : f_.roots_) {
+            RemoveUselessConditionsRec(r, changed);
         }
     } while (changed);
 }
@@ -236,105 +244,26 @@ void Forest::RemoveEndTreesUselessConditions() {
     bool changed;
     do {
         changed = false;
-        for (auto& tg : end_trees_) {
-            for (auto& t : tg) {
-                RemoveUselessConditionsRec(t.GetRoot(), changed);
+        for (auto& f : end_forests_) {
+            for (auto& t : f.roots_) {
+                RemoveUselessConditionsRec(t, changed);
             }
         }
     } while (changed);
 }
 
 bool Forest::RemoveEqualEndTrees() {
-    return RemoveEndTrees(EqualTrees);
+    bool changed = false;
+    for (size_t i = 0; i < end_forests_.size(); ++i) {
+        changed |= RemoveTrees(EqualTrees, end_next_tree_[i], end_forests_[i], true, main_end_tree_mapping_[i]);
+    }
+    return changed;
 }
 
 bool Forest::RemoveEquivalentEndTrees() {
-    return RemoveEndTrees(equivalent_trees);
-}
-
-// Removes duplicate end-trees (this is performed in each group separately, it can't happen that different groups contain equal trees)
-bool Forest::RemoveEndTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2)) {
-
-    // Find which trees are identical and mark them in end_trees_mapping
-    bool found = false;
-    for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
-        const auto& cur_trees = end_trees_[tg];
-        auto& cur_equal = end_next_trees_[tg];
-        // triangular matching
-        for (size_t i = 0; i < cur_trees.size() - 1; ++i) {
-            if (cur_equal[i] == i) {
-                for (size_t j = i + 1; j < cur_trees.size(); ++j) {
-                    if (cur_equal[j] == j) {
-                        if (FunctionPtr(cur_trees[i].GetRoot(), cur_trees[j].GetRoot())) {
-                            cur_equal[j] = i;
-                            found = true;
-                            if (FunctionPtr == equivalent_trees) {
-                                IntersectTrees(cur_trees[i].GetRoot(), cur_trees[j].GetRoot());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (!found) {
-        return false;
-    }
-
-    // Flatten the end_next_trees indexes
-    size_t new_index;
-    for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
-        const auto& cur_trees = end_trees_[tg];
-        auto& cur_equal = end_next_trees_[tg];
-        new_index = 0;
-        for (size_t i = 0; i < cur_equal.size(); ++i) {
-            if (cur_equal[i] == i) {
-                cur_equal[i] = new_index;
-                ++new_index;
-            }
-            else {
-                cur_equal[i] = cur_equal[cur_equal[i]];
-            }
-        }
-    }
-
-    // Update the main_trees_end_trees_mapping_ data structure whose size will never change
-    for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
-        auto& cur_equal = end_next_trees_[tg];
-        auto& cur_mapping = main_trees_end_trees_mapping_[tg];
-        for (size_t i = 0; i < cur_mapping.size(); ++i) {
-            cur_mapping[i] = cur_equal[cur_mapping[i]];
-        }
-    }
-
-    // Remove trees which are identical to already inserted ones
-    for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
-        auto& cur_trees = end_trees_[tg];
-        auto& cur_equal = end_next_trees_[tg];
-        new_index = 0;
-        vector<ltree> trees;
-        for (size_t i = 0; i < cur_equal.size(); ++i) {
-            if (cur_equal[i] == new_index) {
-                trees.push_back(cur_trees[i]);
-                ++new_index;
-            }
-        }
-        cur_trees = move(trees);
-    }
-
-    // No next for end trees, "UpdateNext" is useless
-
-    // Update of end_next_trees_
-    for (size_t tg = 0; tg < end_trees_.size(); ++tg) { // foreach group of end trees
-        auto& cur_trees = end_trees_[tg];
-        auto& cur_equal = end_next_trees_[tg];
-
-        cur_equal.resize(cur_trees.size());
-        iota(begin(cur_equal), end(cur_equal), 0);
-    }
-
-    return true;
+    // TODO 
+    return false;
+    //return RemoveEndTrees(equivalent_trees);
 }
 
 void Forest::UpdateNext(ltree::node* n) {
@@ -348,26 +277,30 @@ void Forest::UpdateNext(ltree::node* n) {
 }
 
 bool Forest::RemoveEquivalentTrees() {
-    return RemoveTrees(equivalent_trees);
+    return RemoveTrees(equivalent_trees, next_tree_, f_);
 }
 
 bool Forest::RemoveEqualTrees() {
-    return RemoveTrees(EqualTrees);
+    return RemoveTrees(EqualTrees, next_tree_, f_);
 }
 
 // Removes duplicate trees inside the forest
-bool Forest::RemoveTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2)) {
+bool Forest::RemoveTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2), 
+                         vector<int>& next_tree, 
+                         BinaryDrag<conact>& f, 
+                         bool are_end_trees, 
+                         vector<int>& mapping) {
     // Find which trees are identical and mark them in next_tree
     bool found = false;
-    for (size_t i = 0; i < next_tree_.size() - 1; ++i) {
-        if (next_tree_[i] == i) {
-            for (size_t j = i + 1; j < next_tree_.size(); ++j) {
-                if (next_tree_[j] == j) {
-                    if (FunctionPtr(trees_[i].GetRoot(), trees_[j].GetRoot())) {
-                        next_tree_[j] = i;
+    for (size_t i = 0; i < next_tree.size() - 1; ++i) {
+        if (next_tree[i] == i) {
+            for (size_t j = i + 1; j < next_tree.size(); ++j) {
+                if (next_tree[j] == j) {
+                    if (FunctionPtr(f.roots_[i], f.roots_[j])) {
+                        next_tree[j] = i;
                         found = true;
                         if (FunctionPtr == equivalent_trees) {
-                            IntersectTrees(trees_[i].GetRoot(), trees_[j].GetRoot());
+                            IntersectTrees(f.roots_[i], f.roots_[j]);
                         }
                     }
                 }
@@ -379,37 +312,48 @@ bool Forest::RemoveTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::
 
     // Flatten the trees indexes
     size_t new_index = 0;
-    for (size_t i = 0; i < next_tree_.size(); ++i) {
-        if (next_tree_[i] == i) {
-            next_tree_[i] = new_index;
+    for (size_t i = 0; i < next_tree.size(); ++i) {
+        if (next_tree[i] == i) {
+            next_tree[i] = new_index;
             ++new_index;
         }
         else {
-            next_tree_[i] = next_tree_[next_tree_[i]];
+            next_tree[i] = next_tree[next_tree[i]];
         }
     }
 
-    // Remove trees which are identical to already inserted ones
+    // Remove roots that are now useless
     new_index = 0;
-    vector<ltree> trees;
-    for (size_t i = 0; i < next_tree_.size(); ++i) {
-        if (next_tree_[i] == new_index) {
-            trees.push_back(trees_[i]);
+    for (size_t i = 0; i < next_tree.size(); ++i) {
+        if (next_tree[i] != new_index) {
+            f.roots_[i] = nullptr;
+        }
+        else {
             ++new_index;
         }
     }
-    trees_ = move(trees);
+    f.roots_.erase(remove(begin(f.roots_), end(f.roots_), nullptr), end(f.roots_));
 
-    for (auto& t : trees_) {
-        UpdateNext(t.GetRoot());
+    if (are_end_trees) {
+        // If we are dealing with end trees then we need to update the 
+        // mapping main-end trees because it changed
+        for (size_t i = 0; i < mapping.size(); ++i) {
+            mapping[i] = next_tree[mapping[i]];
+        }
+    }else{
+        // If we are dealing with main trees then we need to update the 
+        // id of the next tree because they changed
+        for (auto& r : f.roots_) {
+            UpdateNext(r);
+        }
     }
 
-    next_tree_.resize(trees_.size());
-    iota(begin(next_tree_), end(next_tree_), 0);
+    next_tree.resize(f.roots_.size());
+    iota(begin(next_tree), end(next_tree), 0);
     return true;
 }
 
-// See InitNext
+// Initializes leave's next trees (drag) of a tree (drag) with sequential values.
 void Forest::InitNextRec(ltree::node* n) {
     if (n->isleaf()) {
         // Set the next tree to be used for each leaf
@@ -421,11 +365,6 @@ void Forest::InitNextRec(ltree::node* n) {
         InitNextRec(n->left);
         InitNextRec(n->right);
     }
-}
-
-// Initializes leave's next trees with sequential values
-void Forest::InitNext(ltree& t) {
-    InitNextRec(t_.GetRoot());
 }
 
 // Perform tree pruning by removing useless nodes. Useless nodes are identified looking at given constraints 
@@ -445,32 +384,4 @@ ltree::node* Forest::Reduce(const ltree::node* n, ltree& t, const constraints& c
             return t.make_node(n->data, Reduce(n->left, t, constr), Reduce(n->right, t, constr));
         }
     }
-}
-
-// See CreateReducedTrees 
-void Forest::CreateReducedTreesRec(const ltree::node* n, const constraints& constr) {
-    if (n->isleaf()) {
-        // Create a reduced version of the tree based on what we learned on the path to this leaf        
-        ltree t;
-        t.SetRoot(Reduce(t_.GetRoot(), t, constr));
-        trees_.emplace_back(t);
-    }
-    else {
-        constraints constrNew = constr;
-        auto ft = eq_.Find(n->data.condition);
-        if (ft)
-            constrNew[ft] = 0;
-        CreateReducedTreesRec(n->left, constrNew);
-        if (ft)
-            constrNew[ft] = 1;
-        CreateReducedTreesRec(n->right, constrNew);
-    }
-}
-
-// Creates forest of trees pruning original tree. The pruning is performed as follows: the original 
-// tree is recursively explored and constraints (different on each branch) are defined using equivalences 
-// between pixels (i.e. pixels which remain in the mask when it moves). When a leaf is reached the 
-// original tree is reduced using current branch's constraints. 
-void Forest::CreateReducedTrees(const ltree& t, const constraints& initial_constr) {
-    CreateReducedTreesRec(t_.GetRoot(), initial_constr);
 }

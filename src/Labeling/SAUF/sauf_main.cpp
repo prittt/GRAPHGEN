@@ -53,12 +53,12 @@ int main()
     // 3) Generate the C++ source code for the ODT
     ofstream os(conf.treecode_path_);
     if (os){
-        GenerateDragCode(os, t, false);
+        GenerateDragCode(os, t);
     }
 
     // 4) Generate the C++ source code for pointers, 
     // conditions to check and actions to perform
-    GeneratePointersConditionsActionsCode(algorithm_name, rs);
+    GeneratePointersConditionsActionsCode(rs);
 
     return EXIT_SUCCESS;
 }

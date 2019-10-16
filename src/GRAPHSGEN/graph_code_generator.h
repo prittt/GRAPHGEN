@@ -50,19 +50,26 @@ bool GenerateDragCode(const std::string& algorithm_name, ltree& t);
 
 This function works only when all nodes of the DRAGs constituting the forest have both left and right child!
 */
-int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix = "", int start_id = 0, int mask_shift = 1);
+//int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix = "", int start_id = 0, int mask_shift = 1);
 
 
 /** @brief
 */
-std::string DefaultBefore(int i, const std::string& prefix);
-std::string DefaultAfter(int i, const std::string& prefix);
+#define BEFORE_AFTER_FUN(fun_name) std::string fun_name(int index,                                     \
+                                                        const std::string& prefix,                     \
+                                                        const std::vector<std::vector<int>>& mapping,  \
+                                                        int end_group_id)                              \
+
+BEFORE_AFTER_FUN(DefaultEmptyFunc);
+BEFORE_AFTER_FUN(BeforeMainShiftOne);
+BEFORE_AFTER_FUN(BeforeMainShiftTwo);
+BEFORE_AFTER_FUN(BeforeEnd);
+BEFORE_AFTER_FUN(AfterEnd);
 
 /** @brief This function generates the code for the given drag reversing the output into the specified stream
 
 @param[in] os Where to write the code.
 @param[in] bd BinaryDrag<conact> for which generating the code.
-@param[in] with_gotos Whether to handle next trees or not.
 @param[in] before Pointer to the function which defines the string that should be put into the code before a tree.
                   When dealing with forests for example you will need pass to GenerateDragCode a "before" function 
                   like the following one (i identifies the tree): 
@@ -97,15 +104,27 @@ std::string DefaultAfter(int i, const std::string& prefix);
                     to avoid multiple defined labels when dealing with multiple forests in the same code, like 
                     for example when having a special forest for the first line e for the last one.
 @param[in] mask_shif
-*/
-int GenerateDragCode(std::ostream& os,
-                     const BinaryDrag<conact>& bd,
-                     bool with_gotos = true,
-                     std::string before(int i, const std::string& prefix) = DefaultBefore,
-                     std::string after(int i, const std::string& prefix) = DefaultAfter,
-                     std::string prefix = "",
-                     int start_id = 0);
+*/ // TODO update documentation here!
+int GenerateDragCode(std::ostream& os, 
+                     const BinaryDrag<conact>& bd, 
+                     bool with_gotos = false,
+                     BEFORE_AFTER_FUN(before) = DefaultEmptyFunc,
+                     BEFORE_AFTER_FUN(after)  = DefaultEmptyFunc,
+                     const std::string prefix = "",
+                     int start_id = 0,
+                     const std::vector<std::vector<int>> mapping = {}, 
+                     int end_group_id = 0);
 
+// This function generates forest code using numerical labels starting from start_id and returns 
+// the last used_id.
+int GenerateLineForestCode(std::ostream& os, 
+                           const LineForestHandler& lfh,
+                           std::string prefix,
+                           int start_id,
+                           BEFORE_AFTER_FUN(before_main) = BeforeMainShiftOne,
+                           BEFORE_AFTER_FUN(after_main)  = DefaultEmptyFunc,
+                           BEFORE_AFTER_FUN(before_end)  = BeforeEnd,
+                           BEFORE_AFTER_FUN(after_end)   = AfterEnd);
 
 
 #endif // GRAPHSGEN_GRAPH_CODE_GENERATOR_H_

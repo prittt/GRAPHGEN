@@ -43,9 +43,10 @@
 /** @brief Flags for the DrawDagOnFile function
 */
 enum DrawDagFlags {
-    WITH_NEXT      = 1, /**< @brief Whether to handle next tress or not */
+    WITH_NEXT      = 1, /**< @brief Whether to print next tree indexes inside leaves or not */
     VERBOSE        = 2, /**< @brief Whether to display output messages or not */
-    DELETE_DOTCODE = 4, /**< @brief Whether to delete or not the dot code used to generate the image */
+    DELETE_DOTCODE = 4, /**< @brief Whether to delete or not the dot code used to draw the drag */
+    WITH_ROOT_ID   = 8, /**< @brief Whether to print root id or not */
 };
 
 /** @brief Generate a file displaying the specified DRAG. The output format will be the 
@@ -62,6 +63,6 @@ bool DrawDagOnFile(const std::string& output_file,
                    int flags = DrawDagFlags::DELETE_DOTCODE);
 
 
-bool DrawForestOnFile(const std::string& output_file, const Forest& f, bool save_dotcode = false, bool verbose = false);
+bool DrawForestOnFile(const std::string& output_file, const LineForestHandler& lfh, int flags);
 
 #endif // !GRAPHSGEN_OUTPUT_GENERATOR_H_

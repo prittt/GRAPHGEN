@@ -12,6 +12,7 @@
 #include "find_optimal_drag.h"
 #include "forest2dag.h"
 #include "forest_statistics.h"
+#include "forest_handler.h"
 #include "graph_code_generator.h"
 #include "hypercube.h"
 #include "magic_optimizer.h"

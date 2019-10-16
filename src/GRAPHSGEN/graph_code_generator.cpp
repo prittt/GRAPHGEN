@@ -34,8 +34,49 @@
 
 using namespace std;
 
-std::string DefaultBefore(int i, const std::string& prefix) { return std::string(); }
-std::string DefaultAfter(int i, const std::string& prefix) { return std::string(); }
+BEFORE_AFTER_FUN(DefaultEmptyFunc)
+{ 
+    return std::string(); 
+}
+
+// This function defines and returns the string that should be put before each (main) 
+// tree when generating the code for a forest of decision trees. The string contains 
+// an if to check whether the end of a line is reached and a goto to the corresponding 
+// tree in the end line forest. The string is specific for algorithms which exploit a 
+// mask with a horizontal shift of one pixel like most of the thinning algorithms, PRED, 
+// SAUF, CTB and so on. When the end line forest is not generated a different string 
+// should be used, for example replacing the goto with a continue and changing the if
+// condition accordingly. 
+BEFORE_AFTER_FUN(BeforeMainShiftOne)
+{
+    return prefix + "tree_" + to_string(index) + ": if ((c+=1) >= w - 1) goto " +
+           prefix + "break_0_" + to_string(mapping[0][index]) + ";\n";
+}
+
+// This function defines and returns the string that should be put before each (main) 
+// tree when generating the code for a forest of decision trees. The string contains 
+// an if to check whether the end of a line is reached and a goto to the corresponding 
+// tree in the end line forest. The string is specific for algorithms which exploit a 
+// mask with a horizontal shift of two pixels like BBDT, DRAG, Spaghetti and so on. 
+// When the end line forest is not generated a different string should be used, for 
+// example replacing the goto with a continue and changing the if condition accordingly.
+BEFORE_AFTER_FUN(BeforeMainShiftTwo)
+{
+    return prefix + "tree_" + to_string(index) + ": if ((c+=2) >= w - 2) { if (c > w - 2) { goto " +
+           prefix + "break_0_" + to_string(mapping[0][index]) + "; } else { goto " +
+           prefix + "break_1_" + to_string(mapping[1][index]) + "; } } \n";
+}
+
+BEFORE_AFTER_FUN(BeforeEnd)
+{
+    return prefix + "break_" + to_string(end_group_id) + "_" + to_string(index) + ":\n";
+}
+
+BEFORE_AFTER_FUN(AfterEnd)
+{
+    return std::string(2, '\t') + "continue;\n";
+}
+
 
 // This class allows to sum-up all the data required by the recursive functions that generate
 // the DRAG source code, thus simplifying its signature/call.
@@ -122,7 +163,7 @@ public:
         return prefix_;
     }
 
-    // This procedure write to the output stream the C++ source exploring recursively the specified DRAG. 
+    // This procedure writes to the output stream the C++ source exploring recursively the specified DRAG. 
     // When a leaf with multiple actions is found only the first action is considered and written in the
     // output file.
     void GenerateCodeRec(std::ostream& os, ltree::node *n, int tab)
@@ -188,8 +229,8 @@ public:
 // Actual implementation of the GenerateDragCode func. This allows to hide useless 
 // parameters (like prefix string) from the public interface. The prefix string is
 // used to generate specific labels for the start/end trees during the forest code
-// generation, so it is useless during the code generation of a tree.
-bool GenerateDragCode(const string& algorithm_name, ltree& t, std::string prefix)
+// generation, so it is useless during the code generation of a tree. TODO, remove it? 
+bool GenerateDragCode(const string& algorithm_name, BinaryDrag<conact>& bd, std::string prefix)
 {
     filesystem::path code_path = conf.treecode_path_;
 
@@ -200,99 +241,80 @@ bool GenerateDragCode(const string& algorithm_name, ltree& t, std::string prefix
 
     // This object wraps all the variables needed by the recursive function GenerateCodeRec and allows to simplify its
     // following call.
-    GenerateCodeClass gcc(false, prefix, /*{ { t.GetRoot(), 0 } }*/{});
+    GenerateCodeClass gcc(bd.roots_.size() > 1, prefix, { {} }); // t.roots_.size() > 1 serves to distinguish between
+                                                                 // "simple" and multi-rooted DRAGs. In the latter case
+                                                                 // gotos to the next tree will be added.
 
     // Populates the nodes_requring_labels to keep tracks of the DAG nodes that are pointed by other nodes and thus need
     // to have a label
-    gcc.CheckNodesTraversalRec(t.GetRoot());
+    for (auto& t : bd.roots_) {
+        gcc.CheckNodesTraversalRec(t);
+    }
 
-    // This function actually generates and writes in the output stream the C++ source code using pre-calculated data.
-    gcc.GenerateCodeRec(os, t.GetRoot(), 2);
+    // This function actually generates and writes into the output stream the C++ source code using pre-calculated data.
+    for (auto& t : bd.roots_) {
+        // TODO We actually need to call prefix and suffix functions here.
+        gcc.GenerateCodeRec(os, t, 2);
+    }
 
     return true;
 }
 
-// GenerateDragCode public interface.
-bool GenerateDragCode(const string& algorithm_name, ltree& t)
+// GenerateDragCode public interface. TODO, do we need it? 
+bool GenerateDragCode(const string& algorithm_name, BinaryDrag<conact>& t)
 {
     return GenerateDragCode(algorithm_name, t, "");
 }
 
-// This function generates forest code using numerical labels starting from start_id and returns the last used_id
-// This function generates forest code using numerical labels starting from start_id and returns the last used_id
-int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix, int start_id, int mask_shift)
-{
-    GenerateCodeClass gcc_main(true, prefix, { {} });
-
-    for (size_t i = 0; i < f.trees_.size(); ++i) {
-        const auto& t = f.trees_[i];
-        gcc_main.CheckNodesTraversalRec(t.GetRoot());
-    }
-
-    // TODO questa versione è specifica per BBDT, bisogna trovare un modo per generalizzare rispetto allo shift della maschera!!
-    gcc_main.SetId(start_id);
-    for (size_t i = 0; i < f.trees_.size(); ++i) {
-        const auto& t = f.trees_[i];
-        if (mask_shift == 1) {
-            // Thinning, PRED, SAUF, CTB 
-            os << prefix << "tree_" << i << ": if ((c+=1) >= w - 1) goto " << prefix <<
-                "break_0_" << f.main_trees_end_trees_mapping_[0][i] << ";\n";
-        }
-        else if (mask_shift == 2) {
-            // BBDT, DRAG, SPAGHETTI
-            os << prefix << "tree_" << i << ": if ((c+=2) >= w - 2) { if (c > w - 2) { goto " << prefix <<
-                "break_0_" << f.main_trees_end_trees_mapping_[0][i] << "; } else { goto " << prefix <<
-                "break_1_" << f.main_trees_end_trees_mapping_[1][i] << "; } } \n";
-        }
-        gcc_main.GenerateCodeRec(os, t.GetRoot(), 2);
-    }
-
-    // End trees
-    GenerateCodeClass gcc_end(false, prefix, { {} });
-
-    for (size_t tg = 0; tg < f.end_trees_.size(); ++tg) {
-        const auto& cur_trees = f.end_trees_[tg];
-        for (size_t i = 0; i < cur_trees.size(); ++i) {
-            const auto& t = cur_trees[i];
-            gcc_end.CheckNodesTraversalRec(t.GetRoot());
-        }
-    }
-
-    gcc_end.SetId(gcc_main.GetId());
-    for (size_t tg = 0; tg < f.end_trees_.size(); ++tg) {
-        const auto& cur_trees = f.end_trees_[tg];
-        for (size_t i = 0; i < cur_trees.size(); ++i) {
-            os << prefix << "break_" << tg << "_" << i << ":\n";
-            gcc_end.GenerateCodeRec(os, cur_trees[i].GetRoot(), 2);
-            os << string(2, '\t') << "continue;\n";
-        }
-    }
-
-    return gcc_end.GetId();
-}
-
-
-
-
 int GenerateDragCode(std::ostream& os, 
                      const BinaryDrag<conact>& bd, 
                      bool with_gotos,
-                     std::string before(int i, const std::string& prefix), 
-                     std::string after(int i, const std::string& prefix),
-                     std::string prefix,
-                     int start_id)
+                     BEFORE_AFTER_FUN(before),
+                     BEFORE_AFTER_FUN(after),
+                     const std::string prefix,
+                     int start_id,
+                     const std::vector<std::vector<int>> mapping, 
+                     int end_group_id)
 {
+    // This object wraps all the variables needed by the recursive function GenerateCodeRec and allows to simplify its
+    // following call.
     GenerateCodeClass gcc(with_gotos, prefix, { {} });
 
-    for (size_t i = 0; i < bd.roots_.size(); ++i) {
-        gcc.CheckNodesTraversalRec(bd.roots_[i]);
+    // Populates the nodes_requring_labels to keep tracks of the DAG nodes that are pointed by other nodes and thus need
+    // to have a label
+    for (auto& t : bd.roots_) {
+        gcc.CheckNodesTraversalRec(t);
     }
 
+    // And then we generate and write into the output stream the C++ source code using pre-calculated data.
     gcc.SetId(start_id);
-    for (size_t i = 0; i < bd.roots_.size(); ++i) {        
-        os << before(i, prefix);        
+    for (size_t i = 0; i < bd.roots_.size(); ++i) {
+        os << before(i, prefix, mapping, end_group_id);
         gcc.GenerateCodeRec(os, bd.roots_[i], 2);
+        os << after(i, prefix, mapping, end_group_id);
+    }
+    
+    return gcc.GetId();
+}
+
+// This function generates forest code using numerical labels starting from start_id and returns 
+// the last used_id.
+int GenerateLineForestCode(std::ostream& os, 
+                           const LineForestHandler& lfh,
+                           std::string prefix,
+                           int start_id,
+                           BEFORE_AFTER_FUN(before_main),
+                           BEFORE_AFTER_FUN(after_main),
+                           BEFORE_AFTER_FUN(before_end),
+                           BEFORE_AFTER_FUN(after_end))
+{
+    // Generate the code for the main forest
+    int last_id = GenerateDragCode(os, lfh.f_, true, before_main, after_main, prefix, start_id, lfh.main_end_tree_mapping_);
+
+    // Generate the code for the end of the line forests
+    for (size_t i = 0; i < lfh.end_forests_.size(); ++i) {
+        last_id = GenerateDragCode(os, lfh.end_forests_[i], false, before_end, after_end, prefix, last_id, lfh.main_end_tree_mapping_, i);
     }
 
-    return gcc.GetId();
+    return last_id;
 }

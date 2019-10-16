@@ -35,7 +35,6 @@
 
 #include "base_forest.h"
 #include "conact_tree.h"
-//#include "forest_optimizer.h"
 #include "pixel_set.h"
 #include "utilities.h"
 
@@ -68,21 +67,68 @@ struct Equivalences {
 };
 
 using constraints = std::map<std::string, int>;
+static std::vector<int> DEFAULT_VECTOR; // Dummy vector for the default value of DeleteTree member function
 
-struct Forest {
-    BinaryDrag<conact> t_;
-    Equivalences eq_;
+/** @brief Generates all the forests needed to handle one line of the image.
+*/
+using Forest = struct LineForestHandler; // TO BE REMOVED
+struct LineForestHandler {
 
-    bool separately = false; // Specify if end trees from different groups should be treated separately during Tree2Dag conversion
+    /** @brief Creates forest of trees pruning original tree. 
+    
+    The pruning is performed as follows: the original tree is recursively explored and constraints (different on 
+    each branch) are defined using equivalences between pixels (i.e. pixels which remain in the mask when it moves). 
+    When a leaf is reached the original tree is reduced using current branch's constraints. All the attributes are
+    temporary objects, so this class can be used as function.
+
+    */
+    struct CreateReducedDrag {
+        const BinaryDrag<conact>& bd_;
+        BinaryDrag<conact>& f_;
+        Equivalences eq_;
+
+        // bd is the original binary drag from which to generate the forest and f is where to write the trees
+        CreateReducedDrag(const BinaryDrag<conact>& bd, BinaryDrag<conact>& f, const pixel_set& ps) : bd_{ bd }, f_{ f }, eq_{ps} {
+            constraints constr;
+            CreateReducedTreesRec(bd_.roots_[0], constr);
+        }
+
+        // See CreateReducedTrees 
+        void CreateReducedTreesRec(const ltree::node* n, const constraints& constr) {
+            if (n->isleaf()) {
+                // Create a reduced version of the tree based on what we learned on the path to this leaf. The new tree is stored in t_ as well.
+                f_.AddRoot(Reduce(bd_.roots_[0], f_, constr));
+            }
+            else {
+                constraints constrNew = constr;
+                auto ft = eq_.Find(n->data.condition);
+                if (ft)
+                    constrNew[ft] = 0;
+                CreateReducedTreesRec(n->left, constrNew);
+                if (ft)
+                    constrNew[ft] = 1;
+                CreateReducedTreesRec(n->right, constrNew);
+            }
+        }
+    };
+
+    bool separately = false; // TO BE REMOVED Specify if end trees from different groups should be treated separately during Tree2Dag conversion
 
     std::vector<int> next_tree_; // This vector contains the equivalences between main trees
-    std::vector<ltree> trees_;
+    BinaryDrag<conact> f_;
+    std::vector<ltree> trees_; // TO BE REMOVED
 
-    std::vector<std::vector<ltree>> end_trees_;
-    std::vector<std::vector<int>> end_next_trees_; // This vector contains the equivalences between end trees
-    std::vector<std::vector<int>> main_trees_end_trees_mapping_; // This is the mapping between main trees and end trees
+    std::vector<BinaryDrag<conact>> end_forests_;
+    std::vector<std::vector<ltree>> end_trees_; // TO BE REMOVED
 
-    Forest(const Forest& f, std::vector<ltree::node*>& tracked_nodes) {
+    std::vector<std::vector<int>> end_next_tree_; // This vectors contain the equivalences between end trees
+    std::vector<std::vector<int>> main_end_tree_mapping_; // This is the mapping between main trees and end trees
+
+    LineForestHandler() {}
+    LineForestHandler(const BinaryDrag<conact>& t, const pixel_set& ps, const constraints& initial_constraints = {}); // Initial_constraints are useful to create particular forests such as the first line forest
+
+    // TODO, handle BinaryDrag!
+    LineForestHandler(const LineForestHandler& f, std::vector<ltree::node*>& tracked_nodes) {
         //t_ = f.t_;
         //eq_ = f.eq_;
 
@@ -111,23 +157,22 @@ struct Forest {
         //main_trees_end_trees_mapping_ = f.main_trees_end_trees_mapping_;
     }
 
-    Forest() {}
-    Forest(ltree t, const pixel_set& ps, const constraints& initial_constraints = {}); // Initial_constraints are useful to create particular forests such as the first line forest
-
     void RemoveUselessConditions();
     void RemoveEndTreesUselessConditions();
 
     void UpdateNext(ltree::node* n);
+
+    // Removes duplicate trees
     bool RemoveEqualTrees();
     bool RemoveEquivalentTrees();
-    bool RemoveTrees(bool(*FunctionPrt)(const ltree::node* n1, const ltree::node* n2));
 
+    // Removes duplicate end trees. This action is performed in each end forest separately, different
+    // groups cannot contain equal end trees. Moreover, experimental result have proven that merging
+    // end forest together is useless since they will never be used together when working on an image.
     bool RemoveEqualEndTrees();
     bool RemoveEquivalentEndTrees();
-    bool RemoveEndTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2));
-    
+
     void InitNextRec(ltree::node* n);
-    void InitNext(ltree& t);
 
     static ltree::node* Reduce(const ltree::node* n, ltree& t, const constraints& constr);
 
@@ -140,88 +185,13 @@ private:
 
     void RebuildDisjointTrees();
     void RebuildDisjointEndTrees();
+
+    // Actual implementation of RemoveEqualTrees, RemoveEquivalentTrees, RemoveEqualEndTrees, RemoveEquivalentEndTrees
+    bool RemoveTrees(bool(*FunctionPrt)(const ltree::node* n1, const ltree::node* n2),
+        std::vector<int>& next_tree,
+        BinaryDrag<conact>& f,
+        bool are_end_trees = false,
+        std::vector<int>& mapping = DEFAULT_VECTOR);
 };
-
-
-/** @brief This class allows to generate the forests associated to an algorithm when the pixel prediction is applied.
-
-When applying pixel prediction optimization many different forest should be generated. The number of forests depends
-on the mask size and on vertical shift size. This class considers only Rosenfeld and Grana masks. In the former case
-the vertical shift is unitary and only first line forest and "main" forest are required. In the latter case the mask
-has a vertical shift of 2 pixels. In this case four different forest are required:
-    - first line
-    - main
-    - last line
-    - single line
-
-The forests generation requires the original decision tree associated to the algorithm on which apply the prediction
-optimization and the pixel set associated to the mask.
-*/
-//class GenerateForests {
-//
-//#define MAIN_FOREST 1
-//#define FIRST_LINE 2
-//#define LAST_LINE 4
-//#define SINGLE_LINE 8
-//
-//    std::map<int, Forest> f_;
-//
-//    // t is the tree from which generate the forests
-//    ltree& t_;
-//
-//    // ps is the pixel set (i.e. the mask) from which
-//    // the tree t generates
-//    const pixel_set& ps_;
-//
-//public:
-//
-//    GenerateForests(ltree t, const pixel_set& ps, int flag = MAIN_FOREST | FIRST_LINE) : t_(t), ps_(ps)
-//    {
-//        // main forest generation
-//        if (MAIN_FOREST & flag) {
-//            f_[MAIN_FOREST] = Forest(t_, ps_);
-//        }
-//
-//        // firstline forest generation
-//        if (FIRST_LINE & flag) {
-//            constraints first_line_constr;
-//            for (const auto& p : ps_) {
-//                if (p.GetDy() < 0)
-//                    first_line_constr[p.name_] = 0;
-//            }
-//            f_[FIRST_LINE] = Forest(t_, ps_, first_line_constr);
-//        }
-//        // lastline forest forest generation
-//        if (LAST_LINE & flag) {
-//            constraints last_line_constr;
-//            for (const auto& p : ps_) {
-//                if (p.GetDy() > 0)
-//                    last_line_constr[p.name_] = 0;
-//            }
-//            f_[LAST_LINE] = Forest(t_, ps_, last_line_constr);
-//        }
-//        // singleline forest generation
-//        if (SINGLE_LINE & flag) {
-//            constraints single_line_constr;
-//            for (const auto& p : ps_) {
-//                if (p.GetDy() != 0)
-//                    single_line_constr[p.name_] = 0;
-//            }
-//            f_[SINGLE_LINE] = Forest(t_, ps_, single_line_constr);
-//        }
-//    }
-//
-//    void CompressForests() {
-//        LOG("Reducing Forests",
-//            for (auto& x : f_) {
-//                STree st(x.second);
-//            }
-//        );
-//    }
-//
-//    Forest& GetForest(int forest_id) {
-//        return f_.at(forest_id);
-//    }
-//};
 
 #endif // !GRAPHSGEN_FOREST_H_
