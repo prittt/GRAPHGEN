@@ -43,8 +43,6 @@
 /cmake_install.cmake
 /CMakeFiles
 
-**/*.jpg 
-**/*.png
 /outputs
 /outputs.zip
 /outputs_
