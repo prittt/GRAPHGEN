@@ -33,17 +33,26 @@
 
 #include "conact_tree.h"
 
+/** @brief This class allows to "remove" equal subtrees from a BinaryDrag.
 
+The class updates the input BinaryDrag itself so there is no need to build
+a non temporary object. Thus you can do: RemoveEqualSubtrees{bd}.
+The recursive procedure to find equal subtrees exploit memoization so it is
+quite efficient. Please note that the removal of equal subtrees is performed 
+updating the links but nodes are not actually deleted.
+*/
 struct RemoveEqualSubtrees {
-    std::unordered_map<std::string, ltree::node*> sp_; // string -> pointer
-    std::unordered_map<ltree::node*, std::string> ps_; // pointer -> string
+    std::unordered_map<std::string, BinaryDrag<conact>::node*> sp_; // string -> pointer
+    std::unordered_map<BinaryDrag<conact>::node*, std::string> ps_; // pointer -> string
     uint nodes_ = 0, leaves_ = 0;
 
-    RemoveEqualSubtrees(ltree::node* n) {
-        T2D(n);
+    RemoveEqualSubtrees(BinaryDrag<conact>& bd) {
+        for (auto& t : bd.roots_) {
+            RemoveEqualSubtreesRec(t);
+        }
     }
 
-    std::string T2D(ltree::node* n)
+    std::string RemoveEqualSubtreesRec(BinaryDrag<conact>::node*& n)
     {
         // Did we already find this node?
         auto itps = ps_.find(n);
@@ -66,8 +75,8 @@ struct RemoveEqualSubtrees {
         }
         else {
             ++nodes_;
-            auto sl = T2D(n->left);
-            auto sr = T2D(n->right);
+            auto sl = RemoveEqualSubtreesRec(n->left);
+            auto sr = RemoveEqualSubtreesRec(n->right);
             s = n->data.condition + sl + sr;
         }
 

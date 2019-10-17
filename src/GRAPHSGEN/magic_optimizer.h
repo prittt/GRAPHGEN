@@ -36,13 +36,13 @@
 
 // This class serves to efficiently collect information about each node/subtree of a tree starting from a node
 // it both stores properties of each subtree (as string) and all the parents of each node.
-struct MagicOptimizer {
+struct CollectDragStatistics {
 
     // Utility class to calculate and store (sub)trees properties
     struct STreeProp {
         std::string conditions_;
-        std::vector<ltree::node*> leaves_;
-        ltree::node* n_;
+        std::vector<BinaryDrag<conact>::node*> leaves_;
+        BinaryDrag<conact>::node* n_;
 
         STreeProp& operator+=(const STreeProp& rhs) {
             conditions_ += rhs.conditions_;
@@ -61,16 +61,18 @@ struct MagicOptimizer {
             return true;
         }
     };
-    std::unordered_map<ltree::node*, STreeProp> np_; // Associate to each tree node its properties (STreeProp)
-    std::unordered_map<ltree::node*, std::vector<ltree::node*>> parents_; // Associate to each tree node its parents (vector of nodes)
+    std::unordered_map<BinaryDrag<conact>::node*, STreeProp> np_; // Associate to each tree node its properties (STreeProp)
+    std::unordered_map<BinaryDrag<conact>::node*, std::vector<BinaryDrag<conact>::node*>> parents_; // Associate to each tree node its parents (vector of nodes)
 
-    MagicOptimizer() {}
-    MagicOptimizer(ltree::node * n) {
-        CollectStatsRec(n);
+    CollectDragStatistics() {}
+    CollectDragStatistics(BinaryDrag<conact>& bd) {
+        for (const auto& t : bd.roots_) {
+            CollectStatsRec(t);
+        }
     }
 
     // Collect information about each node/subtree of a tree starting from a node
-    STreeProp CollectStatsRec(ltree::node * n) {
+    STreeProp CollectStatsRec(BinaryDrag<conact>::node * n) {
         auto it = np_.find(n);
         if (it != end(np_))
             return it->second;

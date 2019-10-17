@@ -26,8 +26,8 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_CULO_H_
-#define GRAPHSGEN_CULO_H_
+#ifndef GRAPHSGEN_DRAG_COMPRESSOR_H_
+#define GRAPHSGEN_DRAG_COMPRESSOR_H_
 
 #include <algorithm>
 #include <iterator>
@@ -75,7 +75,7 @@
         delete n;
     }*/
 
-    /*void PrintTreeRec(std::ostream& os, ltree::node* n, std::set<ltree::node*>& visited, int tab = 0) {
+/*void PrintTreeRec(std::ostream& os, ltree::node* n, std::set<ltree::node*>& visited, int tab = 0) {
             os << std::string(tab, '\t');
 
             auto it = visited.find(n);
@@ -99,9 +99,80 @@
 
         }*/
 
-        // Compress a tree / forest into a DRAG solving equivalences
-struct FastDragOptimizer {
+/** This class merges special leaves. The following tree
+       b
+      /
+     a
+    / \
+   2  2,3
+becomes:
+       b
+      /
+     2
+*/
+class MergeSpecialLeaves {
+private:
+    std::set<const BinaryDrag<conact>::node*> visited_nodes;
+    //std::set<const BinaryDrag<conact>::node*> visited_leaves;
+public:
+    MergeSpecialLeaves(BinaryDrag<conact>& bd) {
+        for (auto& t : bd.roots_) {
+            MergeSpecialLeavesRec(t);
+        }
+    }
 
+    void MergeSpecialLeavesRec(BinaryDrag<conact>::node*& n) {
+        
+        if (n->isleaf()) {
+            return;
+        }
+
+        auto left  = n->left;
+        auto right = n->right;
+        if (left->isleaf() && right->isleaf() && ((left->data.action & right->data.action) != 0 && left->data.next == right->data.next)) {
+            // In this case the current node becomes a leaf. The action associated to this 
+            // leaf will be the intersection of the actions of its children.
+            n = left;
+            n->data.action = left->data.action & right->data.action;
+            return;
+        }
+
+        if (visited_nodes.insert(n).second) {
+            MergeSpecialLeavesRec(n->left);
+            MergeSpecialLeavesRec(n->right);
+        }
+    }
+};
+
+
+// Compress a tree / forest into a DRAG solving equivalences
+class DragCompressor {
+public:
+    static const int PRINT_STATUS_BAR = 1; /**< @brief Whether to print a sort of progress bar or not */
+    static const int IGNORE_LEAVES    = 2; /**< @brief Whether to ignore leaves or not during the compression.
+                                                   Please note that compressing the leaves will significantly
+                                                   increase the total execution time without improving the
+                                                   final compression result in anyway. */
+    static const int SAVE_INTERMEDIATE_RESULTS = 4; /**< @brief Whether to delete or not the dot code used to draw the drag */
+
+    // BinaryDrag 
+    DragCompressor(BinaryDrag<conact>& bd, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
+        FastDragOptimizerRec(bd, flags);
+        bd = best_bd;
+    }
+
+    // LineForestHandler
+    DragCompressor(LineForestHandler& lfh, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
+        FastDragOptimizerRec(lfh.f_, flags);
+        lfh.f_ = best_bd;
+
+        for (auto& f : lfh.end_forests_) {
+            FastDragOptimizerRec(f, flags);
+            f = best_bd;
+        }
+    }
+
+private:
     // This class perform the merge of equivalent trees updating links
     struct MergeEquivalentTreesAndUpdate {
         std::unordered_set<ltree::node*> visited_;
@@ -137,29 +208,25 @@ struct FastDragOptimizer {
         }
     };
 
-    // "Constructor" for tree optimization
-    FastDragOptimizer(ltree& t) {
-        FastDragOptimizerRec(t);
-    }
 
-    // "Constructor" for forest optimization
-    FastDragOptimizer(Forest& f) {
-        FastDragOptimizerRec(f);
-    }
-
-    int count = 0;
-    size_t best_nodes = std::numeric_limits<size_t >::max();
+    size_t progress_counter = 0;
+    size_t best_nodes  = std::numeric_limits<size_t >::max();
     size_t best_leaves = std::numeric_limits<size_t >::max();
-    ltree best_tree;
-    void FastDragOptimizerRec(ltree& t, bool ignore_leaves = true)
-    {
-        // Collect information of tree's subtrees (as strings)
-        MagicOptimizer mo(t.GetRoot());
+    BinaryDrag<conact> best_bd;
 
-        // Push previously collected information into a (simpler to use) vector
-        std::vector<MagicOptimizer::STreeProp> trees;
-        for (const auto& x : mo.np_)
+    void FastDragOptimizerRec(BinaryDrag<conact>& bd, int flags)
+    {
+        bool print_status_bar = flags & PRINT_STATUS_BAR;
+        bool ignore_leaves = flags & IGNORE_LEAVES;
+        bool save_intermediate_results = flags & SAVE_INTERMEDIATE_RESULTS;
+
+        // Collect information of trees'/drags' subtrees (as strings) and push
+        // them into a vector so that they are easier to use
+        std::vector<CollectDragStatistics::STreeProp> trees;
+        CollectDragStatistics cds(bd);
+        for (const auto& x : cds.np_) {
             trees.push_back(x.second);
+        }
 
         // For each subtree (with or without considering leaves) ...
         for (size_t i = 0; i < trees.size(); ) {
@@ -185,17 +252,17 @@ struct FastDragOptimizer {
             }
         }
 
-        // Order subtrees which have equivalent from the deepest to the least deep
-        // this step is somehow useless since later all the possible merges are 
+        // Then we order subtrees which have equivalent from the deepest to the least 
+        // deep. This step is somehow useless since later all the possible merges are 
         // tested. Ordering the tree is useful to find, in some cases, the best or
         // pseudo optimal solution earlier, so that when the process does not end 
-        // in "good time" we still have a good solution/good compression.
-        sort(begin(trees), end(trees), [](const MagicOptimizer::STreeProp& a, const MagicOptimizer::STreeProp& b) {
+        // in "good time" we still have a good solution/compression.
+        sort(begin(trees), end(trees), [](const CollectDragStatistics::STreeProp& a, const CollectDragStatistics::STreeProp& b) {
             return a.conditions_.size() > b.conditions_.size();
         });
 
+        // Compare each subtree which has equivalent subtrees with all the others
         bool no_eq = true;
-        // Compare each subtree with has equivalent subtrees with all the other
         for (size_t i = 0; i < trees.size(); ++i) {
             bool eq = false;
             size_t j;
@@ -206,138 +273,65 @@ struct FastDragOptimizer {
 
                     // Then we need to copy the original (entire) tree 
                     // keeping track of some nodes. Indeed, to perform
-                    // the link, we need to know the pointers to the 
-                    // roots of the equivalent subtrees after the copy.
-                    std::vector<ltree::node*> tracked_nodes{ trees[i].n_, trees[j].n_ };
-                    ltree t_copy(t, tracked_nodes);
+                    // the link update, we need to know the pointers to
+                    // the roots of the equivalent subtrees after the 
+                    // copy.
+                    std::vector<BinaryDrag<conact>::node*> tracked_nodes{ trees[i].n_, trees[j].n_ };
+                    BinaryDrag<conact> bd_copy(bd, tracked_nodes);
 
                     // Re-calculate subtrees/node statistics over the tree 
                     // copy since pointers to nodes are changed.
-                    MagicOptimizer mo(t_copy.GetRoot());
+                    CollectDragStatistics cds(bd_copy);
 
                     // Perform the merge of equivalent trees updating links
-                    MergeEquivalentTreesAndUpdate(tracked_nodes[0], tracked_nodes[1], mo.parents_);
+                    MergeEquivalentTreesAndUpdate(tracked_nodes[0], tracked_nodes[1], cds.parents_);
 
-                    // Remove equal subtrees inside a tree. Is this really
-                    // necessary here? 
-                    RemoveEqualSubtrees(t_copy.GetRoot());
-
-                    //{ ofstream os("after.txt"); set<ltree::node*> visited; PrintTreeRec(os, t_copy.GetRoot(), visited); }
-                    //DrawDagOnFile("After", t_copy, true);
+                    // Remove equal subtrees inside a BinaryDrag. Is this really
+                    // necessary here? Maybe it isn't but performing this operation
+                    // here can improve the efficiency of the compression in case 
+                    // there are actually equal sub-trees.
+                    RemoveEqualSubtrees{bd_copy};
 
                     // Recursively call the compression function on the current
                     // resulting tree
-                    FastDragOptimizerRec(t_copy);
+                    FastDragOptimizerRec(bd_copy, flags);
                 }
             }
         }
+
         if (no_eq) {
-            ++count;
-            if (count % 1000 == 0)
-                std::cout << "\r" << count % 1000;
-            DragStatistics ds(t);
-            if (ds.Nodes() < best_nodes || (ds.Nodes() == best_nodes) && ds.Leaves() < best_leaves) {
-                best_nodes = ds.Nodes();
-                best_leaves = ds.Leaves();
-                best_tree = t;
-                DrawDagOnFile("BestDrag" + zerostr(count, 4), t, true);
-                std::cout << count << " - nodes: " << ds.Nodes() << " - leaves: " << ds.Leaves() << "\n";
-                FastDragOptimizerRec(t, false);
-            }
-        }
-    }
-
-    void FastDragOptimizerRec(Forest& f, bool ignore_leaves = true)
-    {
-        std::vector<MagicOptimizer::STreeProp> trees;
-        MagicOptimizer mo;
-        for (const auto& t : f.trees_) {
-            mo.CollectStatsRec(t.GetRoot());
-        }
-        for (const auto& x : mo.np_) {
-            trees.push_back(x.second);
-        }
-
-        for (size_t i = 0; i < trees.size(); ) {
-            if (ignore_leaves && trees[i].conditions_ == ".") {
-                trees.erase(begin(trees) + i);
-                continue;
-            }
-            bool eq = false;
-            for (size_t j = 0; j < trees.size(); ++j) {
-                if (i != j && trees[i].equivalent(trees[j])) {
-                    eq = true;
-                    break;
+            // Display a raw progress status if needed
+            if (ignore_leaves) {
+                ++progress_counter;
+                if (print_status_bar) {
+                    if (progress_counter % 1 == 0) {
+                        std::cout << "\r" << std::setfill(' ') << std::setw(10) << progress_counter;
+                    }
                 }
             }
-            if (!eq) {
-                trees.erase(begin(trees) + i);
-            }
-            else {
-                ++i;
-            }
-        }
+            
+            BinaryDragStatistics bds(bd);
+            if (bds.Nodes() < best_nodes || (bds.Nodes() == best_nodes && bds.Leaves() < best_leaves)) {
+                // New better binary drag found. Update attributes accordingly ...
+                best_nodes  = bds.Nodes();
+                best_leaves = bds.Leaves();
+                best_bd = bd;
 
-        sort(begin(trees), end(trees), [](const MagicOptimizer::STreeProp& a, const MagicOptimizer::STreeProp& b) {
-            return a.conditions_.size() > b.conditions_.size();
-        });
-
-        bool no_eq = true;
-        for (size_t i = 0; i < trees.size(); ++i) {
-            bool eq = false;
-            size_t j;
-            for (j = i + 1; j < trees.size(); ++j) {
-                if (trees[i].equivalent(trees[j])) {
-                    no_eq = false;
-
-                    std::vector<ltree::node*> tracked_nodes{ trees[i].n_, trees[j].n_ };
-                    Forest f_copy(f, tracked_nodes);
-
-                    MagicOptimizer mo;
-                    for (const auto& t : f_copy.trees_) {
-                        mo.CollectStatsRec(t.GetRoot());
-                    }
-
-                    if (false) {
-                        ForestStatistics fs(f_copy);
-                        std::cout << "ForestBeforeMerge" << count << " - nodes: " << fs.nodes() << " - leaves: " << fs.leaves() << "\n";
-                        //DrawForestOnFile("ForestBeforeMerge" + zerostr(count, 4), f_copy);
-                    }
-                    MergeEquivalentTreesAndUpdate(tracked_nodes[0], tracked_nodes[1], mo.parents_);
-                    if (false) {
-                        ForestStatistics fs(f_copy);
-                        std::cout << "ForestAfterMerge" << count << " - nodes: " << fs.nodes() << " - leaves: " << fs.leaves() << "\n";
-                        //DrawForestOnFile("ForestAfterMerge" + zerostr(count, 4), f_copy);
-                    }
-
-                    Forest2Dag f2d(f_copy);
-
-                    //{ ofstream os("after.txt"); set<ltree::node*> visited; PrintTreeRec(os, t_copy.GetRoot(), visited); }
-                    //DrawDagOnFile("After", t_copy, true);
-                    FastDragOptimizerRec(f_copy);
-                }
-            }
-        }
-        if (no_eq) {
-            ++count;
-            if (count % 1000 == 0)
-                std::cout << "\r" << count;
-            ForestStatistics fs(f);
-            if (fs.nodes() < best_nodes || (fs.nodes() == best_nodes) && fs.leaves() < best_leaves) {
-                best_nodes = fs.nodes();
-                best_leaves = fs.leaves();
-                //DrawForestOnFile("BestForest" + zerostr(count, 4), f);
-                std::cout << count << " - nodes: " << fs.nodes() << " - leaves: " << fs.leaves() << "\n";
-
-                {
-                    std::ofstream os("stocazzo.txt");
-                    // GenerateForestCode(os, f, "", 0, 2);
+                // ... save the current tree if needed
+                if (save_intermediate_results) {
+                    DrawDagOnFile("BestDrag" + zerostr(progress_counter, 10), bd);
                 }
 
-                FastDragOptimizerRec(f, false);
+                if (print_status_bar) {
+                    std::cout << progress_counter << " - nodes: " << bds.Nodes() << "; leaves: " << bds.Leaves() << "\n";
+                }
+
+                // ... and finally compress the leaves of the current optimal binary drag
+                // FastDragOptimizerRec(bd, flags & ~IGNORE_LEAVES); // This is a bad idea!
+                MergeSpecialLeaves{best_bd};
             }
         }
     }
 };
 
-#endif // GRAPHSGEN_CULO_H_
+#endif // GRAPHSGEN_DRAG_COMPRESSOR_H_

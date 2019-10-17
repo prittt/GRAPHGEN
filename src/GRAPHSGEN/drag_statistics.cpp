@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 -2019 Federico Bolelli, Costantino Grana
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,8 +30,7 @@
 
 #include <iostream>
 
-void PrintStats(const ltree& t) {
-	DragStatistics ds(t);
-	std::cout << "Nodes = " << ds.Nodes() << "\n";
-	std::cout << "Leaves = " << ds.Leaves() << "\n";
+void PrintStats(const BinaryDrag<conact>& bd, std::ostream& os) {
+    BinaryDragStatistics bds(bd);
+    os << "nodes:" << bds.Nodes() << "; leaves = " << bds.Leaves() << "\n";
 }

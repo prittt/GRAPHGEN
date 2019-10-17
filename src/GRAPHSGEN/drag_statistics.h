@@ -29,19 +29,23 @@
 #ifndef GRAPHSGEN_DRAG_STATISTICS_H_
 #define GRAPHSGEN_DRAG_STATISTICS_H_
 
+#include <iostream>
 #include <set>
 
 #include "conact_tree.h"
 
-/** 
-* Calculates the statisics of a DRAG (the number of unique nodes an unique leaves).
-*
-*/
-class DragStatistics {
-    std::set<const ltree::node*> visited_nodes;
-    std::set<const ltree::node*> visited_leaves;
+/** @brief Calculates the statistics of a binary drag with one or multiple roots.
 
-    void PerformStatistics(const ltree::node *n) {
+The statistics are basically the number of unique nodes an unique leaves inside the
+binary drag. Nodes() and Leaves() member functions allows to access the calculated
+statistics.
+
+*/
+class BinaryDragStatistics {
+    std::set<const BinaryDrag<conact>::node*> visited_nodes;
+    std::set<const BinaryDrag<conact>::node*> visited_leaves;
+
+    void PerformStatistics(const BinaryDrag<conact>::node *n) {
         if (n->isleaf()) {
             visited_leaves.insert(n);
             return;
@@ -54,35 +58,52 @@ class DragStatistics {
     }
 
 public:
-	/** 
-	* The constructor creates a DragStatistics object and calculates the statistics of a DRAG
-	* 
-	* @param [in] t: DRAG on which calculate statistics. Note that simple tree are also DRAG.
-	*/
-    DragStatistics(const ltree& t) {
-        PerformStatistics(t.GetRoot());
+    /** @brief The constructor creates the object and directly calculates the statistics.
+
+    @param [in] bd BinaryDrag on which calculate the statistics.
+    */
+    BinaryDragStatistics(const BinaryDrag<conact>& bd) {
+        for (const auto& t : bd.roots_) {
+            PerformStatistics(t);
+        }
     }
 
-	/**
-	* Returns the number of unique nodes inside the DRAG.
-	* 
-	* @return number of unique nodes
-	*/
+    /** @brief Returns the number of unique nodes inside the DRAG.
+
+    @return number of unique nodes
+    */
     auto Nodes() const { return visited_nodes.size(); }
 
-	/**
-	* Returns the number of unique leaves inside the DRAG.
-	*
-	* @return number of unique leaves
-	*/
-	auto Leaves() const { return visited_leaves.size(); }
+    /** @brief Returns the number of unique leaves inside the DRAG.
+
+    @return number of unique leaves
+    */
+    auto Leaves() const { return visited_leaves.size(); }
+
+    /** @brief Reverse into the specified output stream the unique leaves of a BinaryDrag.
+
+    @param[in] os Output stream where to write the leaves. Default value is std::cout.
+
+    @return 
+    */
+    void PrintLeaves(std::ostream& os = std::cout) {
+        for (const auto& l : visited_leaves) {
+            if (l->isleaf()) {
+                for (const auto& a : l->data.actions()) {
+                    os << a << " ";
+                }
+                os << "- " << l->data.next << "\n";
+            }
+        }
+        os << "----------------------------------\n";
+    }
 };
 
-/**
-* Displays on stdout the statisics of a DRAG (number of unique nodes an unique leaves).
-*
-* @param [in] t: DRAG on which calculate statistics. Note that simple tree are also DRAG.
+/** @brief Displays on the specified output stream  the statistics of a DRAG (number of unique nodes an unique leaves).
+
+@param [in] bd BinaryDrag<conact> on which calculate statistics.
+@param [in] os Output stream on which reverse the statistics of bd.
 */
-void PrintStats(const ltree& t);
+void PrintStats(const BinaryDrag<conact>& bd, std::ostream& os = std::cout);
 
 #endif // !GRAPHSGEN_DRAG_STATISTICS_H_

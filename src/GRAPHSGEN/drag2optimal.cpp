@@ -154,7 +154,7 @@ void Dag2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_no
         ltree dag = t;
         Dag2DagUsingIdenties(dag);
 
-        DragStatistics ds(dag);
+        BinaryDragStatistics ds(dag);
 
         if (best_nodes > ds.Nodes()) {
             best_nodes = ds.Nodes();

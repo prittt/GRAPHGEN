@@ -46,30 +46,34 @@ int main()
 
     // Call GRAPHSGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
-    ltree t = GetOdt(rs, algorithm_name);
+    BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
 
     // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, false, true, false);
+    DrawDagOnFile(tree_filename, bd);
 
-    RemoveEqualSubtrees(t.GetRoot());
-    DrawDagOnFile("RemoveEqualSubtrees", t, true);
+    ofstream os("foglie.txt");
+    BinaryDragStatistics a(bd);
+    a.PrintLeaves(os);
 
-    MagicOptimizer mo(t.GetRoot());
-    vector<MagicOptimizer::STreeProp> trees;
-    for (const auto& x : mo.np_)
-        trees.push_back(x.second);
+    RemoveEqualSubtrees{bd};
+    DrawDagOnFile("RemoveEqualSubtrees", bd);
 
-    FastDragOptimizer fdo(t);
-    cout << "Done\n";
+    BinaryDragStatistics b(bd);
+    b.PrintLeaves(os);
+
+    DragCompressor{ bd };
     
-    DrawDagOnFile("FastDragOptimizer", fdo.best_tree, true);
-    GenerateDragCode(algorithm_name, fdo.best_tree);
+    BinaryDragStatistics c(bd);
+    c.PrintLeaves(os);
+
+    DrawDagOnFile("DragCompressor", bd, true);
+    GenerateDragCode(algorithm_name, bd);
     pixel_set block_positions{
            { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
            { "S", {-2, +0} },{ "x", {+0, +0} }
     };
-    GeneratePointersConditionsActionsCode(algorithm_name, rs, block_positions);
+    GeneratePointersConditionsActionsCode(rs, false, block_positions);
         
     /*{
         TLOG("Creating DRAG using equivalences",
