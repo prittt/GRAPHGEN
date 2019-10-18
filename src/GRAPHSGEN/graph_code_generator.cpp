@@ -230,40 +230,55 @@ public:
 // parameters (like prefix string) from the public interface. The prefix string is
 // used to generate specific labels for the start/end trees during the forest code
 // generation, so it is useless during the code generation of a tree. TODO, remove it? 
-bool GenerateDragCode(const string& algorithm_name, BinaryDrag<conact>& bd, std::string prefix)
+//bool GenerateDragCode(const string& algorithm_name, BinaryDrag<conact>& bd, std::string prefix)
+//{
+//    filesystem::path code_path = conf.treecode_path_;
+//
+//    ofstream os(code_path);
+//    if (!os) {
+//        return false;
+//    }
+//
+//    // This object wraps all the variables needed by the recursive function GenerateCodeRec and allows to simplify its
+//    // following call.
+//    GenerateCodeClass gcc(bd.roots_.size() > 1, prefix, { {} }); // t.roots_.size() > 1 serves to distinguish between
+//                                                                 // "simple" and multi-rooted DRAGs. In the latter case
+//                                                                 // gotos to the next tree will be added.
+//
+//    // Populates the nodes_requring_labels to keep tracks of the DAG nodes that are pointed by other nodes and thus need
+//    // to have a label
+//    for (auto& t : bd.roots_) {
+//        gcc.CheckNodesTraversalRec(t);
+//    }
+//
+//    // This function actually generates and writes into the output stream the C++ source code using pre-calculated data.
+//    for (auto& t : bd.roots_) {
+//        // TODO We actually need to call prefix and suffix functions here.
+//        gcc.GenerateCodeRec(os, t, 2);
+//    }
+//
+//    return true;
+//}
+
+// GenerateDragCode public interface. TODO, do we need it? 
+bool GenerateDragCode(const string& algorithm_name,
+                      const BinaryDrag<conact>& bd, 
+                      bool with_gotos,
+                      BEFORE_AFTER_FUN(before),
+                      BEFORE_AFTER_FUN(after),
+                      const std::string prefix,
+                      int start_id,
+                      const std::vector<std::vector<int>> mapping, 
+                      int end_group_id)
 {
     filesystem::path code_path = conf.treecode_path_;
-
+    
     ofstream os(code_path);
     if (!os) {
         return false;
     }
 
-    // This object wraps all the variables needed by the recursive function GenerateCodeRec and allows to simplify its
-    // following call.
-    GenerateCodeClass gcc(bd.roots_.size() > 1, prefix, { {} }); // t.roots_.size() > 1 serves to distinguish between
-                                                                 // "simple" and multi-rooted DRAGs. In the latter case
-                                                                 // gotos to the next tree will be added.
-
-    // Populates the nodes_requring_labels to keep tracks of the DAG nodes that are pointed by other nodes and thus need
-    // to have a label
-    for (auto& t : bd.roots_) {
-        gcc.CheckNodesTraversalRec(t);
-    }
-
-    // This function actually generates and writes into the output stream the C++ source code using pre-calculated data.
-    for (auto& t : bd.roots_) {
-        // TODO We actually need to call prefix and suffix functions here.
-        gcc.GenerateCodeRec(os, t, 2);
-    }
-
-    return true;
-}
-
-// GenerateDragCode public interface. TODO, do we need it? 
-bool GenerateDragCode(const string& algorithm_name, BinaryDrag<conact>& t)
-{
-    return GenerateDragCode(algorithm_name, t, "");
+    return GenerateDragCode(os, bd, with_gotos, before, after, prefix, start_id, mapping, end_group_id);
 }
 
 int GenerateDragCode(std::ostream& os, 

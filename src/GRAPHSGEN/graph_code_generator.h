@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,24 +34,6 @@
 #include "conact_tree.h"
 #include "forest.h"
 #include "rule_set.h"
-
-/** @brief Generate the C++ code for the given DRAG (Directed Rooted Acyclic Graph). 
-
-This function works only when all nodes of the DRAG have both left and right child!
-
-@param[in] algorithm_name Name of the algorithm for which the code must be generated, it is used to name the output file.
-@param[in] t Tree for which to generate the C++ code.
-
-@return Whether the operation ended correctly (true) or not (false).
-*/
-bool GenerateDragCode(const std::string& algorithm_name, ltree& t);
-
-/** @brief Generate the C++ code for the given Forest.
-
-This function works only when all nodes of the DRAGs constituting the forest have both left and right child!
-*/
-//int GenerateForestCode(std::ostream& os, const Forest& f, std::string prefix = "", int start_id = 0, int mask_shift = 1);
-
 
 /** @brief
 */
@@ -115,16 +97,40 @@ int GenerateDragCode(std::ostream& os,
                      const std::vector<std::vector<int>> mapping = {}, 
                      int end_group_id = 0);
 
+/** @brief Generate the C++ code for the given DRAG (Directed Rooted Acyclic Graph). 
+
+This function works only when all nodes of the DRAG have both left and right child!
+
+@param[in] algorithm_name Name of the algorithm for which the code must be generated, it is used to name the output file.
+@param[in] t Tree for which to generate the C++ code.
+
+@return Whether the operation ended correctly (true) or not (false).
+*/
+bool GenerateDragCode(const std::string& algorithm_name,
+                      const BinaryDrag<conact>& bd, 
+                      bool with_gotos = false,
+                      BEFORE_AFTER_FUN(before) = DefaultEmptyFunc,
+                      BEFORE_AFTER_FUN(after)  = DefaultEmptyFunc,
+                      const std::string prefix = "",
+                      int start_id = 0,
+                      const std::vector<std::vector<int>> mapping = {}, 
+                      int end_group_id = 0);
+
+// TODO fix documentation here
+/** @brief Generate the C++ code for the given Forest.
+
+This function works only when all nodes of the DRAGs constituting the forest have both left and right child!
+*/
 // This function generates forest code using numerical labels starting from start_id and returns 
 // the last used_id.
-int GenerateLineForestCode(std::ostream& os, 
+int GenerateLineForestCode(std::ostream& os,
                            const LineForestHandler& lfh,
                            std::string prefix,
                            int start_id,
                            BEFORE_AFTER_FUN(before_main) = BeforeMainShiftOne,
-                           BEFORE_AFTER_FUN(after_main)  = DefaultEmptyFunc,
-                           BEFORE_AFTER_FUN(before_end)  = BeforeEnd,
-                           BEFORE_AFTER_FUN(after_end)   = AfterEnd);
+                           BEFORE_AFTER_FUN(after_main) = DefaultEmptyFunc,
+                           BEFORE_AFTER_FUN(before_end) = BeforeEnd,
+                           BEFORE_AFTER_FUN(after_end) = AfterEnd);
 
 
 #endif // GRAPHSGEN_GRAPH_CODE_GENERATOR_H_

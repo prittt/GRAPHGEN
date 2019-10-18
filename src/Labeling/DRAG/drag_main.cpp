@@ -48,83 +48,25 @@ int main()
     // 1) Load or generate Optimal Decision Tree based on Grana mask
     BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
 
-    // 2) Draw the generated tree to pdf
+    // 2) Draw the generated tree
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
-    ofstream os("foglie.txt");
-    BinaryDragStatistics a(bd);
-    a.PrintLeaves(os);
-
-    RemoveEqualSubtrees{bd};
-    DrawDagOnFile("RemoveEqualSubtrees", bd);
-
-    BinaryDragStatistics b(bd);
-    b.PrintLeaves(os);
-
+    // 3) Compress the tree into a DRAG
     DragCompressor{ bd };
-    
-    BinaryDragStatistics c(bd);
-    c.PrintLeaves(os);
 
-    DrawDagOnFile("DragCompressor", bd, true);
+    // 4) Draw the generated DRAG
+    string drag_filename = algorithm_name + "_drag";
+    DrawDagOnFile(drag_filename, bd);
+    
+    // 5) Generate the DRAG C/C++ code taking care of the names used
+    //    in the Grana's rule set GranaRS
     GenerateDragCode(algorithm_name, bd);
     pixel_set block_positions{
            { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
            { "S", {-2, +0} },{ "x", {+0, +0} }
     };
-    GeneratePointersConditionsActionsCode(rs, false, block_positions);
-        
-    /*{
-        TLOG("Creating DRAG using equivalences",
-            std::cout << "\n";
-            auto t2 = t;
-            RemoveEqualSubtrees sc(t2.GetRoot());
-            DrawDagOnFile("RemoveEqualSubtrees", t2, true);
-            std::cout << "After equal subtrees removal: nodes = " << sc.nodes_ << " - leaves = " << sc.leaves_ << "\n";
-
-            FindOptimalDrag c(t2);
-            c.GenerateAllTrees();
-            DrawDagOnFile("FindOptimalDrag", c.best_tree_, true);
-            std::cout << "\n";
-            );
-    }*/
-    return 0;
-    /*
-        // 2a) Convert Optimal Decision Tree into Directed Rooted Acyclic Graph
-        //     using a exhaustive strategy
-        TLOG("Creating DRAG using identites",
-            Tree2DagUsingIdentities(t);
-        );
-        string drag_filename = algorithm_name + "_drag_identities";
-        DrawDagOnFile(drag_filename, t, true);
-        PrintStats(t);
-
-        //string odrag_filename = algorithm_name + "_optimal_drag.txt";
-        //if (!LoadConactDrag(t, odrag_filename)) {
-        //    TLOG("Computing optimal DRAG\n",
-        //        Dag2OptimalDag(t);
-        //    );
-        //    WriteConactDrag(t, odrag_filename);
-        //}
-        //string optimal_drag_filename = algorithm_name + "_optimal_drag";
-        //DrawDagOnFile(optimal_drag_filename, t, true);
-        //PrintStats(t);
-
-        // 2b) Convert Optimal Decision Tree into Directed Rooted Acyclic Graph
-        //     using a heuristic
-        // TODO
-
-        // 3) Generate the C++ source code for the ODT
-        GenerateDragCode(algorithm_name, t);
-
-        // 4) Generate the C++ source code for pointers,
-        // conditions to check and actions to perform
-        pixel_set block_positions{
-              { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
-              { "S", {-2, +0} },{ "x", {+0, +0} }
-        };
-        GeneratePointersConditionsActionsCode(algorithm_name, rs, block_positions);
-    */
+    GeneratePointersConditionsActionsCode(rs, true, block_positions);
+    
     return EXIT_SUCCESS;
 }

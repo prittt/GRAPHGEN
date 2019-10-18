@@ -36,7 +36,7 @@ using namespace std;
 
 int main()
 {
-    string algorithm_name = "Tagliatelle";
+    string algorithm_name = "Spaghetti";
     conf = ConfigData(algorithm_name);
 
     GranaRS g_rs;
@@ -44,47 +44,38 @@ int main()
 
     // Call GRAPHSGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
-    ltree t = GetOdt(rs, algorithm_name);
+    BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
 
     // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, false, true, false);
+    DrawDagOnFile(tree_filename, bd);
 
-    // Optional) Display Tree statistics
-    PrintStats(t);
-
-    // 3) Generate forests of trees 
-    LOG(algorithm_name + ": making main forest",
-        Forest f(t, rs.ps_);
+    // 3) Generate forests of trees
+    LOG(algorithm_name + " - making forests",
+        ForestHandler fh(bd, rs.ps_, ForestHandler::CENTER_LINES);
     );
-    DrawForestOnFile("FirstForest", f);
 
-    // Display Forest statistics
-    PrintStats(f);
+    // 4) Draw the generated forests on file
+    //fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
 
-    // Convert Forest to DAG
-    LOG("Converting " + algorithm_name + " forest into DAG",
-        Forest2Dag f2d(f);
-    );
-    PrintStats(f);
-    DrawForestOnFile("Forest2Dag", f);
+    // 5) Compress the forests
+    //for (size_t i = 0; i < 10; ++i) {
+    //    std::cout << "\n" << i << ":\n";
+        fh.Compress(DragCompressor::PRINT_STATUS_BAR | DragCompressor::IGNORE_LEAVES);
+    //}
 
-    // Compress forest
-    FastDragOptimizer fdo(f);
-    cout << "Done\n";
+    // 6) Draw the compressed forests on file
+    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
 
-    return 0;
-
-    // 3) Generate the C++ source code for the ODT
-    GenerateDragCode(algorithm_name, t);
-
-    // 4) Generate the C++ source code for pointers, 
-    // conditions to check and actions to perform
-    pixel_set block_positions{
-          { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
-          { "S", {-2, +0} },{ "x", {+0, +0} }
+    // 5) Generate the C/C++ code taking care of the names used
+    //    in the Grana's rule set GranaRS
+    
+    fh.GenerateCode(BeforeMainShiftTwo);
+    /*pixel_set block_positions{
+           { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
+           { "S", {-2, +0} },{ "x", {+0, +0} }
     };
-    GeneratePointersConditionsActionsCode(algorithm_name, rs, block_positions);
+    GeneratePointersConditionsActionsCode(rs, true, block_positions);*/
     
 
     return EXIT_SUCCESS;

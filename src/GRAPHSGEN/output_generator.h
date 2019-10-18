@@ -58,7 +58,7 @@ one set in the general yaml configuration file
 
 @return Whether the operation ended correctly (true) or not (false).
 */
-bool DrawDagOnFile(const std::string& output_file,
+bool DrawDagOnFile(const std::string& base_filename,
                    const BinaryDrag<conact> &dt,
                    int flags = DrawDagFlags::DELETE_DOTCODE);
 

@@ -68,6 +68,8 @@ struct CollectDragStatistics {
     CollectDragStatistics(BinaryDrag<conact>& bd) {
         for (const auto& t : bd.roots_) {
             CollectStatsRec(t);
+            //CollectStatsRec(t->left);
+            //CollectStatsRec(t->right);
         }
     }
 

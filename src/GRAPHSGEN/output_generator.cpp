@@ -130,6 +130,7 @@ void GenerateDotCodeForDagRec(std::ostream& os,
 // All nodes must have both sons! 
 void GenerateDotCodeForDag(std::ostream& os, const BinaryDrag<conact>& bd, bool with_next, bool with_root_id) {
     os << "digraph dag{\n"
+          "ranksep=2.0\n"
           "bgcolor=\"transparent\""
           "\tsubgraph tree{\n";
     nodeid id;
@@ -172,7 +173,7 @@ string GetDotCallString(const filesystem::path& code_path, filesystem::path outp
     return GetDotCallString(code_path.string(), output_path.string());
 }
 
-bool DrawDagOnFile(const string& output_file, const BinaryDrag<conact> &t, int flags) {
+bool DrawDagOnFile(const string& base_filename, const BinaryDrag<conact> &t, int flags) {
 
     bool with_next = flags & DrawDagFlags::WITH_NEXT;
     bool verbose = flags & DrawDagFlags::VERBOSE;
@@ -180,10 +181,10 @@ bool DrawDagOnFile(const string& output_file, const BinaryDrag<conact> &t, int f
     bool with_root_id = flags & DrawDagFlags::WITH_ROOT_ID;
     
     if (verbose) {
-        std::cout << "Drawing DAG: " << output_file << ".. ";
+        std::cout << "Drawing DAG: " << base_filename << ".. ";
     }
-    filesystem::path code_path = conf.GetDotCodePath(output_file);
-    filesystem::path pdf_path = conf.GetDotOutPath(output_file);
+    filesystem::path code_path = conf.GetDotCodePath(base_filename);
+    filesystem::path pdf_path = conf.GetDotOutPath(base_filename);
     ofstream os(code_path);
     if (!os) {
         if (verbose) {
@@ -209,126 +210,6 @@ bool DrawDagOnFile(const string& output_file, const BinaryDrag<conact> &t, int f
     }
     return true;
 }
-
-//// AFTER THE RE-INTRODUCTION OF THE END LINE FORESTS INSIDE THE FOREST LINE HADLER THIS TREE FUNCTIONS SHOULD BE REMOVED
-//bool DrawMainForestOnFile(const string& output_file, const Forest& f, bool save_dotcode, bool verbose) {
-//        return false;
-//    //if (verbose) {
-//    //    std::cout << "Drawing Main Forest: " << output_file << ".. ";
-//    //}
-//    //filesystem::path code_path = conf.GetDotCodePath(output_file);
-//    //filesystem::path pdf_path = conf.GetDotOutPath(output_file);
-//    //ofstream os(code_path);
-//    //if (!os) {
-//    //    if (verbose) {
-//    //        std::cout << "Unable to generate " << code_path << ", stopped\n";
-//    //    }
-//    //    return false;
-//    //}
-//    //os << "digraph dag{\n"
-//    //      "bgcolor=\"transparent\""
-//    //      "\tranksep = 1.5;\n"
-//    //      "\tsubgraph tree{\n";
-//
-//    //nodeid id;
-//    //std::map<ltree::node*, int> printed_node;
-//    //std::vector<std::string> links;
-//    //for (size_t i = 0; i < f.trees_.size(); ++i) {
-//    //    const auto& t = f.trees_[i];
-//    //    string tmp = t.GetRoot()->data.condition;
-//    //    if (i == 0)
-//    //        t.GetRoot()->data.condition = "!" + tmp; // "! -> identifies the root of the start tree"
-//    //    else
-//    //        t.GetRoot()->data.condition = "?" + to_string(i) + " - " + tmp; // "?" -> identifies tree's root
-//    //    printed_node[t.GetRoot()] = id.next();
-//    //    GenerateDotCodeForDagRec(os, t.GetRoot(), printed_node, links, id, true, 2);
-//    //    // Turn the condition back to its original value
-//    //    t.GetRoot()->data.condition = tmp;
-//    //}
-//
-//    //os << "\t}\n";
-//    //for (size_t i = 0; i < links.size(); ++i) {
-//    //    os << links[i];
-//    //}
-//
-//    //os << "}\n";
-//
-//    //os.close();
-//    //if (0 != system(GetDotCallString(code_path, pdf_path).c_str())) {
-//    //    if (verbose) {
-//    //        std::cout << "Unable to generate " + pdf_path.string() + ", stopped\n";
-//    //    }
-//    //    return false;
-//    //}
-//    //if (verbose) {
-//    //    std::cout << "done\n";
-//    //}
-//
-//    //if (!save_dotcode) {
-//    //    remove(code_path.string().c_str());
-//    //}
-//    //return true;
-//}
-//
-//// TODO try to write a single main common function for DrawEndForestOnFile and DrawMainForestOnFile
-//bool DrawEndForestOnFile(const string& output_file, const Forest& f, bool save_dotcode, bool verbose) {
-//    return false;
-//    //if (verbose) {
-//    //    std::cout << "Drawing End Forest: " << output_file << ".. ";
-//    //}
-//    //filesystem::path code_path = conf.GetDotCodePath(output_file);
-//    //filesystem::path pdf_path = conf.GetDotOutPath(output_file);
-//    //ofstream os(code_path);
-//    //if (!os) {
-//    //    if (verbose) {
-//    //        std::cout << "Unable to generate " << code_path << ", stopped\n";
-//    //    }
-//    //    return false;
-//    //}
-//    //os << "digraph dag{\n"
-//    //    "\tranksep = 1.5;\n"
-//    //    "\tsubgraph tree{\n";
-//
-//    //nodeid id;
-//    //std::map<ltree::node*, int> printed_node;
-//    //std::vector<std::string> links;
-//    //for (size_t tg = 0; tg < f.end_trees_.size(); ++tg) {
-//    //    const auto& cur_trees = f.end_trees_[tg];
-//    //    for (size_t i = 0; i < cur_trees.size(); ++i) {
-//    //        const auto& t = cur_trees[i];
-//    //        // In order to easily distinguish roots we change the condition string
-//    //        string tmp = t.GetRoot()->data.condition;
-//    //        t.GetRoot()->data.condition = "?" + to_string(tg) + "," + to_string(i) + " - " + tmp; // "?" -> identifies tree's root
-//    //        printed_node[t.GetRoot()] = id.next();
-//    //        GenerateDotCodeForDagRec(os, t.GetRoot(), printed_node, links, id, false, 2);
-//    //        // Turn the condition back to its original value
-//    //        t.GetRoot()->data.condition = tmp;
-//    //    }
-//    //}
-//
-//    //os << "\t}\n";
-//    //for (size_t i = 0; i < links.size(); ++i) {
-//    //    os << links[i];
-//    //}
-//
-//    //os << "}\n";
-//
-//    //os.close();
-//    //if (0 != system(GetDotCallString(code_path, pdf_path).c_str())) {
-//    //    if (verbose) {
-//    //        std::cout << "Unable to generate " + pdf_path.string() + ", stopped\n";
-//    //    }
-//    //    return false;
-//    //}
-//    //if (verbose) {
-//    //    std::cout << "done\n";
-//    //}
-//
-//    //if (!save_dotcode) {
-//    //    remove(code_path.string().c_str());
-//    //}
-//    //return true;
-//}
 
 bool DrawForestOnFile(const string& output_file, const LineForestHandler& lfh, int flags)
 {

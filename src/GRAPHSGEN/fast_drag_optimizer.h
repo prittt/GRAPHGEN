@@ -75,110 +75,196 @@
         delete n;
     }*/
 
-/*void PrintTreeRec(std::ostream& os, ltree::node* n, std::set<ltree::node*>& visited, int tab = 0) {
-            os << std::string(tab, '\t');
+    /*void PrintTreeRec(std::ostream& os, ltree::node* n, std::set<ltree::node*>& visited, int tab = 0) {
+                os << std::string(tab, '\t');
 
-            auto it = visited.find(n);
-            if (it != end(visited)) {
-                os << " -> " << n << "\n";
-                return;
-            }
-            visited.insert(n);
+                auto it = visited.find(n);
+                if (it != end(visited)) {
+                    os << " -> " << n << "\n";
+                    return;
+                }
+                visited.insert(n);
 
-            if (n->isleaf()) {
-                os << ". ";
-                auto a = n->data.actions();
-                copy(begin(a), end(a), std::ostream_iterator<int>(os, ", "));
-                os << "\n";
-            }
-            else {
-                os << n->data.condition << "\n";
-                PrintTreeRec(os, n->left, visited, tab + 1);
-                PrintTreeRec(os, n->right, visited, tab + 1);
-            }
+                if (n->isleaf()) {
+                    os << ". ";
+                    auto a = n->data.actions();
+                    copy(begin(a), end(a), std::ostream_iterator<int>(os, ", "));
+                    os << "\n";
+                }
+                else {
+                    os << n->data.condition << "\n";
+                    PrintTreeRec(os, n->left, visited, tab + 1);
+                    PrintTreeRec(os, n->right, visited, tab + 1);
+                }
 
-        }*/
+            }*/
 
 /** This class merges special leaves. The following tree
-       b
-      /
-     a
+        b
+        /
+        a
     / \
-   2  2,3
+    2  2,3
 becomes:
-       b
-      /
-     2
+        b
+        /
+        2
 */
 class MergeSpecialLeaves {
 private:
-    std::set<const BinaryDrag<conact>::node*> visited_nodes;
-    //std::set<const BinaryDrag<conact>::node*> visited_leaves;
+    std::unordered_set<const BinaryDrag<conact>::node*> visited_;
+    bool removed_;
 public:
     MergeSpecialLeaves(BinaryDrag<conact>& bd) {
-        for (auto& t : bd.roots_) {
-            MergeSpecialLeavesRec(t);
-        }
+        do {
+            removed_ = false;
+            for (auto& t : bd.roots_) {
+                MergeSpecialLeavesRec(t);
+            }
+        } while (removed_);
     }
 
-    void MergeSpecialLeavesRec(BinaryDrag<conact>::node*& n) {
-        
+    void MergeSpecialLeavesRec(BinaryDrag<conact>::node* n) {
+
         if (n->isleaf()) {
             return;
         }
 
-        auto left  = n->left;
-        auto right = n->right;
-        if (left->isleaf() && right->isleaf() && ((left->data.action & right->data.action) != 0 && left->data.next == right->data.next)) {
-            // In this case the current node becomes a leaf. The action associated to this 
-            // leaf will be the intersection of the actions of its children.
-            n = left;
-            n->data.action = left->data.action & right->data.action;
-            return;
+        auto& left = n->left;
+        auto& right = n->right;
+        if (left->isleaf() && right->isleaf()) {
+            if (left->data.eq(right->data)) {
+                // In this case the current node becomes a leaf. The action associated to this 
+                // leaf will be the intersection of the actions of its children.
+                n->data = left->data;
+                n->data.action &= right->data.action;
+                left = right = nullptr;
+                removed_ = true;
+                return;
+            }
         }
 
-        if (visited_nodes.insert(n).second) {
+        if (visited_.insert(n).second) {
             MergeSpecialLeavesRec(n->left);
             MergeSpecialLeavesRec(n->right);
         }
     }
 };
 
+class MergeLeaves {
+private:
+    std::unordered_set<BinaryDrag<conact>::node*> visited_nodes_;
+    std::unordered_set<BinaryDrag<conact>::node*> visited_leaves_;
+    std::unordered_map<BinaryDrag<conact>::node*, std::vector<BinaryDrag<conact>::node*>> parents_;
+public:
+    MergeLeaves(BinaryDrag<conact>& bd) {
+        for (auto& t : bd.roots_) {
+            CalculateStatsRec(t);
+        }
+        CompressLeaves();
+    }
+
+    // Yet another function to populate visited nodes/leaves and parents node data structure
+    void CalculateStatsRec(BinaryDrag<conact>::node*& n) {
+
+        if (n->isleaf()) {
+            visited_leaves_.insert(n);
+            return;
+        }
+
+        parents_[n->left].push_back(n);
+        parents_[n->right].push_back(n);
+
+        if (visited_nodes_.insert(n).second) {
+            CalculateStatsRec(n->left);
+            CalculateStatsRec(n->right);
+        }
+    }
+    
+    void CompressLeaves() {
+
+        std::unordered_set<BinaryDrag<conact>::node*> already_updated; // Store the leaves for which the parents have already been updated
+        // For each actually used leaf
+        for(auto& i : visited_leaves_){
+            // Skip multiple actions leaves 
+            if (i->data.actions().size() != 1 || already_updated.find(i) != end(already_updated)){
+                continue;
+            }
+
+            // Compare the current leaf's action with the actions of all the others leaves 
+            // and merge them (updating parents) if there is a non-empty intersection and
+            // the next tree ids are the same
+            for (auto& j : visited_leaves_){
+                if(i == j){
+                    continue; // We don't want to compare compare a leaf with itself
+                }
+                
+                if ((i->data.action & j->data.action) != 0 && i->data.next == j->data.next) {
+                    // Merge required!
+                    
+                    // Add them to the already_updated
+                    already_updated.insert(j);
+
+                    // Update j's parents so that they will point to i. 
+                    for (auto& x : parents_[j]) {
+                        if (x->left == j) {
+                            x->left = i;
+                        }
+                        else {
+                            x->right = i;
+                        }
+                    }
+                }
+            }
+        }
+    }
+};
 
 // Compress a tree / forest into a DRAG solving equivalences
 class DragCompressor {
 public:
-    static const int PRINT_STATUS_BAR = 1; /**< @brief Whether to print a sort of progress bar or not */
-    static const int IGNORE_LEAVES    = 2; /**< @brief Whether to ignore leaves or not during the compression.
-                                                   Please note that compressing the leaves will significantly
-                                                   increase the total execution time without improving the
-                                                   final compression result in anyway. */
+    static const int PRINT_STATUS_BAR          = 1; /**< @brief Whether to print a sort of progress bar or not */
+    static const int IGNORE_LEAVES             = 2; /**< @brief Whether to ignore leaves or not during the compression.
+                                                                Please note that compressing the leaves will significantly
+                                                                increase the total execution time without improving the
+                                                                final compression result in anyway. */
     static const int SAVE_INTERMEDIATE_RESULTS = 4; /**< @brief Whether to delete or not the dot code used to draw the drag */
 
     // BinaryDrag 
     DragCompressor(BinaryDrag<conact>& bd, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
+        RemoveEqualSubtrees{ bd };  // TODO controllare se questa è giusta!
         FastDragOptimizerRec(bd, flags);
-        bd = best_bd;
+        bd = best_bd_;
+
+        bool print_status_bar = flags & PRINT_STATUS_BAR;
+        if (print_status_bar) {
+           std::cout << "\r" << progress_counter_;
+        }
+
     }
 
     // LineForestHandler
     DragCompressor(LineForestHandler& lfh, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
+        RemoveEqualSubtrees{ lfh.f_ };
         FastDragOptimizerRec(lfh.f_, flags);
-        lfh.f_ = best_bd;
+        lfh.f_ = best_bd_;
 
         for (auto& f : lfh.end_forests_) {
+            RemoveEqualSubtrees{ f };
             FastDragOptimizerRec(f, flags);
-            f = best_bd;
+            f = best_bd_;
         }
     }
 
 private:
     // This class perform the merge of equivalent trees updating links
     struct MergeEquivalentTreesAndUpdate {
-        std::unordered_set<ltree::node*> visited_;
-        std::unordered_map<ltree::node*, std::vector<ltree::node*>>& parents_;
+        std::unordered_set<BinaryDrag<conact>::node*> visited_;
+        std::unordered_map<BinaryDrag<conact>::node*, std::vector<ltree::node*>>& parents_;
 
-        MergeEquivalentTreesAndUpdate(ltree::node* a, ltree::node* b, std::unordered_map<ltree::node*, std::vector<ltree::node*>>& parents) :
+        MergeEquivalentTreesAndUpdate(BinaryDrag<conact>::node* a, 
+                                      BinaryDrag<conact>::node* b, 
+                                      std::unordered_map<BinaryDrag<conact>::node*, std::vector<BinaryDrag<conact>::node*>>& parents) :
             parents_{ parents }
         {
             MergeEquivalentTreesAndUpdateRec(a, b);
@@ -208,11 +294,10 @@ private:
         }
     };
 
-
-    size_t progress_counter = 0;
-    size_t best_nodes  = std::numeric_limits<size_t >::max();
-    size_t best_leaves = std::numeric_limits<size_t >::max();
-    BinaryDrag<conact> best_bd;
+    size_t progress_counter_ = 0;
+    size_t best_nodes_ = std::numeric_limits<size_t >::max();
+    size_t best_leaves_ = std::numeric_limits<size_t >::max();
+    BinaryDrag<conact> best_bd_;
 
     void FastDragOptimizerRec(BinaryDrag<conact>& bd, int flags)
     {
@@ -290,7 +375,7 @@ private:
                     // necessary here? Maybe it isn't but performing this operation
                     // here can improve the efficiency of the compression in case 
                     // there are actually equal sub-trees.
-                    RemoveEqualSubtrees{bd_copy};
+                    RemoveEqualSubtrees{ bd_copy };
 
                     // Recursively call the compression function on the current
                     // resulting tree
@@ -301,34 +386,37 @@ private:
 
         if (no_eq) {
             // Display a raw progress status if needed
-            if (ignore_leaves) {
-                ++progress_counter;
-                if (print_status_bar) {
-                    if (progress_counter % 1 == 0) {
-                        std::cout << "\r" << std::setfill(' ') << std::setw(10) << progress_counter;
-                    }
+            ++progress_counter_;
+            if (print_status_bar) {
+                if (progress_counter_ % 1000 == 0) {
+                    std::cout << "\r" << progress_counter_;
                 }
             }
-            
+
             BinaryDragStatistics bds(bd);
-            if (bds.Nodes() < best_nodes || (bds.Nodes() == best_nodes && bds.Leaves() < best_leaves)) {
-                // New better binary drag found. Update attributes accordingly ...
-                best_nodes  = bds.Nodes();
-                best_leaves = bds.Leaves();
-                best_bd = bd;
+            if (bds.Nodes() < best_nodes_) {
+                // New better binary drag found ...
+                
+                // ... compress the leaves of the current optimal binary drag
+                MergeSpecialLeaves{ bd };
+                MergeLeaves{ bd };
+
+                // ... and finally update class attributes accordingly
+                BinaryDragStatistics bds(bd);
+                best_nodes_  = bds.Nodes();
+                best_leaves_ = bds.Leaves();
+                best_bd_ = bd;
 
                 // ... save the current tree if needed
                 if (save_intermediate_results) {
-                    DrawDagOnFile("BestDrag" + zerostr(progress_counter, 10), bd);
+                    DrawDagOnFile("BestDrag" + zerostr(progress_counter_, 10), bd);
                 }
 
+                // ... print status if needed
                 if (print_status_bar) {
-                    std::cout << progress_counter << " - nodes: " << bds.Nodes() << "; leaves: " << bds.Leaves() << "\n";
+                    std::cout << progress_counter_ << " - nodes: " << bds.Nodes() << "; leaves: " << bds.Leaves() << "\n";
                 }
 
-                // ... and finally compress the leaves of the current optimal binary drag
-                // FastDragOptimizerRec(bd, flags & ~IGNORE_LEAVES); // This is a bad idea!
-                MergeSpecialLeaves{best_bd};
             }
         }
     }

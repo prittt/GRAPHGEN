@@ -99,12 +99,11 @@ public:
         }
     }
 
-    void CompressForests() {
-        LOG("Reducing Forests",
-            for (auto& x : f_) {
-                // TODO
-            }
-        );
+    void Compress(int flags = DragCompressor::PRINT_STATUS_BAR | DragCompressor::IGNORE_LEAVES) {
+       for (auto& x : f_) {
+           DragCompressor(x.second, flags);
+       }
+        
     }
 
     LineForestHandler& GetLineForestHandler(int forest_id) {

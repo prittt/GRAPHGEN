@@ -40,12 +40,12 @@ struct BinaryDrag {
     {
         T data;
         node *left = nullptr, *right = nullptr;
-        std::vector<node *> parents_;
+        //std::vector<node *> parents_;
 
         node() {}
         node(T d) : data(std::move(d)) {}
         node(T d, node* l, node* r) : data(std::move(d)), left(l), right(r) {}
-        node(T d, node* l, node* r, std::vector<node *> parents) : data(std::move(d)), left(l), right(r), parents_(parents) {}
+        //node(T d, node* l, node* r, std::vector<node *> parents) : data(std::move(d)), left(l), right(r), parents_(parents) {}
 
         bool isleaf() const {
             return left == nullptr && right == nullptr;
@@ -108,12 +108,12 @@ struct BinaryDrag {
         for (const auto& x : bd.roots_) {
             roots_.push_back(MakeCopyRecursive(x, copies));
         }
-        for (const auto& n : bd.nodes_) {
+        /*for (const auto& n : bd.nodes_) {
             auto& nn = copies[n.get()];
             for (const auto& p : n->parents_) {
                 nn->parents_.push_back(copies[p]);
             }
-        }
+        }*/
     }
     
     BinaryDrag(const BinaryDrag& bd, std::vector<node*>& tracked_nodes) { // Allows to track where the nodes in a tree have been copied to
@@ -121,12 +121,12 @@ struct BinaryDrag {
         for (const auto& x : bd.roots_) {
             roots_.push_back(MakeCopyRecursive(x, copies));
         }
-        for (const auto& n : bd.nodes_) {
+        /*for (const auto& n : bd.nodes_) {
             auto& nn = copies[n.get()];
             for (const auto& p : n->parents_) {
                 nn->parents_.push_back(copies[p]);
             }
-        }
+        }*/
         for (auto& n : tracked_nodes) {
             n = copies[n];
         }
