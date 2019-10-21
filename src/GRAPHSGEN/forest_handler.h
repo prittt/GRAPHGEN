@@ -16,6 +16,7 @@ the latter case the mask has a vertical shift of 2 pixels. In this case four dif
 The forests generation requires the original decision tree associated to the algorithm on which apply the prediction
 optimization and the pixel set associated to the mask.
 */
+
 class ForestHandler {
     std::map<int, LineForestHandler> f_;
     std::map<int, std::string> names = { 
@@ -31,10 +32,10 @@ class ForestHandler {
                                            {SINGLE_LINE , "sl"}
                                          };
 public:
-    static const int CENTER_LINES = 1;
-    static const int FIRST_LINE   = 2;
-    static const int LAST_LINE    = 4;
-    static const int SINGLE_LINE  = 8;
+    static const int CENTER_LINES;
+    static const int FIRST_LINE;
+    static const int LAST_LINE;
+    static const int SINGLE_LINE;
 
     ForestHandler(const BinaryDrag<conact>& bd,
         const pixel_set& ps,
@@ -110,3 +111,11 @@ public:
         return f_.at(forest_id);
     }
 };
+
+// out of class static const initializer for strict compilers (e.g. gcc)
+// see: https://stackoverflow.com/questions/5391973/undefined-reference-to-static-const-int
+
+const int ForestHandler::CENTER_LINES = 1;
+const int ForestHandler::FIRST_LINE   = 2;
+const int ForestHandler::LAST_LINE    = 4;
+const int ForestHandler::SINGLE_LINE  = 8;
