@@ -243,12 +243,20 @@ public:
 
     }
 
+    bool changes_;
     // LineForestHandler
     DragCompressor(LineForestHandler& lfh, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
         RemoveEqualSubtrees{ lfh.f_ };
-        FastDragOptimizerRec(lfh.f_, flags);
-        lfh.f_ = best_bd_;
+        do {
+            changes_ = false;
+            std::cout << "\n.\n";
+            FastDragOptimizerRec(lfh.f_, flags);
+            lfh.f_ = best_bd_;
+        }while(changes_);
+        std::cout << "---------------\n";
 
+        MergeLeaves{ best_bd_ };
+        
         for (auto& f : lfh.end_forests_) {
             RemoveEqualSubtrees{ f };
             FastDragOptimizerRec(f, flags);
@@ -370,6 +378,9 @@ private:
 
                     // Perform the merge of equivalent trees updating links
                     MergeEquivalentTreesAndUpdate(tracked_nodes[0], tracked_nodes[1], cds.parents_);
+                    
+                    // Il merge delle foglie speciali non dovremmo farlo qui?
+                    MergeSpecialLeaves{ bd };
 
                     // Remove equal subtrees inside a BinaryDrag. Is this really
                     // necessary here? Maybe it isn't but performing this operation
@@ -396,10 +407,11 @@ private:
             BinaryDragStatistics bds(bd);
             if (bds.Nodes() < best_nodes_) {
                 // New better binary drag found ...
-                
+                changes_ = true;
+
                 // ... compress the leaves of the current optimal binary drag
-                MergeSpecialLeaves{ bd };
-                MergeLeaves{ bd };
+                //MergeSpecialLeaves{ bd };
+                //MergeLeaves{ bd };
 
                 // ... and finally update class attributes accordingly
                 BinaryDragStatistics bds(bd);
