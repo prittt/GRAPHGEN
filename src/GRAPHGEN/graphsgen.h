@@ -19,5 +19,6 @@
 #include "merge_set.h"
 #include "output_generator.h"
 #include "tree2dag_identities.h"
+#include "image_frequencies.h"
 
 #endif // !GRAPHSGEN_GRAPHSGEN_H_

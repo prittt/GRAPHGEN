@@ -30,10 +30,9 @@
 #define GRAPGHSGEN_CONFIG_DATA_H_
 
 #include <iostream>
+#include <filesystem>
 
 #include "yaml-cpp/yaml.h"
-
-#include "utilities.h"
 
 struct ConfigData {
 
@@ -42,6 +41,7 @@ struct ConfigData {
 
     // Global names/paths
     std::filesystem::path global_output_path_;
+    std::filesystem::path global_input_path_;
     std::string algorithm_name_;
     
     // Dot configurations
@@ -75,56 +75,22 @@ struct ConfigData {
     std::string rstable_suffix_ = "_rstable.yaml";
     std::filesystem::path rstable_path_;
 
+    // Datasets
+    std::vector<std::string> datasets_;
+    std::vector<std::filesystem::path> datasets_path_;
+
+    // Frequencies
+    std::string frequencies_suffix_ = "_frequencies.bin";
+    std::filesystem::path frequencies_path_;
+
+    // Customization flags
+    bool use_frequencies_ = false;
+    bool force_odt_generation_ = false;
+    bool force_frequencies_count_ = false;
+
     ConfigData() {}
     
-    ConfigData(std::string algorithm_name) : algorithm_name_{ algorithm_name } {
-        YAML::Node config;
-        try {
-            config = YAML::LoadFile(config_file_);
-        }
-        catch (...) {
-            std::cout << "ERROR: Unable to read configuration file '" << config_file_ << "'.\n";
-            exit(EXIT_FAILURE);
-        }
-
-        if (config["paths"]["output"]) {
-            global_output_path_ = std::filesystem::path(config["paths"]["output"].as<std::string>()) / std::filesystem::path(algorithm_name);
-            std::filesystem::create_directories(global_output_path_);
-
-            // ODT
-            odt_path_ = global_output_path_ / std::filesystem::path(algorithm_name + odt_suffix_);
-
-            // Code
-            code_path_ = global_output_path_ / std::filesystem::path(algorithm_name + code_suffix_);
-
-            // Rule Set / Decision Table
-            rstable_path_ = global_output_path_ / std::filesystem::path(algorithm_name + rstable_suffix_);
-            
-            // Tree / Forest / Dag (.inc) // TODO the following variables are probably useless
-            treecode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + treecode_suffix_);
-            forestcode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + forestcode_suffix_);
-            treedagcode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + treedagcode_suffix_);
-            forestdagcode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + forestdagcode_suffix_);
-        }
-        else {
-            std::cout << "ERROR: missing output path in configuration file.\n";
-            exit(EXIT_FAILURE);
-        }
-
-        if (config["dot"]["background"]) {
-            dot_background_color_ = "\"" + config["dot"]["background"].as<std::string>() + "\"";
-        }
-        else {
-            std::cout << "WARNING: missing dot background color, 'transparent' will be used.\n";
-        }
-
-        if (config["dot"]["out_format"]) {
-            dot_output_format_ = "." + config["dot"]["out_format"].as<std::string>();
-        }
-        else {
-            std::cout << "WARNING: missing output file format, 'pdf' will be used.\n";
-        }
-    }
+    ConfigData(std::string algorithm_name);
 
     // Dot code
     std::filesystem::path GetDotCodePath(const std::string& out_base_name) {

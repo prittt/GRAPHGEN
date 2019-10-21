@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,44 +26,34 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "yaml-cpp/yaml.h"
+#ifndef GRAPHSGEN_IMAGE_FREQUENCIES_H_
+#define GRAPHSGEN_IMAGE_FREQUENCIES_H_
 
-#include "graphsgen.h"
+#include <filesystem>
 
-#include "rosenfeld_ruleset.h"
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 
-using namespace std;
+#include "rule_set.h"
+#include "config_data.h"
 
-int main()
-{
-    string algorithm_name = "SAUF";
-    conf = ConfigData(algorithm_name);
+struct mask {
+    cv::Mat1b mask_;
+    int top_ = 0, bottom_ = 0, left_ = 0, right_ = 0;
+    int border_ = 0;
+    int exp_;
+    int increment_ = 0;
 
-    RosenfeldRS r_rs;
-    auto rs = r_rs.GetRuleSet();
+    mask(const pixel_set& ps);
+    size_t MaskToLinearMask(const cv::Mat1b r_img) const;
+};
 
-    // Load image frequencies into ruleset
-    if (conf.use_frequencies_) {
-        AddFrequenciesToRuleset(conf, rs, conf.force_frequencies_count_);
-    }
+void CalculateConfigurationsFrequencyOnImage(const cv::Mat1b& img, const mask &msk, rule_set &rs);
+bool GetBinaryImage(const std::string &FileName, cv::Mat1b& binary);
+bool LoadFileList(std::vector<std::pair<std::string, bool>>& filenames, const std::string& files_path);
+bool CalculateRulesFrequencies(const pixel_set& ps, std::vector<std::pair<std::filesystem::path, bool>>& paths, rule_set& rs);
+//void CalculateRulesFrequencies(const pixel_set &ps, const std::vector<std::string> &paths, rule_set &rs);
+bool AddFrequenciesToRuleset(const ConfigData& config, rule_set& rs, bool force);
 
-    // Call GRAPHSGEN:
-    // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
-    BinaryDrag<conact> t = GetOdt(rs, algorithm_name, conf.force_odt_generation_);
-
-    // 2) Draw the generated tree to pdf
-    string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t);
-
-    // 3) Generate the C++ source code for the ODT
-    ofstream os(conf.treecode_path_);
-    if (os){
-        GenerateDragCode(os, t);
-    }
-
-    // 4) Generate the C++ source code for pointers, 
-    // conditions to check and actions to perform
-    GeneratePointersConditionsActionsCode(rs);
-
-    return EXIT_SUCCESS;
-}
+#endif // !GRAPHSGEN_IMAGE_FREQUENCIES_H_
