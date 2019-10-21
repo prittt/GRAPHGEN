@@ -32,7 +32,7 @@
 
 #include <cassert>
 
-#include "Forest2dag.h"
+#include "forest2dag.h"
 #include "forest_optimizer.h"
 
 using namespace std;

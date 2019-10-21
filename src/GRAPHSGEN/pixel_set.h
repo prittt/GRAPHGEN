@@ -46,7 +46,7 @@ struct pixel {
 	std::string name_;
 
     pixel() {}
-    pixel(YAML::Node& node) {
+    pixel(const YAML::Node& node) {
         Deserialize(node);
     }
 	pixel(std::string name, std::vector<int> coords) : name_{ std::move(name) }, coords_{ std::move(coords) } {}
@@ -85,7 +85,7 @@ struct pixel {
         return pixel_node;
     }
 
-    void Deserialize(YAML::Node& node) {
+    void Deserialize(const YAML::Node& node) {
         name_ = node["name"].as<std::string>();
         for (unsigned i = 0; i < node["coords"].size(); ++i) {
             coords_.push_back(node["coords"][i].as<int>());
@@ -112,7 +112,7 @@ struct pixel_set {
 
     pixel_set() 
     {}
-    pixel_set(YAML::Node& ps_node) {
+    pixel_set(const YAML::Node& ps_node) {
         Deserialize(ps_node);
     }
     pixel_set(std::initializer_list<pixel> il, std::vector<uint8_t> shifts) : pixels_{ il }, shifts_{std::move(shifts)}
@@ -168,7 +168,7 @@ struct pixel_set {
         return ps_node;
     }
 
-    void Deserialize(YAML::Node& node) {
+    void Deserialize(const YAML::Node& node) {
         for (unsigned i = 0; i < node["shifts"].size(); ++i) {
             shifts_.push_back(node["shifts"][i].as<int>());
         }
