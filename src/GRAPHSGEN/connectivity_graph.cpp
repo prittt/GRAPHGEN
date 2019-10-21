@@ -268,7 +268,7 @@ void PrintActionsSet(std::set<std::bitset<128>, less<128>>& to_print, std::ostre
 //    }
 //
 //    // N.B. dal risultato sembra evidente che noi diamo per scontato che tutti i pixel da etichettare siano
-//    // connessi a tutti i pixel nella maschera. Ma in questo caso non è vero. Va gestito?
+//    // connessi a tutti i pixel nella maschera. Ma in questo caso non Ã¨ vero. Va gestito?
 //
 //    {
 //        std::ofstream os("actions_set.txt");
@@ -428,7 +428,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActionsGivenTheSetOfPixelToB
             i_actions.push_back("nothing");
         }
 
-        // Costruisco il set finale di azioni dove ogni azioni sarà del tipo e<-..,g<-..,i<-..
+        // Costruisco il set finale di azioni dove ogni azioni sarÃ  del tipo e<-..,g<-..,i<-..
         for (const auto& ae : e_actions) {
             for (const auto& ag : g_actions) {
                 for (const auto& ai : i_actions) {

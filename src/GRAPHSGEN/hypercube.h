@@ -121,11 +121,11 @@ struct VNode {
 #pragma pack(8)
 
 template <typename T>
-std::istream& rawread(std::istream& is, T& val, size_t n = sizeof(val)) {
+std::istream& rawread(std::istream& is, T& val, size_t n) {
     return is.read(reinterpret_cast<char*>(&val), n);
 }
 template <typename T>
-std::ostream& rawwrite(std::ostream& os, const T& val, size_t n = sizeof(val)) {
+std::ostream& rawwrite(std::ostream& os, const T& val, size_t n) {
     return os.write(reinterpret_cast<const char*>(&val), n);
 }
 
