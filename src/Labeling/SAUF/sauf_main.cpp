@@ -44,16 +44,16 @@ int main()
 
     // Call GRAPHSGEN:
     // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
-    BinaryDrag<conact> t = GetOdt(rs, algorithm_name);
+    BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
 
     // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t);
+    DrawDagOnFile(tree_filename, bd);
 
     // 3) Generate the C++ source code for the ODT
     ofstream os(conf.treecode_path_);
     if (os){
-        GenerateDragCode(os, t);
+        GenerateDragCode(os, bd);
     }
 
     // 4) Generate the C++ source code for pointers, 
