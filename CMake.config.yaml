@@ -1,16 +1,23 @@
 %YAML:1.2
 ---
 ############################################
-# This is the GRAPHSGEN configuration file #
+# This is the GRAPHGEN configuration file #
 ############################################
 
-paths: {input: "", output: "${GRAPHSGEN_OUTPUT_PATH}"}
+use_frequencies: false
+
+force_frequencies_count: false
+force_odt_generation: false
+
+datasets: ["fingerprints", "hamlet"]
+
+paths: {input: "${GRAPHGEN_INPUT_PATH}", output: "${GRAPHGEN_OUTPUT_PATH}"}
 
 # Currently supported output formats are "pdf", "png", and "svg"
 # The background can be one of the color supported by dot, such 
 # as "white", "red", "turquoise", "sienna", "transparent", etc 
-dot: {out_format: "svg", background: "transparent" }
+dot: {out_format: "svg", background: "transparent", ranksep: "0.5"}
 
 ############################################
-# This is the GRAPHSGEN configuration file #
+# This is the GRAPHGEN configuration file #
 ############################################

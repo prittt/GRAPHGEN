@@ -1,4 +1,4 @@
-macro(graphsgen_update_3rdparty SUBMODULE)
+macro(graphgen_update_3rdparty SUBMODULE)
     if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     # Update submodule as needed
         message(STATUS "${SUBMODULE} update")
@@ -14,7 +14,7 @@ endmacro()
 # --------------------
 # yaml-cpp
 # --------------------
-graphsgen_update_3rdparty(yaml-cpp)
+graphgen_update_3rdparty(yaml-cpp)
 
 SET(APPLE_UNIVERSAL_BIN OFF CACHE INTERNAL "" FORCE)
 SET(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)

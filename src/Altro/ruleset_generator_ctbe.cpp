@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -118,7 +118,7 @@ rule_set generate_ctbe()
     //auto actions_i = GenerateAllPossibleLabelingActions(ag_i, "i");
     auto actions = GenerateAllPossibleLabelingActionsGivenTheSetOfPixelToBeLabeled(ag, { "e", "g", "i" }, labeling);
 
-    //// Costruisco il set finale di azioni dove ogni azioni sarà del tipo e<-..,g<-..,i<-..
+    //// Costruisco il set finale di azioni dove ogni azioni sarï¿½ del tipo e<-..,g<-..,i<-..
     //vector<string> actions;
     //for (const auto& ae : actions_e) {
     //    for (const auto& ag : actions_g) {
@@ -220,7 +220,7 @@ rule_set generate_ctbe()
             i_actions.push_back("nothing");
         }
 
-        // Costruisco il set finale di azioni dove ogni azioni sarà del tipo e<-..,g<-..,i<-..
+        // Costruisco il set finale di azioni dove ogni azioni sarï¿½ del tipo e<-..,g<-..,i<-..
         vector<string> actions;
         for (const auto& ae : e_actions) {
             for (const auto& ag : g_actions) {

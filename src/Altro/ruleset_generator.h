@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,8 +26,8 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_RULESET_GENERATOR_H_
-#define GRAPHSGEN_RULESET_GENERATOR_H_
+#ifndef GRAPHGEN_RULESET_GENERATOR_H_
+#define GRAPHGEN_RULESET_GENERATOR_H_
 
 #include "rule_set.h"
 
@@ -49,4 +49,4 @@ static std::string ruleset_generator_names[] = { RSG_ALGO };
 static rule_set(*ruleset_generator_functions[])(void) = { RSG_ALGO };
 #undef RSG
 
-#endif // !GRAPHSGEN_RULESET_GENERATOR_H_
+#endif // !GRAPHGEN_RULESET_GENERATOR_H_
