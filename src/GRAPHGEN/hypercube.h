@@ -187,4 +187,7 @@ is always regenerated. The loaded/generated tree is then returned.
 */
 ltree GetOdt(const rule_set& rs, const std::string& algorithm_name, bool force_generation = false);
 
+ltree GetOdtWithFileSuffix(const rule_set& rs, const std::string& file_suffix, bool force_generation = false);
+
+
 #endif // !GRAPHGEN_CONACT_TREE_H_

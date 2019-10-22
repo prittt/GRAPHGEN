@@ -226,3 +226,12 @@ ltree GetOdt(const rule_set& rs, const string& algorithm_name, bool force_genera
     }
     return t;
 }
+
+ltree GetOdtWithFileSuffix(const rule_set& rs, const string& file_suffix, bool force_generation) {
+    string odt_filename = conf.GetCustomOdtPath(file_suffix).string();
+    ltree t;
+    if (force_generation || !LoadConactTree(t, odt_filename)) {
+        t = GenerateOdt(rs, odt_filename);
+    }
+    return t;
+}

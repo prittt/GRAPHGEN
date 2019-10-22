@@ -61,9 +61,6 @@ ConfigData::ConfigData(string algorithm_name) : algorithm_name_{ algorithm_name 
         forestcode_path_ = global_output_path_ / path(algorithm_name + forestcode_suffix_);
         treedagcode_path_ = global_output_path_ / path(algorithm_name + treedagcode_suffix_);
         forestdagcode_path_ = global_output_path_ / path(algorithm_name + forestdagcode_suffix_);
-
-        // Frequencies
-        frequencies_path_ = global_output_path_ / path(algorithm_name + frequencies_suffix_);
     }
     else {
         cout << "ERROR: missing output path in configuration file.\n";
@@ -102,17 +99,5 @@ ConfigData::ConfigData(string algorithm_name) : algorithm_name_{ algorithm_name 
     else {
         cout << "WARNING: missing output file format, 'pdf' will be used.\n";
     }
-
-    if (config["use_frequencies"]) {
-        use_frequencies_ = config["use_frequencies"].as<bool>();
-    }
-
-    if (config["force_odt_generation"]) {
-        force_odt_generation_ = config["force_odt_generation"].as<bool>();
-    }
-
-    if (config["force_frequencies_count"]) {
-        force_frequencies_count_ = config["force_frequencies_count"].as<bool>();
-    }
-    
+        
 }

@@ -52,19 +52,19 @@ int main()
 
     // 3) Generate forests of trees
     LOG(algorithm_name + " - making forests",
-        ForestHandler fh(bd, rs.ps_, ForestHandler::CENTER_LINES);
+        ForestHandler fh(bd, rs.ps_, ForestHandler::CENTER_LINES | ForestHandler::FIRST_LINE | ForestHandler::LAST_LINE | ForestHandler::SINGLE_LINE);
     );
 
     // 4) Draw the generated forests on file
     fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
 
     // 5) Compress the forests
-    //fh.Compress(DragCompressor::PRINT_STATUS_BAR | DragCompressor::IGNORE_LEAVES);
+    fh.Compress(DragCompressor::PRINT_STATUS_BAR | DragCompressor::IGNORE_LEAVES);
 
     // 6) Draw the compressed forests on file
-    //fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
 
-    // 5) Generate the C/C++ code taking care of the names used
+    // 7) Generate the C/C++ code taking care of the names used
     //    in the Grana's rule set GranaRS
     fh.GenerateCode(BeforeMainShiftTwo);
     pixel_set block_positions{

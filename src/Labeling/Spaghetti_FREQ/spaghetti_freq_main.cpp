@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,35 +30,65 @@
 
 #include "graphgen.h"
 
-#include "rosenfeld_ruleset.h"
+#include "grana_ruleset.h"
 
 using namespace std;
 
 int main()
 {
-    string algorithm_name = "SAUF";
+    string algorithm_name = "Spaghetti_FREQ";
     conf = ConfigData(algorithm_name);
 
-    RosenfeldRS r_rs;
-    auto rs = r_rs.GetRuleSet();
+    GranaRS g_rs;
+    auto rs = g_rs.GetRuleSet();
+
+    // Add names of used data sets to file names
+    std::string dataset_names;
+    bool first = true;
+    for (const auto &d : conf.datasets_) {
+        if (!first) {
+            dataset_names += '-';
+        }
+        else {
+            first = false;
+        }
+        dataset_names += d;
+    }
+    algorithm_name += "_" + dataset_names;
 
     // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
-    BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
+    // 1) Count frequencies
+    AddFrequenciesToRuleset(conf, rs, false);
 
-    // 2) Draw the generated tree to pdf
+    // 2) Load or generate Optimal Decision Tree based on Grana mask
+    BinaryDrag<conact> bd = GetOdtWithFileSuffix(rs, dataset_names);
+
+    // 3) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
-    // 3) Generate the C++ source code for the ODT
-    ofstream os(conf.treecode_path_);
-    if (os){
-        GenerateDragCode(os, bd);
-    }
+    // 4) Generate forests of trees
+    LOG(algorithm_name + " - making forests",
+        ForestHandler fh(bd, rs.ps_, ForestHandler::CENTER_LINES | ForestHandler::FIRST_LINE | ForestHandler::LAST_LINE | ForestHandler::SINGLE_LINE);
+    );
 
-    // 4) Generate the C++ source code for pointers,
-    // conditions to check and actions to perform
-    GeneratePointersConditionsActionsCode(rs);
+    // 5) Draw the generated forests on file
+    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+
+    // 6) Compress the forests
+    fh.Compress(DragCompressor::PRINT_STATUS_BAR | DragCompressor::IGNORE_LEAVES);
+
+    // 7) Draw the compressed forests on file
+    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+
+    // 8) Generate the C/C++ code taking care of the names used
+    //    in the Grana's rule set GranaRS
+    fh.GenerateCode(BeforeMainShiftTwo);
+    pixel_set block_positions{
+           { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
+           { "S", {-2, +0} },{ "x", {+0, +0} }
+    };
+    GeneratePointersConditionsActionsCode(rs, true, block_positions);
 
     return EXIT_SUCCESS;
 }
