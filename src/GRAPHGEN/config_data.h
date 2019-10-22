@@ -43,7 +43,7 @@ struct ConfigData {
     std::filesystem::path global_output_path_;
     std::filesystem::path global_input_path_;
     std::string algorithm_name_;
-    
+
     // Dot configurations
     std::string dot_background_color_ = "\"transparent\"";
     std::string dot_output_format_ = ".pdf";
@@ -91,44 +91,8 @@ struct ConfigData {
     bool force_frequencies_count_ = false;
 
     ConfigData() {}
-    
+
     ConfigData(std::string algorithm_name);
-
-            // Rule Set / Decision Table
-            rstable_path_ = global_output_path_ / std::filesystem::path(algorithm_name + rstable_suffix_);
-            
-            // Tree / Forest / Dag (.inc) // TODO the following variables are probably useless
-            treecode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + treecode_suffix_);
-            forestcode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + forestcode_suffix_);
-            treedagcode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + treedagcode_suffix_);
-            forestdagcode_path_ = global_output_path_ / std::filesystem::path(algorithm_name + forestdagcode_suffix_);
-        }
-        else {
-            std::cout << "ERROR: missing output path in configuration file.\n";
-            exit(EXIT_FAILURE);
-        }
-
-        if (config["dot"]["background"]) {
-            dot_background_color_ = "\"" + config["dot"]["background"].as<std::string>() + "\"";
-        }
-        else {
-            std::cout << "WARNING: missing dot background color, " + dot_background_color_ + " will be used.\n";
-        }
-
-        if (config["dot"]["ranksep"]) {
-            dot_ranksep_ = config["dot"]["ranksep"].as<std::string>();
-        }
-        else {
-            std::cout << "WARNING: missing dot ranksep, " + dot_ranksep_ + " will be used.\n";
-        }
-        
-        if (config["dot"]["out_format"]) {
-            dot_output_format_ = "." + config["dot"]["out_format"].as<std::string>();
-        }
-        else {
-            std::cout << "WARNING: missing output file format, 'pdf' will be used.\n";
-        }
-    }
 
     // Dot code
     std::filesystem::path GetDotCodePath(const std::string& out_base_name) {

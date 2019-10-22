@@ -86,7 +86,14 @@ ConfigData::ConfigData(string algorithm_name) : algorithm_name_{ algorithm_name 
         dot_background_color_ = "\"" + config["dot"]["background"].as<string>() + "\"";
     }
     else {
-        cout << "WARNING: missing dot background color, 'transparent' will be used.\n";
+        cout << "WARNING: missing dot background color,  " + dot_background_color_ + " will be used.\n";
+    }
+
+    if (config["dot"]["ranksep"]) {
+        dot_ranksep_ = config["dot"]["ranksep"].as<std::string>();
+    }
+    else {
+        std::cout << "WARNING: missing dot ranksep, " + dot_ranksep_ + " will be used.\n";
     }
 
     if (config["dot"]["out_format"]) {

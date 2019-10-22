@@ -248,16 +248,7 @@ public:
                                                                 final compression result in anyway. */
     static const int SAVE_INTERMEDIATE_RESULTS = 4; /**< @brief Whether to delete or not the dot code used to draw the drag */
 
-<<<<<<< HEAD:src/GRAPHGEN/drag_compressor.h
     void UpdateProgress(int flags) {
-=======
-    // BinaryDrag 
-    DragCompressor(BinaryDrag<conact>& bd, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
-        RemoveEqualSubtrees{ bd };  // TODO controllare se questa � giusta!
-        FastDragOptimizerRec(bd, flags);
-        bd = best_bd_;
-
->>>>>>> c9d099c71ff4ba4846f7d431b39a0897647a770c:src/GRAPHGEN/fast_drag_optimizer.h
         bool print_status_bar = flags & PRINT_STATUS_BAR;
         if (print_status_bar) {
             std::cout << "\r" << progress_counter_ << "\n";
