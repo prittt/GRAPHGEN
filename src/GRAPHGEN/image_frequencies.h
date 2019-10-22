@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,8 +26,8 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_IMAGE_FREQUENCIES_H_
-#define GRAPHSGEN_IMAGE_FREQUENCIES_H_
+#ifndef GRAPHGEN_IMAGE_FREQUENCIES_H_
+#define GRAPHGEN_IMAGE_FREQUENCIES_H_
 
 #include <filesystem>
 
@@ -56,4 +56,4 @@ bool CalculateRulesFrequencies(const pixel_set& ps, std::vector<std::pair<std::f
 //void CalculateRulesFrequencies(const pixel_set &ps, const std::vector<std::string> &paths, rule_set &rs);
 bool AddFrequenciesToRuleset(const ConfigData& config, rule_set& rs, bool force);
 
-#endif // !GRAPHSGEN_IMAGE_FREQUENCIES_H_
+#endif // !GRAPHGEN_IMAGE_FREQUENCIES_H_

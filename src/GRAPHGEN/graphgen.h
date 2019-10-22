@@ -1,5 +1,5 @@
-#ifndef GRAPHSGEN_GRAPHSGEN_H_
-#define GRAPHSGEN_GRAPHSGEN_H_
+#ifndef GRAPHGEN_GRAPHGEN_H_
+#define GRAPHGEN_GRAPHGEN_H_
 
 #include "base_ruleset.h"
 #include "conact_code_generator.h"
@@ -21,4 +21,4 @@
 #include "tree2dag_identities.h"
 #include "image_frequencies.h"
 
-#endif // !GRAPHSGEN_GRAPHSGEN_H_
+#endif // !GRAPHGEN_GRAPHGEN_H_

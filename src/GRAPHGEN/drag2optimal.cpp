@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -72,7 +72,7 @@ void Dag2DagUsingIdenties(ltree& t) {
 }
 
 // TODO: 
-// Le funzioni che seguono sono praticamente identiche alle versione con identità, riddurre il codice aggiungendo parametri alle funzioni?
+// Le funzioni che seguono sono praticamente identiche alle versione con identitï¿½, riddurre il codice aggiungendo parametri alle funzioni?
 // FindAndLinkEquivalencesDagRec
 // Dag2DagUsingEquivalencesRec
 // Dag2DagUsingEquivalences

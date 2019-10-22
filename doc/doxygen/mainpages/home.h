@@ -1,9 +1,9 @@
 /**
 @mainpage Documentation
 
-@image html graphsgen.png
+@image html graphgen.png
 
-GRAPHSGEN is the all encompassing graphs generator!
+GRAPHGEN is the all encompassing graphs generator!
 
 @cond
 @section manual_user User Manual

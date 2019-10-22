@@ -853,11 +853,11 @@ void CreateThinning() {
 
 int main()
 {
-    CreateRonsefeldLabeling();
+    //CreateRonsefeldLabeling();
     //CreateSpaghettiLabeling();
     //CreateChangLabeling();
     //CreateCtbeLabeling();
-    //CreateRonsefeldLabeling();
+    CreateRonsefeldLabeling();
 
 	return EXIT_SUCCESS;
 }

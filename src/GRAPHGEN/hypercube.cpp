@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -176,7 +176,7 @@ ltree VHyperCube::optimize(bool bVerbose)
 				if (arrPosIndifference[i] < m_iDim) {
 					// Ci stanno le altre indifferenze?
 					if (m_iDim - 1 - arrPosIndifference[i] >= iNumIndifference - 1 - i) {
-						// La posizione è valida, ci stanno le altre, allora sistemo 
+						// La posizione ï¿½ valida, ci stanno le altre, allora sistemo 
 						// le indifferenze successive
 						iPos = arrPosIndifference[i] + 1;
 						for (size_t j = i + 1; j < iNumIndifference; j++) {

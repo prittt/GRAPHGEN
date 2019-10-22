@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,8 +26,8 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_SYSTEM_INFO_H_
-#define GRAPHSGEN_SYSTEM_INFO_H_
+#ifndef GRAPHGEN_SYSTEM_INFO_H_
+#define GRAPHGEN_SYSTEM_INFO_H_
 
 
 #if _WIN32 || _WIN64 || WIN32 || __WIN32__ || __WINDOWS__ || __TOS_WIN__
@@ -40,18 +40,18 @@
 // #include <WINDOWS.h>
 // #include <lm.h>
 // #pragma comment(lib, "netapi32.lib")
-#define GRAPHSGEN_WINDOWS
+#define GRAPHGEN_WINDOWS
 #elif  __gnu_linux__ || __linux__
-#define GRAPHSGEN_LINUX
+#define GRAPHGEN_LINUX
 //#include <sys/utsname.h>
 #elif  __unix || __unix__
-#define GRAPHSGEN_UNIX
+#define GRAPHGEN_UNIX
 //#include <sys/utsname.h>
 #elif __APPLE__ || __MACH__ || macintosh || Macintosh || (__APPLE__ && __MACH__)
 //#include <sys/types.h>
 //#include <sys/sysctl.h>
-#define GRAPHSGEN_APPLE
+#define GRAPHGEN_APPLE
 #endif
 
 
-#endif // !GRAPHSGEN_SYSTEM_INFO_H_
+#endif // !GRAPHGEN_SYSTEM_INFO_H_

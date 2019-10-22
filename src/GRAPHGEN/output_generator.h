@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,8 +26,8 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_OUTPUT_GENERATOR_H_
-#define GRAPHSGEN_OUTPUT_GENERATOR_H_
+#ifndef GRAPHGEN_OUTPUT_GENERATOR_H_
+#define GRAPHGEN_OUTPUT_GENERATOR_H_
 
 #include <fstream>
 #include <iostream>
@@ -65,4 +65,4 @@ bool DrawDagOnFile(const std::string& base_filename,
 
 bool DrawForestOnFile(const std::string& output_file, const LineForestHandler& lfh, int flags);
 
-#endif // !GRAPHSGEN_OUTPUT_GENERATOR_H_
+#endif // !GRAPHGEN_OUTPUT_GENERATOR_H_
