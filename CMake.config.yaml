@@ -1,7 +1,7 @@
 %YAML:1.2
 ---
 ############################################
-# This is the GRAPHSGEN configuration file #
+# This is the GRAPHGEN configuration file #
 ############################################
 
 use_frequencies: false
@@ -19,5 +19,5 @@ paths: {input: "${GRAPHGEN_INPUT_PATH}", output: "${GRAPHGEN_OUTPUT_PATH}"}
 dot: {out_format: "svg", background: "transparent" }
 
 ############################################
-# This is the GRAPHSGEN configuration file #
+# This is the GRAPHGEN configuration file #
 ############################################

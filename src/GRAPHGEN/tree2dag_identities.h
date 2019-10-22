@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,8 +26,8 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_TREE2DAG_IDENTITIES_H_
-#define GRAPHSGEN_TREE2DAG_IDENTITIES_H_
+#ifndef GRAPHGEN_TREE2DAG_IDENTITIES_H_
+#define GRAPHGEN_TREE2DAG_IDENTITIES_H_
 
 #include "conact_tree.h"
 
@@ -37,4 +37,4 @@ void FindAndLinkIdentiesRec(ltree::node* n1, ltree::node* n2);
 // Converts a tree into dag considering only equal subtrees
 void Tree2DagUsingIdentities(ltree& t);
 
-#endif //!GRAPHSGEN_TREE2DAG_IDENTITIES_H_
+#endif //!GRAPHGEN_TREE2DAG_IDENTITIES_H_

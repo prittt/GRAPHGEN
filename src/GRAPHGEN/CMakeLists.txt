@@ -14,7 +14,7 @@ target_sources(GRAPHGEN PRIVATE
 	forest_statistics.h
 	forest2dag.cpp
 	forest2dag.h
-	graphsgen.h
+	graphgen.h
 	hypercube.cpp
 	hypercube.h
 	merge_set.h

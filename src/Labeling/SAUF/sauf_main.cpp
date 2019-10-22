@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -28,7 +28,7 @@
 
 #include "yaml-cpp/yaml.h"
 
-#include "graphsgen.h"
+#include "graphgen.h"
 
 #include "rosenfeld_ruleset.h"
 
@@ -47,7 +47,7 @@ int main()
         AddFrequenciesToRuleset(conf, rs, conf.force_frequencies_count_);
     }
 
-    // Call GRAPHSGEN:
+    // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
     BinaryDrag<conact> bd = GetOdt(rs, algorithm_name, conf.force_odt_generation_);
 

@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,8 +26,8 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHSGEN_FOREST_OPTIMIZER_H_
-#define GRAPHSGEN_FOREST_OPTIMIZER_H_
+#ifndef GRAPHGEN_FOREST_OPTIMIZER_H_
+#define GRAPHGEN_FOREST_OPTIMIZER_H_
 
 #include <algorithm>
 #include <bitset>
@@ -223,7 +223,7 @@ struct STree {
 		Intersect(vec[0].n_, vec[j].n_);
 		for (size_t k = 0; k < f_.trees_.size(); ++k) {
 			auto& t = f_.trees_[k];
-			// Era un viaggio che poi è deviato verso un altro viaggio
+			// Era un viaggio che poi ï¿½ deviato verso un altro viaggio
 			//// Whole trees can be equivalent too
 			//if (t.GetRoot() == vec[0].n_) {
 			//	t.GetRoot() = vec[j].n_;
@@ -308,7 +308,7 @@ struct STree {
 			const auto& cur_trees = trees[tg];
 			for (size_t k = 0; k < cur_trees.size(); ++k) {
 				const auto& t = cur_trees[k];
-				// Era un viaggio che poi è deviato verso un altro viaggio
+				// Era un viaggio che poi ï¿½ deviato verso un altro viaggio
 				// Whole trees can be equivalent too
 				/*if (t->root == vec[0].n_) {
 					t->root = vec[j].n_;
@@ -355,4 +355,4 @@ struct STree {
 	}
 };
 
-#endif // !GRAPHSGEN_FOREST_OPTIMIZER_H_
+#endif // !GRAPHGEN_FOREST_OPTIMIZER_H_
