@@ -47,6 +47,7 @@ BEFORE_AFTER_FUN(BeforeMainShiftOne);
 BEFORE_AFTER_FUN(BeforeMainShiftTwo);
 BEFORE_AFTER_FUN(BeforeEnd);
 BEFORE_AFTER_FUN(AfterEnd);
+BEFORE_AFTER_FUN(AfterEndNoLoop);
 
 /** @brief This function generates the code for the given drag reversing the output into the specified stream
 

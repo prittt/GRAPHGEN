@@ -77,6 +77,11 @@ BEFORE_AFTER_FUN(AfterEnd)
     return std::string(2, '\t') + "continue;\n";
 }
 
+BEFORE_AFTER_FUN(AfterEndNoLoop) 
+{
+    return std::string(2, '\t') + "goto " + prefix + ";\n";
+}
+
 
 // This class allows to sum-up all the data required by the recursive functions that generate
 // the DRAG source code, thus simplifying its signature/call.
@@ -306,7 +311,7 @@ int GenerateDragCode(std::ostream& os,
         gcc.GenerateCodeRec(os, bd.roots_[i], 2);
         os << after(i, prefix, mapping, end_group_id);
     }
-    
+
     return gcc.GetId();
 }
 
