@@ -47,6 +47,8 @@ struct ConfigData {
     // Dot configurations
     std::string dot_background_color_ = "\"transparent\"";
     std::string dot_output_format_ = ".pdf";
+    std::string dot_ranksep_ = "0.5";
+
 
     // Dot Code
     std::string dotcode_suffix_ = "_dotcode.txt";
@@ -115,9 +117,16 @@ struct ConfigData {
             dot_background_color_ = "\"" + config["dot"]["background"].as<std::string>() + "\"";
         }
         else {
-            std::cout << "WARNING: missing dot background color, 'transparent' will be used.\n";
+            std::cout << "WARNING: missing dot background color, " + dot_background_color_ + " will be used.\n";
         }
 
+        if (config["dot"]["ranksep"]) {
+            dot_ranksep_ = config["dot"]["ranksep"].as<std::string>();
+        }
+        else {
+            std::cout << "WARNING: missing dot ranksep, " + dot_ranksep_ + " will be used.\n";
+        }
+        
         if (config["dot"]["out_format"]) {
             dot_output_format_ = "." + config["dot"]["out_format"].as<std::string>();
         }

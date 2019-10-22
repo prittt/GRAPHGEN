@@ -36,26 +36,36 @@ using namespace std;
 
 int main()
 {
-    string algorithm_name = "SAUF";
+    // Setup configuration
+    string algorithm_name = "PRED++";
     conf = ConfigData(algorithm_name);
 
+    // Load or generate rules
     RosenfeldRS r_rs;
     auto rs = r_rs.GetRuleSet();
 
     // Call GRAPHSGEN:
     // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
     BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
-
-    // 2) Draw the generated tree to pdf
+    
+    // 2) Draw the generated tree on file
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
+    
+    // 3) Generate forests of trees
+    LOG(algorithm_name + " - making forests",
+        ForestHandler fh(bd, rs.ps_);
+    );
+    
+    // 4) Compress the forest
+    fh.Compress();
 
-    // 3) Generate the C++ source code for the ODT
-    GenerateDragCode(bd);
+    // 5) Draw the compressed forests on file
+    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+    
+    // 6) Generate the C/C++ source code
+    fh.GenerateCode();
+    GeneratePointersConditionsActionsCode(rs, false);
 
-    // 4) Generate the C++ source code for pointers, 
-    //    conditions to check and actions to perform
-    GeneratePointersConditionsActionsCode(rs);
-
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }

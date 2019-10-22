@@ -44,22 +44,20 @@ int main()
 
     // Call GRAPHSGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
-    ltree t = GetOdt(rs, algorithm_name);
+    BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
 
-    // 2) Draw the generated tree to pdf
+    // 2) Draw the generated tree
     string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, false, true, false);
+    DrawDagOnFile(tree_filename, bd);
 
-    // 3) Generate the C++ source code for the ODT
-    GenerateDragCode(algorithm_name, t);
-
-    // 4) Generate the C++ source code for pointers, 
-    // conditions to check and actions to perform
+    // 3) Generate the tree C/C++ code taking care of the names used
+    //    in the Grana's rule set GranaRS
+    GenerateDragCode(bd);
     pixel_set block_positions{
-          { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
-          { "S", {-2, +0} },{ "x", {+0, +0} }
+           { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
+           { "S", {-2, +0} },{ "x", {+0, +0} }
     };
-    GeneratePointersConditionsActionsCode(algorithm_name, rs, block_positions);
+    GeneratePointersConditionsActionsCode(rs, true, block_positions);
 
     return EXIT_SUCCESS;
 }

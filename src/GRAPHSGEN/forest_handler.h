@@ -17,6 +17,7 @@ The forests generation requires the original decision tree associated to the alg
 optimization and the pixel set associated to the mask.
 */
 class ForestHandler {
+public:
     std::map<int, LineForestHandler> f_;
     std::map<int, std::string> names = { 
                                          {CENTER_LINES, "center"}, 

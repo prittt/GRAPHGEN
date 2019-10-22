@@ -156,8 +156,9 @@ private:
     std::unordered_set<BinaryDrag<conact>::node*> visited_nodes_;
     std::unordered_set<BinaryDrag<conact>::node*> visited_leaves_;
     std::unordered_map<BinaryDrag<conact>::node*, std::vector<BinaryDrag<conact>::node*>> parents_;
+    BinaryDrag<conact>& bd_;
 public:
-    MergeLeaves(BinaryDrag<conact>& bd) {
+    MergeLeaves(BinaryDrag<conact>& bd) : bd_{bd} {
         for (auto& t : bd.roots_) {
             CalculateStatsRec(t);
         }
@@ -172,15 +173,24 @@ public:
             return;
         }
 
-        parents_[n->left].push_back(n);
-        parents_[n->right].push_back(n);
-
         if (visited_nodes_.insert(n).second) {
+            parents_[n->left].push_back(n);
+            parents_[n->right].push_back(n);
+
             CalculateStatsRec(n->left);
             CalculateStatsRec(n->right);
         }
     }
     
+    void SerializeVisitedLeaves(std::ostream& os = std::cout) {
+        for (const auto& l : visited_leaves_) {
+            for (const auto& a : l->data.actions()) {
+                os << a;
+            }
+            os << "- " << l->data.next << "\n";
+        }
+    }
+
     void CompressLeaves() {
 
         std::unordered_set<BinaryDrag<conact>::node*> already_updated; // Store the leaves for which the parents have already been updated
@@ -196,7 +206,11 @@ public:
             // the next tree ids are the same
             for (auto& j : visited_leaves_){
                 if(i == j){
-                    continue; // We don't want to compare compare a leaf with itself
+                    continue; // We don't want to compare a leaf with itself
+                }
+
+                if (already_updated.find(j) != end(already_updated)) {
+                    continue; // We don't want to consider the same leaf multiple times
                 }
                 
                 if ((i->data.action & j->data.action) != 0 && i->data.next == j->data.next) {
@@ -210,11 +224,15 @@ public:
                         if (x->left == j) {
                             x->left = i;
                         }
-                        else {
+                        else if (x->right == j) { // This should be always true, but...
                             x->right = i;
+                        }
+                        else {
+                            throw; // Bug catcher
                         }
                     }
                 }
+                //DrawDagOnFile("current_dag", bd_, DrawDagFlags::WITH_NEXT | DrawDagFlags::WITH_ROOT_ID);
             }
         }
     }
@@ -230,41 +248,60 @@ public:
                                                                 final compression result in anyway. */
     static const int SAVE_INTERMEDIATE_RESULTS = 4; /**< @brief Whether to delete or not the dot code used to draw the drag */
 
-    // BinaryDrag 
-    DragCompressor(BinaryDrag<conact>& bd, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
-        RemoveEqualSubtrees{ bd };  // TODO controllare se questa è giusta!
-        FastDragOptimizerRec(bd, flags);
-        bd = best_bd_;
-
+    void UpdateProgress(int flags) {
         bool print_status_bar = flags & PRINT_STATUS_BAR;
         if (print_status_bar) {
-           std::cout << "\r" << progress_counter_;
+            std::cout << "\r" << progress_counter_ << "\n";
         }
+    }
 
+    // BinaryDrag 
+    DragCompressor(BinaryDrag<conact>& bd, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
+        RemoveEqualSubtrees{ bd };
+        do {
+            changes_ = false;
+            FastDragOptimizerRec(bd, flags);
+            bd = best_bd_;
+        } while (changes_);
+        
+        UpdateProgress(flags);
     }
 
     bool changes_;
     // LineForestHandler
     DragCompressor(LineForestHandler& lfh, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
+        std::cout << "main forest: \n";
         RemoveEqualSubtrees{ lfh.f_ };
         do {
             changes_ = false;
-            std::cout << "\n.\n";
             FastDragOptimizerRec(lfh.f_, flags);
             lfh.f_ = best_bd_;
         }while(changes_);
-        std::cout << "---------------\n";
-
-        MergeLeaves{ best_bd_ };
         
+        UpdateProgress(flags);
+
+        int fn = 0;
         for (auto& f : lfh.end_forests_) {
+            std::cout << "end forest " << fn++ << ": \n";
+            progress_counter_ = 0; 
             RemoveEqualSubtrees{ f };
-            FastDragOptimizerRec(f, flags);
-            f = best_bd_;
+            ResetBest();
+            do {
+                changes_ = false;
+                FastDragOptimizerRec(f, flags);
+                f = best_bd_;
+            } while (changes_);
+            UpdateProgress(flags);
         }
     }
 
 private:
+
+    void ResetBest() {
+        best_nodes_ = std::numeric_limits<size_t >::max();
+        best_leaves_ = std::numeric_limits<size_t >::max();
+    }
+
     // This class perform the merge of equivalent trees updating links
     struct MergeEquivalentTreesAndUpdate {
         std::unordered_set<BinaryDrag<conact>::node*> visited_;
@@ -379,9 +416,6 @@ private:
                     // Perform the merge of equivalent trees updating links
                     MergeEquivalentTreesAndUpdate(tracked_nodes[0], tracked_nodes[1], cds.parents_);
                     
-                    // Il merge delle foglie speciali non dovremmo farlo qui?
-                    MergeSpecialLeaves{ bd };
-
                     // Remove equal subtrees inside a BinaryDrag. Is this really
                     // necessary here? Maybe it isn't but performing this operation
                     // here can improve the efficiency of the compression in case 
@@ -410,8 +444,8 @@ private:
                 changes_ = true;
 
                 // ... compress the leaves of the current optimal binary drag
-                //MergeSpecialLeaves{ bd };
-                //MergeLeaves{ bd };
+                MergeSpecialLeaves{ bd };
+                MergeLeaves{ bd };
 
                 // ... and finally update class attributes accordingly
                 BinaryDragStatistics bds(bd);
@@ -426,7 +460,7 @@ private:
 
                 // ... print status if needed
                 if (print_status_bar) {
-                    std::cout << progress_counter_ << " - nodes: " << bds.Nodes() << "; leaves: " << bds.Leaves() << "\n";
+                    std::cout << "\r" << progress_counter_ << " - nodes: " << bds.Nodes() << "; leaves: " << bds.Leaves() << "\n";
                 }
 
             }

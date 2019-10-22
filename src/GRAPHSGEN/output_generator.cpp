@@ -130,8 +130,8 @@ void GenerateDotCodeForDagRec(std::ostream& os,
 // All nodes must have both sons! 
 void GenerateDotCodeForDag(std::ostream& os, const BinaryDrag<conact>& bd, bool with_next, bool with_root_id) {
     os << "digraph dag{\n"
-          "ranksep=2.0\n"
-          "bgcolor=\"transparent\""
+          "ranksep=" + conf.dot_ranksep_ + "\n" +
+          "bgcolor=" + conf.dot_background_color_ + "\n" +
           "\tsubgraph tree{\n";
     nodeid id;
     

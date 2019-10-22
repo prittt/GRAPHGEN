@@ -40,7 +40,7 @@ target_sources(GRAPHSGEN PRIVATE
 	graph_code_generator.cpp
     config_data.h
     
-    fast_drag_optimizer.h
+    drag_compressor.h
     magic_optimizer.h
     remove_equal_subtrees.h
     find_optimal_drag.h

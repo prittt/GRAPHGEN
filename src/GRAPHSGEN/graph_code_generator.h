@@ -106,8 +106,7 @@ This function works only when all nodes of the DRAG have both left and right chi
 
 @return Whether the operation ended correctly (true) or not (false).
 */
-bool GenerateDragCode(const std::string& algorithm_name,
-                      const BinaryDrag<conact>& bd, 
+bool GenerateDragCode(const BinaryDrag<conact>& bd, 
                       bool with_gotos = false,
                       BEFORE_AFTER_FUN(before) = DefaultEmptyFunc,
                       BEFORE_AFTER_FUN(after)  = DefaultEmptyFunc,

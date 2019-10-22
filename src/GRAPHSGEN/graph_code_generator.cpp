@@ -260,9 +260,7 @@ public:
 //    return true;
 //}
 
-// GenerateDragCode public interface. TODO, do we need it? 
-bool GenerateDragCode(const string& algorithm_name,
-                      const BinaryDrag<conact>& bd, 
+bool GenerateDragCode(const BinaryDrag<conact>& bd, 
                       bool with_gotos,
                       BEFORE_AFTER_FUN(before),
                       BEFORE_AFTER_FUN(after),

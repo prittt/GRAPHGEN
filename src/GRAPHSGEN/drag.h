@@ -30,12 +30,17 @@
 #define GRAPHSGEN_DRAG_H_
 
 #include <algorithm>
+#include <cassert>
+#include <iostream>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
+#include <istream>
 #include <vector>
 
 template<typename T>
-struct BinaryDrag {
+class BinaryDrag {
+public:
     struct node
     {
         T data;
@@ -67,7 +72,7 @@ struct BinaryDrag {
     // Adds a root to the vector of roots and returns its index
     int AddRoot(node* r) {
         roots_.push_back(r);
-        return roots_.size() - 1; 
+        return roots_.size() - 1;
     }
 
     node* GetRoot() const {
@@ -115,7 +120,7 @@ struct BinaryDrag {
             }
         }*/
     }
-    
+
     BinaryDrag(const BinaryDrag& bd, std::vector<node*>& tracked_nodes) { // Allows to track where the nodes in a tree have been copied to
         std::unordered_map<node*, node*> copies;
         for (const auto& x : bd.roots_) {
@@ -141,10 +146,175 @@ struct BinaryDrag {
         return *this;
     }
 
-    node* make_root() { 
+    node* make_root() {
         roots_.push_back(make_node());
         return roots_.back();
     }
 };
+
+//class ConactBinaryDrag : BinaryDrag<conact> {
+//public:
+//    ConactBinaryDrag(std::istream& is) {
+//        Load(is, *this);
+//    }
+//
+//    bool Serialize(const std::string& filename) {
+//        std::ofstream os(filename);
+//
+//        if (!os) {
+//            return false;
+//        }
+//
+//        return Serialize(os);
+//    }
+//
+//    bool Serialize(std::ostream& os = std::cout) {
+//        if (!os) {
+//            return false;
+//        }
+//
+//        Save(os, *this);
+//        return true;
+//    }
+//
+//private:
+//    struct Save {
+//        std::ostream& os_;
+//        std::unordered_set<ConactBinaryDrag::node*> visited_;
+//        std::unordered_map<ConactBinaryDrag::node*, int> nodes_with_refs_;
+//        int id_ = 0;
+//
+//        void CheckNodesTraversalRec(BinaryDrag<conact>::node *n)
+//        {
+//            if (nodes_with_refs_.find(n) != end(nodes_with_refs_)) {
+//                if (!nodes_with_refs_[n])
+//                    nodes_with_refs_[n] = ++id_;
+//            }
+//            else {
+//                nodes_with_refs_[n] = 0;
+//                if (!n->isleaf()) {
+//                    CheckNodesTraversalRec(n->left);
+//                    CheckNodesTraversalRec(n->right);
+//                }
+//            }
+//        }
+//
+//        Save(std::ostream& os, ConactBinaryDrag& bd) : os_(os)
+//        {
+//            for (auto& x : bd.roots_) {
+//                CheckNodesTraversalRec(x);
+//            }
+//            for (auto& x : bd.roots_) {
+//                SaveRec(x);
+//            }
+//        }
+//
+//        void SaveRec(ConactBinaryDrag::node* n, int tab = 0)
+//        {
+//            os_ << std::string(tab, '\t');
+//
+//            if (!visited_.insert(n).second) {
+//                os_ << "@ " << nodes_with_refs_[n] << "\n";
+//                return;
+//            }
+//
+//            if (nodes_with_refs_[n]) {
+//                os_ << "^ " << nodes_with_refs_[n] << " ";
+//            }
+//
+//            if (n->isleaf()) {
+//                assert(n->data.t == conact::type::ACTION);
+//                auto a = n->data.actions();
+//                os_ << ". " << a[0];
+//                for (size_t i = 1; i < a.size(); ++i) {
+//                    os_ << "," << a[i];
+//                }
+//                os_ << " - " << n->data.next << "\n";
+//            }
+//            else {
+//                assert(n->data.t == conact::type::CONDITION);
+//                os_ << n->data.condition << "\n";
+//                SaveRec(n->left, tab + 1);
+//                SaveRec(n->right, tab + 1);
+//            }
+//        }
+//    };
+//
+//    struct Load {
+//        std::istream& is_;
+//        ConactBinaryDrag& bd_;
+//        std::vector<ConactBinaryDrag::node*> np_;
+//
+//        Load(std::istream& is, ConactBinaryDrag& bd) : is_(is), bd_(bd)
+//        {
+//            np_.push_back(nullptr);
+//            while (true) {
+//                ConactBinaryDrag::node* n = LoadConactTreeRec();
+//                if (n == nullptr)
+//                    break;
+//                bd_.AddRoot(n);
+//            }
+//        }
+//
+//        ConactBinaryDrag::node* LoadConactTreeRec()
+//        {
+//            std::string s;
+//            while (is_ >> s) {
+//                if (s[0] == '#') {
+//                    getline(is_, s);
+//                }
+//                else {
+//                    break;
+//                }
+//            }
+//
+//            if (!is_) {
+//                return nullptr;
+//            }
+//
+//            if (s == "@") {
+//                int pos;
+//                is_ >> pos;
+//                return np_[pos];
+//            }
+//
+//            auto n = bd_.make_node();
+//
+//            if (s == "^") {
+//                int pos;
+//                is_ >> pos >> s;
+//                if (pos != np_.size()) {
+//                    throw;
+//                }
+//                np_.push_back(n);
+//            }
+//
+//            if (s == ".") {
+//                // leaf
+//                n->data.t = conact::type::ACTION;
+//                do {
+//                    int action;
+//                    is_ >> action >> std::ws;
+//                    n->data.action.set(action - 1);
+//                } while (is_.peek() == ',' && is_.get());
+//
+//                if (is_.get() != '-') {
+//                    throw;
+//                }
+//                is_ >> n->data.next;
+//            }
+//            else {
+//                // real node with branches
+//                n->data.t = conact::type::CONDITION;
+//                n->data.condition = s;
+//
+//                n->left = LoadConactTreeRec();
+//                n->right = LoadConactTreeRec();
+//            }
+//
+//            return n;
+//        }
+//    };
+//};
 
 #endif // !GRAPHSGEN_DRAG_H_

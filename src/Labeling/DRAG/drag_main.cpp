@@ -61,7 +61,7 @@ int main()
     
     // 5) Generate the DRAG C/C++ code taking care of the names used
     //    in the Grana's rule set GranaRS
-    GenerateDragCode(algorithm_name, bd);
+    GenerateDragCode(bd);
     pixel_set block_positions{
            { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
            { "S", {-2, +0} },{ "x", {+0, +0} }
