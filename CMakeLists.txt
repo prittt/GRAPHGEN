@@ -11,7 +11,7 @@
 # this list of conditions and the following disclaimer in the documentation
 # and / or other materials provided with the distribution.
 #
-# * Neither the name of GRAPHSGEN nor the names of its
+# * Neither the name of GRAPHGEN nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
@@ -28,14 +28,15 @@
 
 cmake_minimum_required (VERSION 3.13)
 
-set (ProjectName "GRAPHSGEN")
+set (ProjectName "GRAPHGEN")
 project (${ProjectName})
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Configs" FORCE)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Install prefix" FORCE)
 
-#Set GRAPHSGEN variables
-set(GRAPHSGEN_OUTPUT_PATH "${CMAKE_INSTALL_PREFIX}/outputs" CACHE PATH "'output' results path")
+#Set GRAPHGEN variables
+set(GRAPHGEN_OUTPUT_PATH "${CMAKE_INSTALL_PREFIX}/outputs" CACHE PATH "'output' results path")
+set(GRAPHGEN_INPUT_PATH "" CACHE PATH "input path with datasets for counting frequencies")
 
 if(MSVC)
   set(CMAKE_USE_RELATIVE_PATHS ON CACHE INTERNAL "" FORCE)
@@ -50,17 +51,17 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # --------------------
 # OpenCV 
 # --------------------
-#set(OpenCV_REQUIRED_PACKAGES "core;imgcodecs;imgproc" CACHE STRING "OpenCV packages required by GRAPHSGEN are already set")
-#FIND_PACKAGE(OpenCV REQUIRED ${OpenCV_REQUIRED_PACKAGES})
-#include_directories( ${OpenCV_INCLUDE_DIRS} )
-#if(MSVC)
-#	if("${OpenCV_STATIC}" STREQUAL "ON" OR "${OpenCV_SHARED}" STREQUAL "OFF")
-#		message(STATUS "Setting static runtime for MSVC")
-#		foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO) 
-#			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-#		endforeach(flag_var)
-#	endif()
-#endif()
+set(OpenCV_REQUIRED_PACKAGES "core;imgcodecs;imgproc" CACHE STRING "OpenCV packages required by GRAPHGEN are already set")
+FIND_PACKAGE(OpenCV REQUIRED ${OpenCV_REQUIRED_PACKAGES})
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+if(MSVC)
+	if("${OpenCV_STATIC}" STREQUAL "ON" OR "${OpenCV_SHARED}" STREQUAL "OFF")
+		message(STATUS "Setting static runtime for MSVC")
+		foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO) 
+			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+		endforeach(flag_var)
+	endif()
+endif()
 
 find_package(Git QUIET)
 
@@ -75,10 +76,10 @@ set(CMAKE_FOLDER "")
 # --------------------
 # Project
 # --------------------
-add_library(GRAPHSGEN STATIC "${CMAKE_INSTALL_PREFIX}/config.yaml")
-target_include_directories(GRAPHSGEN PUBLIC src/GRAPHSGEN)
-add_subdirectory(src/GRAPHSGEN)
-target_link_libraries(GRAPHSGEN yaml-cpp)
+add_library(GRAPHGEN STATIC "${CMAKE_INSTALL_PREFIX}/config.yaml")
+target_include_directories(GRAPHGEN PUBLIC src/GRAPHGEN)
+add_subdirectory(src/GRAPHGEN)
+target_link_libraries(GRAPHGEN yaml-cpp)
 
 if (WIN32)
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
@@ -90,7 +91,7 @@ foreach(ALGO ${LABELING_ALGORITHMS})
 	set_target_properties(${ALGO} PROPERTIES FOLDER "Labeling")
 	include_directories(src/Labeling)
 	add_subdirectory(src/Labeling/${ALGO})
-	target_link_libraries (${ALGO} GRAPHSGEN)
+	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
 
 #set(THINNING_ALGORITHMS ZS CACHE INTERNAL ON FORCE)
@@ -100,13 +101,13 @@ foreach(ALGO ${THINNING_ALGORITHMS})
 	set_target_properties(${ALGO} PROPERTIES FOLDER "Thinning")
 	include_directories(src/Thinning)
 	add_subdirectory(src/Thinning/${ALGO})
-	target_link_libraries (${ALGO} GRAPHSGEN)
+	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
 
 
 # Check for c++17 support (TODO check if it actually works)
-set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHSGEN PROPERTY CXX_STANDARD 17)
-set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHSGEN PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD_REQUIRED ON)
 
 #add_definitions(-D_CRT_SECURE_NO_WARNINGS) #To suppress 'fopen' opencv warning/bug  
 # Set configuration file	
@@ -114,11 +115,11 @@ configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/
 
 
 #set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set YACCLAB as startup group instead of ALL_BUILD
-#target_link_libraries (${ProjectName} ${OpenCV_LIBS})
+target_link_libraries (${ProjectName} ${OpenCV_LIBS})
 
 # Creation of output directory
-if (NOT EXISTS "${GRAPHSGEN_OUTPUT_PATH}")
-	file(MAKE_DIRECTORY ${GRAPHSGEN_OUTPUT_PATH})
+if (NOT EXISTS "${GRAPHGEN_OUTPUT_PATH}")
+	file(MAKE_DIRECTORY ${GRAPHGEN_OUTPUT_PATH})
 endif()
 
 #target_include_directories(SAUF PUBLIC 
