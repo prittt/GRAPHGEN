@@ -9,7 +9,8 @@ Can be displayed only if the repo is public.
 
 ### Windows
 * Compiler: Visual Studio 2017 or later.
-No further requirements. yaml-cpp and graphviz are distributed (as submodule and executable respectively) with Graphgen.
+
+No further requirements. yaml-cpp and graphviz are distributed (as submodule and executable respectively) with GRAPHGEN.
 
 ### Linux
 * Compiler: GCC 9.x or later (for full std::filesystem support).
