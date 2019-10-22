@@ -16,7 +16,6 @@ the latter case the mask has a vertical shift of 2 pixels. In this case four dif
 The forests generation requires the original decision tree associated to the algorithm on which apply the prediction
 optimization and the pixel set associated to the mask.
 */
-
 class ForestHandler {
 public:
     std::map<int, LineForestHandler> f_;
