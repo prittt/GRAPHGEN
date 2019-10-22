@@ -66,7 +66,7 @@ struct RemoveEqualSubtrees {
             ++leaves_;
             //ss << setfill('0') << setw(3) << n->data.next;
             //s = n->data.action.to_string() + ss.str();
-            auto& a = n->data.actions();
+            const std::vector<uint>& a = n->data.actions();
             s = '.' + std::to_string(a[0]);
             for (std::size_t i = 1; i < a.size(); ++i) {
                 s += ',' + std::to_string(a[i]);

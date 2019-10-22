@@ -30,6 +30,8 @@
 
 #include <optional>
 
+#include "system_info.h"
+
 using namespace std;
 
 //void print_node(BinaryDrag<conact>::node *n, int i)
@@ -161,11 +163,24 @@ void GenerateDotCodeForDag(std::ostream& os, const BinaryDrag<conact>& bd, bool 
 
 string GetDotCallString(const std::string& code_path, const std::string& output_path = "")
 {
-    string dot_call = "..\\tools\\dot\\dot -T" + conf.dot_output_format_.substr(1) + " \"" + code_path + "\"";
+    string dot_call;
+
+#ifdef GRAPHSGEN_WINDOWS
+    dot_call = "..\\tools\\dot\\dot -T" + conf.dot_output_format_.substr(1) + " \"" + code_path + "\"";
+#endif
+
+#ifdef GRAPHSGEN_LINUX
+    dot_call = "dot -T" + conf.dot_output_format_.substr(1) + " \"" + code_path + "\"";
+#endif
+    
+    if (dot_call.length() == 0) {
+        throw std::runtime_error("Error in generating graph output: Unsupported operating system for using dot module of graphviz (Linux and Windows only).");
+    }
+
     if(output_path != ""){
         dot_call += " -o \"" + output_path + "\"";
     }
-    //std::cout << dot_call;
+
     return dot_call;
 }
 

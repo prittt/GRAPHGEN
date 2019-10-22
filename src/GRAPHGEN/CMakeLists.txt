@@ -53,4 +53,6 @@ target_sources(GRAPHGEN PRIVATE
     pool.h
     
     drag.h
+
+	system_info.h
 )

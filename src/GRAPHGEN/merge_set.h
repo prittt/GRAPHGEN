@@ -93,7 +93,7 @@ struct MultiMergeSet {
     std::vector<std::string> pixel_list_;
     std::string x_pixel_;
 
-    MultiMergeSet(connectivity_mat &con, std::vector<std::string> &pixel_list, std::string &x_pixel) : con_{ con }, pixel_list_{ pixel_list }, x_pixel_{ x_pixel } {}
+    MultiMergeSet(connectivity_mat &con, const std::vector<std::string> &pixel_list, const std::string &x_pixel) : con_{ con }, pixel_list_{ pixel_list }, x_pixel_{ x_pixel } {}
 
     void ReduceMergeSet(std::vector<std::string>& ms) {
         for (size_t i = 0; i < ms.size(); ++i) {

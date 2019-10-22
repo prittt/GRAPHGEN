@@ -220,7 +220,7 @@ struct rule_set {
         return rs_node;
     }
 
-    void Deserialize(YAML::Node& rs_node) {
+    void Deserialize(const YAML::Node& rs_node) {
         /*std::vector<rule> rules;*/
 
         ps_ = pixel_set(rs_node["pixel_set"]);
