@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -28,7 +28,7 @@
 
 #include "yaml-cpp/yaml.h"
 
-#include "graphsgen.h"
+#include "graphgen.h"
 
 #include "grana_ruleset.h"
 
@@ -36,13 +36,13 @@ using namespace std;
 
 int main()
 {
-    string algorithm_name = "Tagliatelle";
+    string algorithm_name = "Spaghetti";
     conf = ConfigData(algorithm_name);
 
     GranaRS g_rs;
     auto rs = g_rs.GetRuleSet();
 
-    // Call GRAPHSGEN:
+    // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
     BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
 
