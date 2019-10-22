@@ -1,4 +1,6 @@
-target_sources(GRAPHSGEN PRIVATE
+target_sources(GRAPHGEN PRIVATE
+    image_frequencies.cpp
+    image_frequencies.h
     drag_statistics.cpp
 	drag_statistics.h
 	drag2optimal.cpp
@@ -39,6 +41,7 @@ target_sources(GRAPHSGEN PRIVATE
 	conact_code_generator.h
 	graph_code_generator.cpp
     config_data.h
+    config_data.cpp
     
     fast_drag_optimizer.h
     magic_optimizer.h
