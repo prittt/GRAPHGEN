@@ -1,4 +1,4 @@
-# Copyright(c) 2018 Federico Bolelli, Costantino Grana
+# Copyright(c) 2018 - 2019 Federico Bolelli, Stefano Allegretti, Costantino Grana
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -11,7 +11,7 @@
 # this list of conditions and the following disclaimer in the documentation
 # and / or other materials provided with the distribution.
 #
-# * Neither the name of GRAPHSGEN nor the names of its
+# * Neither the name of GRAPHGEN nor the names of its
 # contributors may be used to endorse or promote products derived from
 # this software without specific prior written permission.
 #
@@ -26,93 +26,34 @@
 # OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required (VERSION 3.13)
 
-set (ProjectName "GRAPHSGEN")
+set (ProjectName "GRAPHGEN")
 project (${ProjectName})
-
-#Suppress creation of ZERO_CHECK
-#set(CMAKE_SUPPRESS_REGENERATION true)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Configs" FORCE)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Install prefix" FORCE)
 
-#Set GRAPHSGEN variables
-set(GRAPHSGEN_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/outputs" CACHE PATH "'output' results path")
-
-#Set project variables
+#Set GRAPHGEN variables
+set(GRAPHGEN_OUTPUT_PATH "${CMAKE_INSTALL_PREFIX}/outputs" CACHE PATH "'output' results path")
+set(GRAPHGEN_INPUT_PATH "" CACHE PATH "input path with datasets for counting frequencies")
 
 if(MSVC)
   set(CMAKE_USE_RELATIVE_PATHS ON CACHE INTERNAL "" FORCE)
 endif()
 
 # ----------------------------------------------------------------------------
-#  Check for c++11 support
-# ----------------------------------------------------------------------------
-
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-
-if(DEFINED CMAKE_BUILD_TYPE)
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
-endif()
-
-message(STATUS "Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang" OR CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
-    if(NOT CMAKE_CXX_FLAGS MATCHES "-m32" AND NOT CMAKE_CXX_FLAGS MATCHES "-m64")
-        set(CMAKE_CXX_FLAGS "-m32 ${CMAKE_CXX_FLAGS}" CACHE STRING "32-bit compiled" FORCE)
-    endif()
-    if(NOT CMAKE_C_FLAGS MATCHES "-m32" AND NOT CMAKE_C_FLAGS MATCHES "-m64")
-        set(CMAKE_C_FLAGS "-m32 ${CMAKE_C_FLAGS}" CACHE STRING "32-bit compiled" FORCE)
-    endif()
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-	if(COMPILER_SUPPORTS_CXX11 AND NOT CMAKE_CXX_FLAGS MATCHES "-std=c\\+\\+11")
-		set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}" CACHE STRING "Enable c++11" FORCE)
-	elseif(COMPILER_SUPPORTS_CXX0X AND NOT CMAKE_CXX_FLAGS MATCHES "-std=c\\+\\+11")
-		set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}" CACHE STRING "Enable c++11" FORCE)
-	elseif(NOT COMPILER_SUPPORTS_CXX11)
-		message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no complete C++11 support. Please use a different C++ compiler.")
-	endif()
-else()
-	if(MSVC)
-		if(MSVC_VERSION LESS 1800)
-			message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no complete C++11 support. Please use a different C++ compiler.")
-		endif()
-	else()
-		message(STATUS "We are not able to check if ${CMAKE_CXX_COMPILER} compiler has complete C++11 support. YACCLAB may not work properly.")
-	endif()
-endif()
-message(STATUS "C++ flags: ${CMAKE_CXX_FLAGS}")
-message(STATUS "C flags: ${CMAKE_C_FLAGS}")
-
-
-# ----------------------------------------------------------------------------
-#  Build & install layouts
-# ----------------------------------------------------------------------------
-
-# Save libs and executables in the same place
-set(GRAPHSGEN_EXECUTABLE_OUTPUT_PATH "${CMAKE_INSTALL_PREFIX}" CACHE PATH "Output directory for applications" )
-
-# ----------------------------------------------------------------------------
 # Solution folders
 # ----------------------------------------------------------------------------
-if(ENABLE_SOLUTION_FOLDERS)
-  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-  set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMakeTargets")
-endif()
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+#set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMakeTargets")
 
 # --------------------
 # OpenCV 
 # --------------------
-
-set(OpenCV_REQUIRED_PACKAGES "core;imgcodecs;imgproc" CACHE STRING "OpenCV packages required by YACCLAB are already set")
+set(OpenCV_REQUIRED_PACKAGES "core;imgcodecs;imgproc" CACHE STRING "OpenCV packages required by GRAPHGEN are already set")
 FIND_PACKAGE(OpenCV REQUIRED ${OpenCV_REQUIRED_PACKAGES})
 include_directories( ${OpenCV_INCLUDE_DIRS} )
-
 if(MSVC)
 	if("${OpenCV_STATIC}" STREQUAL "ON" OR "${OpenCV_SHARED}" STREQUAL "OFF")
 		message(STATUS "Setting static runtime for MSVC")
@@ -122,33 +63,65 @@ if(MSVC)
 	endif()
 endif()
 
+find_package(Git QUIET)
+
+# --------------------
+# 3rdparty 
+# --------------------
+set(CMAKE_FOLDER 3rdparty)
+add_subdirectory(3rdparty)
+set(CMAKE_FOLDER "")
+# --------------------
+
 # --------------------
 # Project
 # --------------------
+add_library(GRAPHGEN STATIC "${CMAKE_INSTALL_PREFIX}/config.yaml")
+target_include_directories(GRAPHGEN PUBLIC src/GRAPHGEN)
+add_subdirectory(src/GRAPHGEN)
+target_link_libraries(GRAPHGEN yaml-cpp)
 
-include_directories("${CMAKE_SOURCE_DIR}/include")
+if (WIN32)
+	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
+endif (WIN32)
 
-file(GLOB SRCFILES ${SRCFILES} "src/*.cc" "src/*.cpp" "src/*.c")
-file(GLOB HFILES ${HFILES} "include/*.h" "include/*.hpp")
-file(GLOB INCFILES ${INCFILES} "include/*.inc")
+set(LABELING_ALGORITHMS SAUF PRED PRED++ BBDT DRAG Spaghetti Spaghetti_FREQ Tagliatelle CACHE INTERNAL ON FORCE)
+foreach(ALGO ${LABELING_ALGORITHMS})
+	add_executable(${ALGO} "")
+	set_target_properties(${ALGO} PROPERTIES FOLDER "Labeling")
+	include_directories(src/Labeling)
+	add_subdirectory(src/Labeling/${ALGO})
+	target_link_libraries (${ALGO} GRAPHGEN)
+endforeach()
+
+#set(THINNING_ALGORITHMS ZS CACHE INTERNAL ON FORCE)
+set(THINNING_ALGORITHMS CACHE INTERNAL ON FORCE)
+foreach(ALGO ${THINNING_ALGORITHMS})
+	add_executable(${ALGO} "")
+	set_target_properties(${ALGO} PROPERTIES FOLDER "Thinning")
+	include_directories(src/Thinning)
+	add_subdirectory(src/Thinning/${ALGO})
+	target_link_libraries (${ALGO} GRAPHGEN)
+endforeach()
+
+
+# Check for c++17 support (TODO check if it actually works)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD_REQUIRED ON)
 
 #add_definitions(-D_CRT_SECURE_NO_WARNINGS) #To suppress 'fopen' opencv warning/bug  
 # Set configuration file	
-#if(YACCLAB_IS_TRAVIS_CI)	
-#	configure_file("${CMAKE_SOURCE_DIR}/doc/config_travis.yaml" "${CMAKE_INSTALL_PREFIX}/config.yaml")
-#else()
-#	configure_file("${CMAKE_SOURCE_DIR}/doc/config_base.yaml" "${CMAKE_INSTALL_PREFIX}/config.yaml")
-#endif()
-source_group("Include Files" FILES ${INCFILES})
-source_group("Header Files" FILES ${HFILES})
-source_group("Source Files" FILES ${SRCFILES})
+configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/config.yaml")
 
-set (addExe ${SRCFILES} ${HFILES} ${INCFILES})
-add_executable(${ProjectName} ${addExe})
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set YACCLAB as startup group instead of ALL_BUILD
-target_link_libraries (${ProjectName}  ${OpenCV_LIBS})
+
+#set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set YACCLAB as startup group instead of ALL_BUILD
+target_link_libraries (${ProjectName} ${OpenCV_LIBS})
 
 # Creation of output directory
-if (NOT EXISTS "${GRAPHSGEN_OUTPUT_PATH}")
-		file(MAKE_DIRECTORY ${GRAPHSGEN_OUTPUT_PATH})
+if (NOT EXISTS "${GRAPHGEN_OUTPUT_PATH}")
+	file(MAKE_DIRECTORY ${GRAPHGEN_OUTPUT_PATH})
 endif()
+
+#target_include_directories(SAUF PUBLIC 
+#                                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdparty/yaml-cpp/include> 
+#                                $<INSTALL_INTERFACE:include>)
