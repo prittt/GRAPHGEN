@@ -238,6 +238,8 @@ public:
     }
 };
 
+
+/** @brief This enum class defines the available flags for the DragCompression class. */
 enum class DragCompressorFlags : uint32_t {
     NONE                      = 0, /**< @brief No flags */
     PRINT_STATUS_BAR          = 1, /**< @brief Whether to print a sort of progress bar or not */
@@ -248,25 +250,30 @@ enum class DragCompressorFlags : uint32_t {
     SAVE_INTERMEDIATE_RESULTS = 4, /**< @brief Whether to delete or not the dot code used to draw the drag */
 };
 
+DEFINE_ENUM_CLASS_OR_OPERATOR(DragCompressorFlags)
+DEFINE_ENUM_CLASS_AND_OPERATOR(DragCompressorFlags)
+
 // Compress a tree / forest into a DRAG solving equivalences
 class DragCompressor {
+private:
+    bool changes_;
 public:
-    static const int PRINT_STATUS_BAR          = 1; /**< @brief Whether to print a sort of progress bar or not */
-    static const int IGNORE_LEAVES             = 2; /**< @brief Whether to ignore leaves or not during the compression.
-                                                                Please note that compressing the leaves will significantly
-                                                                increase the total execution time without improving the
-                                                                final compression result in anyway. */
-    static const int SAVE_INTERMEDIATE_RESULTS = 4; /**< @brief Whether to delete or not the dot code used to draw the drag */
+    //static const int PRINT_STATUS_BAR          = 1; /**< @brief Whether to print a sort of progress bar or not */
+    //static const int IGNORE_LEAVES             = 2; /**< @brief Whether to ignore leaves or not during the compression.
+    //                                                            Please note that compressing the leaves will significantly
+    //                                                            increase the total execution time without improving the
+    //                                                            final compression result in anyway. */
+    //static const int SAVE_INTERMEDIATE_RESULTS = 4; /**< @brief Whether to delete or not the dot code used to draw the drag */
 
-    void UpdateProgress(int flags) {
-        bool print_status_bar = flags & PRINT_STATUS_BAR;
+    void UpdateProgress(DragCompressorFlags flags) {
+        bool print_status_bar = flags & DragCompressorFlags::PRINT_STATUS_BAR;
         if (print_status_bar) {
             std::cout << "\r" << progress_counter_ << "\n";
         }
     }
 
     // BinaryDrag 
-    DragCompressor(BinaryDrag<conact>& bd, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
+    DragCompressor(BinaryDrag<conact>& bd, DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
         TLOG("Compressing BinaryDrag",
             RemoveEqualSubtrees{ bd };
             do {
@@ -279,9 +286,8 @@ public:
         )
     }
 
-    bool changes_;
     // LineForestHandler
-    DragCompressor(LineForestHandler& lfh, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
+    DragCompressor(LineForestHandler& lfh, DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
         std::cout << "main forest: \n";
         RemoveEqualSubtrees{ lfh.f_ };
         do {
@@ -356,11 +362,11 @@ private:
     size_t best_leaves_ = std::numeric_limits<size_t >::max();
     BinaryDrag<conact> best_bd_;
 
-    void FastDragOptimizerRec(BinaryDrag<conact>& bd, int flags)
+    void FastDragOptimizerRec(BinaryDrag<conact>& bd, DragCompressorFlags flags)
     {
-        bool print_status_bar = flags & PRINT_STATUS_BAR;
-        bool ignore_leaves = flags & IGNORE_LEAVES;
-        bool save_intermediate_results = flags & SAVE_INTERMEDIATE_RESULTS;
+        bool print_status_bar = flags & DragCompressorFlags::PRINT_STATUS_BAR;
+        bool ignore_leaves = flags & DragCompressorFlags::IGNORE_LEAVES;
+        bool save_intermediate_results = flags & DragCompressorFlags::SAVE_INTERMEDIATE_RESULTS;
 
         // Collect information of trees'/drags' subtrees (as strings) and push
         // them into a vector so that they are easier to use

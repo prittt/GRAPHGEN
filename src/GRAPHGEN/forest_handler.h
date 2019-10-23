@@ -107,7 +107,7 @@ public:
         }
     }
 
-    void Compress(int flags = DragCompressor::PRINT_STATUS_BAR | DragCompressor::IGNORE_LEAVES) {
+    void Compress(DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
        for (auto& x : f_) {
            DragCompressor(x.second, flags);
        }
