@@ -240,7 +240,7 @@ public:
 
 
 /** @brief This enum class defines the available flags for the DragCompression class. */
-enum class DragCompressorFlags : uint32_t {
+DEFINE_ENUM_CLASS_FLAGS(DragCompressorFlags, 
     NONE                      = 0, /**< @brief No flags */
     PRINT_STATUS_BAR          = 1, /**< @brief Whether to print a sort of progress bar or not */
     IGNORE_LEAVES             = 2, /**< @brief Whether to ignore leaves or not during the compression.
@@ -248,10 +248,10 @@ enum class DragCompressorFlags : uint32_t {
                                                             increase the total execution time without improving the
                                                             final compression result in anyway. */
     SAVE_INTERMEDIATE_RESULTS = 4, /**< @brief Whether to delete or not the dot code used to draw the drag */
-};
+)
 
-DEFINE_ENUM_CLASS_OR_OPERATOR(DragCompressorFlags)
-DEFINE_ENUM_CLASS_AND_OPERATOR(DragCompressorFlags)
+//DEFINE_ENUM_CLASS_OR_OPERATOR(DragCompressorFlags)
+//DEFINE_ENUM_CLASS_AND_OPERATOR(DragCompressorFlags)
 
 // Compress a tree / forest into a DRAG solving equivalences
 class DragCompressor {
