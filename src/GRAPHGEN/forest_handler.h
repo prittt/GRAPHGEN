@@ -16,7 +16,6 @@ the latter case the mask has a vertical shift of 2 pixels. In this case four dif
 The forests generation requires the original decision tree associated to the algorithm on which apply the prediction
 optimization and the pixel set associated to the mask.
 */
-
 class ForestHandler {
 public:
     std::map<int, LineForestHandler> f_;
@@ -84,10 +83,11 @@ public:
     }
 
     // TODO add documentation here and move the implementation in the cpp file
-    void GenerateCode(BEFORE_AFTER_FUN(before_main) = BeforeMainShiftOne,
-                      BEFORE_AFTER_FUN(after_main)  = DefaultEmptyFunc,
-                      BEFORE_AFTER_FUN(before_end)  = BeforeEnd,
-                      BEFORE_AFTER_FUN(after_end)   = AfterEnd,
+    void GenerateCode(BEFORE_AFTER_FUN(before_main)       = BeforeMainShiftOne,
+                      BEFORE_AFTER_FUN(after_main)        = DefaultEmptyFunc,
+                      BEFORE_AFTER_FUN(before_end)        = BeforeEnd,
+                      BEFORE_AFTER_FUN(after_end)         = AfterEnd,
+                      BEFORE_AFTER_FUN(after_end_no_loop) = AfterEndNoLoop,
                       int flags = 0 /* no flags available right now */)
     {
         for (const auto& i : f_) {
@@ -97,11 +97,17 @@ public:
                 std::cout << "Something went wrong during the generation of " << conf.algorithm_name_ << "forest code\n";
                 return;
             }
-            GenerateLineForestCode(os, i.second, prefixs[i.first] + "_", 0, before_main, after_main, before_end, after_end);
+            if (i.first != CENTER_LINES) {
+                GenerateLineForestCode(os, i.second, prefixs[i.first] + "_", 0, before_main, after_main, before_end, after_end_no_loop);
+                os << prefixs[i.first] + "_" << ":;\n";
+            }
+            else {
+                GenerateLineForestCode(os, i.second, prefixs[i.first] + "_", 0, before_main, after_main, before_end, after_end);
+            }
         }
     }
 
-    void Compress(int flags = DragCompressor::PRINT_STATUS_BAR | DragCompressor::IGNORE_LEAVES) {
+    void Compress(DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
        for (auto& x : f_) {
            DragCompressor(x.second, flags);
        }

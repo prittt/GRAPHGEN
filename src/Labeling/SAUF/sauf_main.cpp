@@ -43,14 +43,8 @@ int main()
     auto rs = r_rs.GetRuleSet();
 
     // Call GRAPHGEN:
-    // Load image frequencies into ruleset
-    if (conf.use_frequencies_) {
-        AddFrequenciesToRuleset(conf, rs, conf.force_frequencies_count_);
-    }
-
-    // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
-    BinaryDrag<conact> bd = GetOdt(rs, algorithm_name, conf.force_odt_generation_);
+    BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
 
     // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
@@ -64,7 +58,7 @@ int main()
 
     // 4) Generate the C++ source code for pointers,
     // conditions to check and actions to perform
-    GeneratePointersConditionsActionsCode(rs);
+    GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE);
 
     return EXIT_SUCCESS;
 }

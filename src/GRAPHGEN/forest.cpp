@@ -177,11 +177,11 @@ LineForestHandler::LineForestHandler(const BinaryDrag<conact>& bd,
 
 void Forest::RebuildDisjointTrees() {
 
-    vector<ltree> new_trees;
+    vector<BinaryDrag<conact>> new_trees;
 
     for (auto& t : trees_) {
         // Here Reduce() is used just to recreate trees 
-        ltree new_t;
+        BinaryDrag<conact> new_t;
         new_t.SetRoot(Reduce(t.GetRoot(), new_t, {}));
         new_trees.push_back(move(new_t));
     }
@@ -191,12 +191,12 @@ void Forest::RebuildDisjointTrees() {
 
 void Forest::RebuildDisjointEndTrees() {
 
-    vector<vector<ltree>> new_trees;
+    vector<vector<BinaryDrag<conact>>> new_trees;
     for (auto& tg : end_trees_) {
         new_trees.emplace_back();
         for (auto& t : tg) {
             // Here Reduce() is used just to recreate trees 
-            ltree new_t;
+            BinaryDrag<conact> new_t;
             new_t.SetRoot(Reduce(t.GetRoot(), new_t, {}));
             new_trees.back().push_back(move(new_t));
         }
@@ -206,7 +206,7 @@ void Forest::RebuildDisjointEndTrees() {
 }
 
 // See RemoveUselessConditions
-void RemoveUselessConditionsRec(ltree::node* n, bool& changed) {
+void RemoveUselessConditionsRec(BinaryDrag<conact>::node* n, bool& changed) {
     if (!n->isleaf()) {
         if (EqualTrees(n->left, n->right)) {
             changed = true;
@@ -267,7 +267,7 @@ bool Forest::RemoveEquivalentEndTrees() {
     //return RemoveEndTrees(equivalent_trees);
 }
 
-void Forest::UpdateNext(ltree::node* n) {
+void Forest::UpdateNext(BinaryDrag<conact>::node* n) {
     if (n->isleaf()) {
         n->data.next = next_tree_[n->data.next];
     }
@@ -286,7 +286,7 @@ bool Forest::RemoveEqualTrees() {
 }
 
 // Removes duplicate trees inside the forest
-bool Forest::RemoveTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::node* n2), 
+bool Forest::RemoveTrees(bool(*FunctionPtr)(const BinaryDrag<conact>::node* n1, const BinaryDrag<conact>::node* n2), 
                          vector<int>& next_tree, 
                          BinaryDrag<conact>& f, 
                          bool are_end_trees, 
@@ -355,7 +355,7 @@ bool Forest::RemoveTrees(bool(*FunctionPtr)(const ltree::node* n1, const ltree::
 }
 
 // Initializes leave's next trees (drag) of a tree (drag) with sequential values.
-void Forest::InitNextRec(ltree::node* n) {
+void Forest::InitNextRec(BinaryDrag<conact>::node* n) {
     if (n->isleaf()) {
         // Set the next tree to be used for each leaf
         n->data.next = next_tree_.size();
@@ -369,7 +369,7 @@ void Forest::InitNextRec(ltree::node* n) {
 }
 
 // Perform tree pruning by removing useless nodes. Useless nodes are identified looking at given constraints 
-ltree::node* Forest::Reduce(const ltree::node* n, ltree& t, const constraints& constr) {
+BinaryDrag<conact>::node* Forest::Reduce(const BinaryDrag<conact>::node* n, BinaryDrag<conact>& t, const constraints& constr) {
     if (n->isleaf()) {
         return t.make_node(n->data);
     }

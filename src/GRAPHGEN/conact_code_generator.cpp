@@ -238,7 +238,7 @@ void GeneratePointersCode(ofstream& os, const rule_set& rs) {
     os << global_ss.str();
 }
 
-void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditions) 
+void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditions)
 {
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
     unsigned n_dims = shifts.size(); // Here we get how many dims image has
@@ -268,7 +268,7 @@ void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditio
 }
 
 // This function .. it works only for 2d and 3d images TODO description.
-void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& names) 
+void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& names, bool with_continues = true)
 {
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
     unsigned n_dims = shifts.size(); // Here we get how many dims image has
@@ -284,12 +284,21 @@ void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& name
 
         string where_to_write = "img_labels_" + string(n_dims > 2 ? "slice00_" : "") + "row00[c] = ";
 
-        os << where_to_write << CreateAssignmentCode(cur_action, names) << "; continue; \n";
+        os << where_to_write << CreateAssignmentCode(cur_action, names) << ";";
+
+        if (with_continues) {
+            os << "continue;";
+        }
+
+        os << "\n";
     }
 }
 
-// Overloading function
-bool GeneratePointersConditionsActionsCode(const rule_set& rs, bool actions_with_conditions, std::optional<pixel_set> names) {
+bool GeneratePointersConditionsActionsCode(const rule_set& rs, GenerateConditionActionCodeFlags flag, std::optional<pixel_set> names) {
+
+    bool actions_with_conditions = flag & GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS;
+    bool actions_with_continue = flag & GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE;
+
     ofstream os(conf.code_path_);
     if (!os) {
         return false;
@@ -301,7 +310,7 @@ bool GeneratePointersConditionsActionsCode(const rule_set& rs, bool actions_with
 
     GeneratePointersCode(os, rs);
     GenerateConditionsCode(os, rs, actions_with_conditions);
-    GenerateActionsCode(os, rs, names.value());
+    GenerateActionsCode(os, rs, names.value(), actions_with_continue);
 
     return true;
 }

@@ -30,42 +30,48 @@
 
 #include "graphgen.h"
 
-#include "rosenfeld_ruleset.h"
+#include "grana_ruleset.h"
 
 using namespace std;
 
 int main()
 {
-    // Setup configuration
-    string algorithm_name = "PRED++";
+    string algorithm_name = "Tagliatelle";
     conf = ConfigData(algorithm_name);
 
-    // Load or generate rules
-    RosenfeldRS r_rs;
-    auto rs = r_rs.GetRuleSet();
+    GranaRS g_rs;
+    auto rs = g_rs.GetRuleSet();
 
     // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
+    // 1) Load or generate Optimal Decision Tree based on Grana mask
     BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
-    
-    // 2) Draw the generated tree on file
+
+    // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
-    
+
     // 3) Generate forests of trees
     LOG(algorithm_name + " - making forests",
-        ForestHandler fh(bd, rs.ps_);
+        ForestHandler fh(bd, rs.ps_, ForestHandler::CENTER_LINES | ForestHandler::FIRST_LINE | ForestHandler::LAST_LINE | ForestHandler::SINGLE_LINE);
     );
-    
-    // 4) Compress the forest
-    fh.Compress();
 
-    // 5) Draw the compressed forests on file
+    // 4) Draw the generated forests on file
     fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
-    
-    // 6) Generate the C/C++ source code
-    fh.GenerateCode();
-    GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::NONE);
 
-	return EXIT_SUCCESS;
+    // x) Compress the forests
+    //fh.Compress(DragCompressor::PRINT_STATUS_BAR | DragCompressor::IGNORE_LEAVES);
+
+    // x) Draw the compressed forests on file
+    //fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+
+    // 5) Generate the C/C++ code taking care of the names used
+    //    in the Grana's rule set GranaRS
+    fh.GenerateCode(BeforeMainShiftTwo);
+    pixel_set block_positions{
+           { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
+           { "S", {-2, +0} },{ "x", {+0, +0} }
+    };
+    GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::NONE, block_positions);
+
+    return EXIT_SUCCESS;
 }

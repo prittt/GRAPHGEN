@@ -43,13 +43,13 @@
 #include "forest_statistics.h"
 #include "graph_code_generator.h"
 
-/*ltree::node* MergeEquivalentTreesRec(ltree::node* a, ltree::node* b, std::unordered_map<ltree::node*, ltree::node*> &merged)
+/*BinaryDrag<conact>::node* MergeEquivalentTreesRec(BinaryDrag<conact>::node* a, BinaryDrag<conact>::node* b, std::unordered_map<BinaryDrag<conact>::node*, BinaryDrag<conact>::node*> &merged)
     {
         auto it = merged.find(a);
         if (it != end(merged))
             return it->second;
 
-        auto n = new ltree::node(*a);
+        auto n = new BinaryDrag<conact>::node(*a);
         if (a->isleaf()) {
             n->data.action &= b->data.action;
         }
@@ -61,7 +61,7 @@
         return n;
     }
 
-    void DeleteTreeRec(ltree::node* n, std::unordered_map<ltree::node*, bool> &deleted)
+    void DeleteTreeRec(BinaryDrag<conact>::node* n, std::unordered_map<BinaryDrag<conact>::node*, bool> &deleted)
     {
         auto it = deleted.find(n);
         if (it != end(deleted))
@@ -75,7 +75,7 @@
         delete n;
     }*/
 
-    /*void PrintTreeRec(std::ostream& os, ltree::node* n, std::set<ltree::node*>& visited, int tab = 0) {
+    /*void PrintTreeRec(std::ostream& os, BinaryDrag<conact>::node* n, std::set<BinaryDrag<conact>::node*>& visited, int tab = 0) {
                 os << std::string(tab, '\t');
 
                 auto it = visited.find(n);
@@ -238,38 +238,56 @@ public:
     }
 };
 
+
+/** @brief This enum class defines the available flags for the DragCompression class. */
+enum class DragCompressorFlags : uint32_t {
+    NONE                      = 0, /**< @brief No flags */
+    PRINT_STATUS_BAR          = 1, /**< @brief Whether to print a sort of progress bar or not */
+    IGNORE_LEAVES             = 2, /**< @brief Whether to ignore leaves or not during the compression.
+                                                            Please note that compressing the leaves will significantly
+                                                            increase the total execution time without improving the
+                                                            final compression result in anyway. */
+    SAVE_INTERMEDIATE_RESULTS = 4, /**< @brief Whether to delete or not the dot code used to draw the drag */
+};
+
+DEFINE_ENUM_CLASS_OR_OPERATOR(DragCompressorFlags)
+DEFINE_ENUM_CLASS_AND_OPERATOR(DragCompressorFlags)
+
 // Compress a tree / forest into a DRAG solving equivalences
 class DragCompressor {
+private:
+    bool changes_;
 public:
-    static const int PRINT_STATUS_BAR          = 1; /**< @brief Whether to print a sort of progress bar or not */
-    static const int IGNORE_LEAVES             = 2; /**< @brief Whether to ignore leaves or not during the compression.
-                                                                Please note that compressing the leaves will significantly
-                                                                increase the total execution time without improving the
-                                                                final compression result in anyway. */
-    static const int SAVE_INTERMEDIATE_RESULTS = 4; /**< @brief Whether to delete or not the dot code used to draw the drag */
+    //static const int PRINT_STATUS_BAR          = 1; /**< @brief Whether to print a sort of progress bar or not */
+    //static const int IGNORE_LEAVES             = 2; /**< @brief Whether to ignore leaves or not during the compression.
+    //                                                            Please note that compressing the leaves will significantly
+    //                                                            increase the total execution time without improving the
+    //                                                            final compression result in anyway. */
+    //static const int SAVE_INTERMEDIATE_RESULTS = 4; /**< @brief Whether to delete or not the dot code used to draw the drag */
 
-    void UpdateProgress(int flags) {
-        bool print_status_bar = flags & PRINT_STATUS_BAR;
+    void UpdateProgress(DragCompressorFlags flags) {
+        bool print_status_bar = flags & DragCompressorFlags::PRINT_STATUS_BAR;
         if (print_status_bar) {
             std::cout << "\r" << progress_counter_ << "\n";
         }
     }
 
     // BinaryDrag 
-    DragCompressor(BinaryDrag<conact>& bd, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
-        RemoveEqualSubtrees{ bd };
-        do {
-            changes_ = false;
-            FastDragOptimizerRec(bd, flags);
-            bd = best_bd_;
-        } while (changes_);
+    DragCompressor(BinaryDrag<conact>& bd, DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
+        TLOG("Compressing BinaryDrag",
+            RemoveEqualSubtrees{ bd };
+            do {
+                changes_ = false;
+                FastDragOptimizerRec(bd, flags);
+                bd = best_bd_;
+            } while (changes_);
         
-        UpdateProgress(flags);
+            UpdateProgress(flags);
+        )
     }
 
-    bool changes_;
     // LineForestHandler
-    DragCompressor(LineForestHandler& lfh, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
+    DragCompressor(LineForestHandler& lfh, DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
         std::cout << "main forest: \n";
         RemoveEqualSubtrees{ lfh.f_ };
         do {
@@ -305,7 +323,7 @@ private:
     // This class perform the merge of equivalent trees updating links
     struct MergeEquivalentTreesAndUpdate {
         std::unordered_set<BinaryDrag<conact>::node*> visited_;
-        std::unordered_map<BinaryDrag<conact>::node*, std::vector<ltree::node*>>& parents_;
+        std::unordered_map<BinaryDrag<conact>::node*, std::vector<BinaryDrag<conact>::node*>>& parents_;
 
         MergeEquivalentTreesAndUpdate(BinaryDrag<conact>::node* a, 
                                       BinaryDrag<conact>::node* b, 
@@ -315,7 +333,7 @@ private:
             MergeEquivalentTreesAndUpdateRec(a, b);
         }
 
-        void MergeEquivalentTreesAndUpdateRec(ltree::node* a, ltree::node* b)
+        void MergeEquivalentTreesAndUpdateRec(BinaryDrag<conact>::node* a, BinaryDrag<conact>::node* b)
         {
             auto it = visited_.find(a);
             if (it != end(visited_))
@@ -344,11 +362,11 @@ private:
     size_t best_leaves_ = std::numeric_limits<size_t >::max();
     BinaryDrag<conact> best_bd_;
 
-    void FastDragOptimizerRec(BinaryDrag<conact>& bd, int flags)
+    void FastDragOptimizerRec(BinaryDrag<conact>& bd, DragCompressorFlags flags)
     {
-        bool print_status_bar = flags & PRINT_STATUS_BAR;
-        bool ignore_leaves = flags & IGNORE_LEAVES;
-        bool save_intermediate_results = flags & SAVE_INTERMEDIATE_RESULTS;
+        bool print_status_bar = flags & DragCompressorFlags::PRINT_STATUS_BAR;
+        bool ignore_leaves = flags & DragCompressorFlags::IGNORE_LEAVES;
+        bool save_intermediate_results = flags & DragCompressorFlags::SAVE_INTERMEDIATE_RESULTS;
 
         // Collect information of trees'/drags' subtrees (as strings) and push
         // them into a vector so that they are easier to use

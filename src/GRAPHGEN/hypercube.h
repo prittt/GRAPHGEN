@@ -162,14 +162,14 @@ struct VHyperCube {
 		return m_arrIndex[idx.GetIndex()];
 	}
 
-    ltree optimize(bool bVerbose = false);
+    BinaryDrag<conact> optimize(bool bVerbose = false);
 };
 
 // TODO should these functions be hide from the outside?
 // Generates an Optimal Decision Tree from the given rule_set,
 // and store it in the filename when specified.
-ltree GenerateOdt(const rule_set& rs);
-ltree GenerateOdt(const rule_set& rs, const std::string& filename);
+BinaryDrag<conact> GenerateOdt(const rule_set& rs);
+BinaryDrag<conact> GenerateOdt(const rule_set& rs, const std::string& filename);
 
 
 /** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
@@ -185,6 +185,9 @@ is always regenerated. The loaded/generated tree is then returned.
 
 @return The optimal decision tree associated to the specified rule set.
 */
-ltree GetOdt(const rule_set& rs, const std::string& algorithm_name, bool force_generation = false);
+BinaryDrag<conact> GetOdt(const rule_set& rs, const std::string& algorithm_name, bool force_generation = false);
+
+BinaryDrag<conact> GetOdtWithFileSuffix(const rule_set& rs, const std::string& file_suffix, bool force_generation = false);
+
 
 #endif // !GRAPHGEN_CONACT_TREE_H_

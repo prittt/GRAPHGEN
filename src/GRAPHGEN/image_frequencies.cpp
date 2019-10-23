@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -179,12 +179,25 @@ bool CalculateRulesFrequencies(const pixel_set& ps, vector<pair<path, bool>>& pa
 //}
 
 bool AddFrequenciesToRuleset(const ConfigData& config, rule_set& rs, bool force) {
+   
+    std::string dataset_names;
+    bool first = true;
+    for (const auto &piece : conf.datasets_) {
+        if (!first) {
+            dataset_names += '-';
+        }
+        else {
+            first = false;
+        }
+        dataset_names += piece;
+    }
 
     if (!force) {
         ifstream is;
         is.exceptions(fstream::badbit | fstream::failbit | fstream::eofbit);
+
         try {
-            is.open(config.frequencies_path_, ios::binary);
+            is.open(config.GetFrequenciesPath(dataset_names), ios::binary);
             vector<rule> new_rules = rs.rules;
             unsigned int n;
             is.read(reinterpret_cast<char*>(&n), 4);
@@ -240,7 +253,7 @@ bool AddFrequenciesToRuleset(const ConfigData& config, rule_set& rs, bool force)
     // - n:             little endian 4 bytes unsigned integer, stores the number of datasets considered
     // - datasets:      a sequence of n datasets names, each of them ending with a '\n'
     // - frequencies:   the array of frequencies stored as little endian 8 bytes unsigned integers
-    ofstream os(config.frequencies_path_, ios::binary);
+    ofstream os(config.GetFrequenciesPath(dataset_names), ios::binary);
     if (!os) {
         cerr << "Frequencies couldn't be stored into file.\n";
     }

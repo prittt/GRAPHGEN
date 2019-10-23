@@ -36,16 +36,33 @@
 #include "forest.h"
 #include "rule_set.h"
 
-// TODO fix documentation
-// This function generates code for conditions and actions' macros and rows' pointers
-//void GenerateConditionsActionsCode(std::ofstream& os, const rule_set& rs);
-//// Overloading function
-// names contains the position in the labels image corresponding to the names used in labeling actions. 
-// It is necessary to handle blocks names and defaults to mask pixel set if not provided. 
+
+/** @brief This is the enum class that defines the available flags for the GeneratePointersConditionsActionsCode function.
+*/
+enum class GenerateConditionActionCodeFlags : uint32_t {
+    NONE                    = 0,          /**< @brief No flags */
+    CONDITIONS_WITH_IFS     = (1 << 0),   /**< @brief Whether to add if statements or not when generating conditions code. 
+                                                      They serve to check if the pixel we want to check is inside the image 
+                                                      or not. All the algorithms that make use of prediction can avoid these
+                                                      checks because they are inbuilt in the forest. */
+    ACTIONS_WITH_CONTINUE   = (1 << 1),   /**< @brief Whether to add continues at the end of each action or not */
+};
+
+DEFINE_ENUM_CLASS_OR_OPERATOR(GenerateConditionActionCodeFlags)
+DEFINE_ENUM_CLASS_AND_OPERATOR(GenerateConditionActionCodeFlags)
+
+/** @brief
+
+TODO fix documentation
+names contains the position in the labels image corresponding to the names used in labeling actions. 
+It is necessary to handle blocks names and defaults to mask pixel set if not provided. 
+
+*/
 bool GeneratePointersConditionsActionsCode(const rule_set& rs,
-                                           bool actions_with_conditions = true,
+                                           GenerateConditionActionCodeFlags flag = GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE,
                                            std::optional<pixel_set> names = std::nullopt);
 
+// This is the version for CTBE algorithm. It is very raw and it is based on the previous versione of graphgen
 //bool GenerateActionsForCtbe(const std::string& filename, const rule_set& rs);
 
 #endif // GRAPHGEN_CONACT_CODE_GENERATOR_H_

@@ -34,7 +34,7 @@
 
 #include "drag_statistics.h"
 
-void FindAndLinkIdentiesDagRec(ltree::node* n1, ltree::node* n2, std::map<ltree::node*, bool> &visited_fl) {
+void FindAndLinkIdentiesDagRec(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2, std::map<BinaryDrag<conact>::node*, bool> &visited_fl) {
     if (n2->isleaf() || n1 == n2 || visited_fl[n2])
         return;
     visited_fl[n2] = true;
@@ -52,8 +52,8 @@ void FindAndLinkIdentiesDagRec(ltree::node* n1, ltree::node* n2, std::map<ltree:
 }
 
 // Recursive auxiliary function for the conversion of a DAG into DAG with no equivalent subgraphs
-void Dag2DagUsingIdentiesRec(ltree::node *n, ltree& t, std::map<ltree::node*, bool> &visited_n) {
-    std::map<ltree::node*, bool> visited_fl;
+void Dag2DagUsingIdentiesRec(BinaryDrag<conact>::node *n, BinaryDrag<conact>& t, std::map<BinaryDrag<conact>::node*, bool> &visited_n) {
+    std::map<BinaryDrag<conact>::node*, bool> visited_fl;
     FindAndLinkIdentiesDagRec(n, t.GetRoot(), visited_fl);
     visited_n[n] = true;
 
@@ -66,8 +66,8 @@ void Dag2DagUsingIdentiesRec(ltree::node *n, ltree& t, std::map<ltree::node*, bo
 }
 
 // Converts dag to dag using identies between subtrees
-void Dag2DagUsingIdenties(ltree& t) {
-	std::map<ltree::node*, bool> visited_n;
+void Dag2DagUsingIdenties(BinaryDrag<conact>& t) {
+	std::map<BinaryDrag<conact>::node*, bool> visited_n;
 	Dag2DagUsingIdentiesRec(t.GetRoot(), t, visited_n);
 }
 
@@ -76,7 +76,7 @@ void Dag2DagUsingIdenties(ltree& t) {
 // FindAndLinkEquivalencesDagRec
 // Dag2DagUsingEquivalencesRec
 // Dag2DagUsingEquivalences
-void FindAndLinkEquivalencesDagRec(ltree::node* n1, ltree::node* n2, std::map<ltree::node*, bool> &visited_fl) {
+void FindAndLinkEquivalencesDagRec(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2, std::map<BinaryDrag<conact>::node*, bool> &visited_fl) {
 	if (n2->isleaf() || n1 == n2 || visited_fl[n2])
 		return;
 	visited_fl[n2] = true;
@@ -94,8 +94,8 @@ void FindAndLinkEquivalencesDagRec(ltree::node* n1, ltree::node* n2, std::map<lt
 }
 
 // Recursive auxiliary function for the conversion of a DAG into DAG with no equivalent subgraphs
-void Dag2DagUsingEquivalencesRec(ltree::node *n, ltree& t, std::map<ltree::node*, bool> &visited_n, bool considering_leaves) {
-	std::map<ltree::node*, bool> visited_fl;
+void Dag2DagUsingEquivalencesRec(BinaryDrag<conact>::node *n, BinaryDrag<conact>& t, std::map<BinaryDrag<conact>::node*, bool> &visited_n, bool considering_leaves) {
+	std::map<BinaryDrag<conact>::node*, bool> visited_fl;
 	
 	if (!n->isleaf() || considering_leaves) {
 		FindAndLinkEquivalencesDagRec(n, t.GetRoot(), visited_fl);
@@ -111,21 +111,21 @@ void Dag2DagUsingEquivalencesRec(ltree::node *n, ltree& t, std::map<ltree::node*
 }
 
 // Converts dag to dag using equivalences between subtrees
-void Dag2DagUsingEquivalences(ltree& t, bool considering_leaves) {
-	std::map<ltree::node*, bool> visited_n;
+void Dag2DagUsingEquivalences(BinaryDrag<conact>& t, bool considering_leaves) {
+	std::map<BinaryDrag<conact>::node*, bool> visited_n;
 	Dag2DagUsingEquivalencesRec(t.GetRoot(), t, visited_n, considering_leaves);
 }
 
 // Given a dag with multiple actions on leaves this function generate all possible dags with only one action per leaf
 // VERSIONE CHE CONTA I NODI E LE FOGLIE PER DECIDERE QUAL E' L'ALBERO MIGLIORE
-void Dag2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_nodes, uint &best_leaves, std::map<const ltree::node*, bool> &visited_n, uint &counter) {
-    ltree nt;
+void Dag2OptimalDagRec(BinaryDrag<conact>& t, BinaryDrag<conact>::node* n, BinaryDrag<conact> &best_tree, uint &best_nodes, uint &best_leaves, std::map<const BinaryDrag<conact>::node*, bool> &visited_n, uint &counter) {
+    BinaryDrag<conact> nt;
     if (n->isleaf()) {
         // leaf with multiple action
         std::vector<uint> actions_list = n->data.actions();
         if (actions_list.size() > 1) {
             for (size_t i = 0; i < actions_list.size() - 1; ++i) {
-                std::map<const ltree::node*, bool> visited_node_cur;
+                std::map<const BinaryDrag<conact>::node*, bool> visited_node_cur;
                 n->data.action = 0;
                 n->data.action.set(actions_list[i] - 1);
                 nt = t;
@@ -151,7 +151,7 @@ void Dag2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_no
 
     if (t.GetRoot() == n) {
         counter++;
-        ltree dag = t;
+        BinaryDrag<conact> dag = t;
         Dag2DagUsingIdenties(dag);
 
         BinaryDragStatistics ds(dag);
@@ -175,10 +175,10 @@ void Dag2OptimalDagRec(ltree& t, ltree::node* n, ltree &best_tree, uint &best_no
 
 // Converts a tree into dag minimizing the number of nodes (Note: this is "necessary" when the leaves of a tree contain multiple actions)
 // UTILIZZA IL NUMERO DI NODI PER SCEGLIERE IL DAG OTTIMO
-void Dag2OptimalDag(ltree& t) {
-    std::vector<ltree> trees;
-    ltree best_tree;
-    std::map<const ltree::node*, bool> visited_nodes;
+void Dag2OptimalDag(BinaryDrag<conact>& t) {
+    std::vector<BinaryDrag<conact>> trees;
+    BinaryDrag<conact> best_tree;
+    std::map<const BinaryDrag<conact>::node*, bool> visited_nodes;
     uint counter = 0;
     uint best_nodes = std::numeric_limits<uint>::max();
     uint best_leaves = std::numeric_limits<uint>::max();

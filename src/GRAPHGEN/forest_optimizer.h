@@ -43,7 +43,7 @@ struct STree {
 		string conditions;
 		vector<std::bitset</*11881*/128>> actions;
 		vector<uint> nexts;
-		ltree::node* n_;
+		BinaryDrag<conact>::node* n_;
 
 		STreeProp& operator+=(const STreeProp& rhs) {
 			conditions += rhs.conditions;
@@ -101,10 +101,10 @@ struct STree {
 			return true;
 		}
 	};
-	map<ltree::node*, STreeProp> np_;
+	map<BinaryDrag<conact>::node*, STreeProp> np_;
 	Forest& f_;
 
-	STreeProp CollectStatsRec(ltree::node * n) {
+	STreeProp CollectStatsRec(BinaryDrag<conact>::node * n) {
 		auto it = np_.find(n);
 		if (it != end(np_))
 			return it->second;
@@ -127,7 +127,7 @@ struct STree {
 	}
 
 	// Works only with equivalent trees
-	static void Intersect(ltree::node* n1, ltree::node* n2) {
+	static void Intersect(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2) {
 		if (n1->isleaf()) {
 			n1->data.action &= n2->data.action;
 			n2->data.action = n1->data.action;
@@ -139,7 +139,7 @@ struct STree {
 	}
 	// tbr to be replaced
 	// rw replace with
-	static void FindAndReplace(ltree::node* n, ltree::node* tbr, ltree::node* rw) {
+	static void FindAndReplace(BinaryDrag<conact>::node* n, BinaryDrag<conact>::node* tbr, BinaryDrag<conact>::node* rw) {
 		if (!n->isleaf()) {
 			if (n->left == tbr) {
 				n->left = rw;
@@ -234,7 +234,7 @@ struct STree {
 		return true;
 	}
 
-	bool LetsDoEndTrees(const vector<vector<ltree*>> trees) {
+	bool LetsDoEndTrees(const vector<vector<BinaryDrag<conact>*>> trees) {
 		np_.clear();
 
 		for (size_t tg = 0; tg < trees.size(); ++tg) {
@@ -329,8 +329,8 @@ struct STree {
 
 		if (f_.separately) {
 			for (auto& tg : f.end_trees_) {
-				vector<vector<ltree*>> cur_tree_ptrs = { vector<ltree*>() };
-				for (ltree &t : tg) {
+				vector<vector<BinaryDrag<conact>*>> cur_tree_ptrs = { vector<BinaryDrag<conact>*>() };
+				for (BinaryDrag<conact> &t : tg) {
 					cur_tree_ptrs.front().push_back(&t);
 				}
 				while (LetsDoEndTrees(cur_tree_ptrs)) {
@@ -340,10 +340,10 @@ struct STree {
 			}
 		}
 		else {
-			vector<vector<ltree*>> tree_ptrs;
-			for (vector<ltree> &tg : f_.end_trees_) {
+			vector<vector<BinaryDrag<conact>*>> tree_ptrs;
+			for (vector<BinaryDrag<conact>> &tg : f_.end_trees_) {
 				tree_ptrs.emplace_back();
-				for (ltree &t : tg) {
+				for (BinaryDrag<conact> &t : tg) {
 					tree_ptrs.back().push_back(&t);
 				}
 			}

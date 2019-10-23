@@ -83,12 +83,6 @@ struct ConfigData {
 
     // Frequencies
     std::string frequencies_suffix_ = "_frequencies.bin";
-    std::filesystem::path frequencies_path_;
-
-    // Customization flags
-    bool use_frequencies_ = false;
-    bool force_odt_generation_ = false;
-    bool force_frequencies_count_ = false;
 
     ConfigData() {}
 
@@ -109,6 +103,15 @@ struct ConfigData {
         return global_output_path_ / std::filesystem::path(algorithm_name_ + "_" + out_base_name + forestcode_suffix_);
     }
 
+    // Frequencies cache
+    std::filesystem::path GetFrequenciesPath(const std::string& datasets_name) const {
+        return global_output_path_ / std::filesystem::path(algorithm_name_ + "_" + datasets_name + frequencies_suffix_);
+    }
+
+    // Get ODT path with custom suffix (used in conjunction with frequencies)
+    std::filesystem::path GetCustomOdtPath(const std::string& custom_suffix) const {
+        return global_output_path_ / std::filesystem::path(algorithm_name_ + "_" + custom_suffix + odt_suffix_);
+    }
 };
 
 #endif // GRAPGHSGEN_CONFIG_DATA_H_

@@ -77,6 +77,11 @@ BEFORE_AFTER_FUN(AfterEnd)
     return std::string(2, '\t') + "continue;\n";
 }
 
+BEFORE_AFTER_FUN(AfterEndNoLoop) 
+{
+    return std::string(2, '\t') + "goto " + prefix + ";\n";
+}
+
 
 // This class allows to sum-up all the data required by the recursive functions that generate
 // the DRAG source code, thus simplifying its signature/call.
@@ -89,18 +94,18 @@ class GenerateCodeClass {
     // printed_node keeps track of the nodes that have already been written in the C++ source code and allows to avoid 
     // duplicated nodes in the final result. Indeed, the same node can be pointed by multiple nodes in the DAG but it 
     // will have to appear only once in the final code.
-    std::map<ltree::node*, int> printed_nodes_;
+    std::map<BinaryDrag<conact>::node*, int> printed_nodes_;
 
     // nodes_requring_labels keeps track of the DAG nodes that are pointed by other nodes and thus need to have a label.
     // We need this in order to know if we have to create a label for this node or not. This map is populated by the 
     // ChekNodesTraversalRec procedure. 
-    std::map<ltree::node*, bool> nodes_requiring_labels_;
+    std::map<BinaryDrag<conact>::node*, bool> nodes_requiring_labels_;
 
     nodeid id_;
 
 public:
 
-    GenerateCodeClass(bool with_gotos, std::string prefix, map<ltree::node*, int> printed_nodes) :
+    GenerateCodeClass(bool with_gotos, std::string prefix, map<BinaryDrag<conact>::node*, int> printed_nodes) :
         with_gotos_(with_gotos),
         prefix_(prefix),
         printed_nodes_(printed_nodes)
@@ -166,7 +171,7 @@ public:
     // This procedure writes to the output stream the C++ source exploring recursively the specified DRAG. 
     // When a leaf with multiple actions is found only the first action is considered and written in the
     // output file.
-    void GenerateCodeRec(std::ostream& os, ltree::node *n, int tab)
+    void GenerateCodeRec(std::ostream& os, BinaryDrag<conact>::node *n, int tab)
     {
         // Extract needed data from the GenerateCodeClass
         auto& m = printed_nodes_;
@@ -207,7 +212,7 @@ public:
     // This procedure checks and stores (inside the nodes_requiring_labels_ map) the nodes which will require labels, 
     // that are nodes pointed by other nodes inside the DAG. This allows to handle labels/gotos during the generation 
     // of the C++ source code.
-    void CheckNodesTraversalRec(ltree::node *n)
+    void CheckNodesTraversalRec(BinaryDrag<conact>::node *n)
     {
         auto& ml = nodes_requiring_labels_;
 
@@ -306,7 +311,7 @@ int GenerateDragCode(std::ostream& os,
         gcc.GenerateCodeRec(os, bd.roots_[i], 2);
         os << after(i, prefix, mapping, end_group_id);
     }
-    
+
     return gcc.GetId();
 }
 
