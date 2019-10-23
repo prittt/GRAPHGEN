@@ -238,7 +238,7 @@ void GeneratePointersCode(ofstream& os, const rule_set& rs) {
     os << global_ss.str();
 }
 
-void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditions) 
+void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditions)
 {
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
     unsigned n_dims = shifts.size(); // Here we get how many dims image has
@@ -268,7 +268,7 @@ void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditio
 }
 
 // This function .. it works only for 2d and 3d images TODO description.
-void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& names, bool with_continues = true) 
+void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& names, bool with_continues = true)
 {
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
     unsigned n_dims = shifts.size(); // Here we get how many dims image has
@@ -285,7 +285,7 @@ void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& name
         string where_to_write = "img_labels_" + string(n_dims > 2 ? "slice00_" : "") + "row00[c] = ";
 
         os << where_to_write << CreateAssignmentCode(cur_action, names) << ";";
-            
+
         if (with_continues) {
             os << "continue;";
         }
@@ -294,10 +294,10 @@ void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& name
     }
 }
 
-bool GeneratePointersConditionsActionsCode(const rule_set& rs, int flag, std::optional<pixel_set> names) {
-    
-    bool actions_with_conditions = flag & GenerateActionCode::ACTIONS_WITH_CONDITIONS;
-    bool actions_with_continue = flag & GenerateActionCode::ACTIONS_WITH_CONTINUE;
+bool GeneratePointersConditionsActionsCode(const rule_set& rs, GenerateActionCodeFlags flag, std::optional<pixel_set> names) {
+
+    bool actions_with_conditions = flag & GenerateActionCodeFlags::ACTIONS_WITH_CONDITIONS;
+    bool actions_with_continue = flag & GenerateActionCodeFlags::ACTIONS_WITH_CONTINUE;
 
     ofstream os(conf.code_path_);
     if (!os) {

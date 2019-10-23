@@ -65,7 +65,7 @@ int main()
     
     // 6) Generate the C/C++ source code
     fh.GenerateCode();
-    GeneratePointersConditionsActionsCode(rs, false);
+    GeneratePointersConditionsActionsCode(rs, GenerateActionCodeFlags::NONE);
 
 	return EXIT_SUCCESS;
 }

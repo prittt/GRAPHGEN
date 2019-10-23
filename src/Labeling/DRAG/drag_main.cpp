@@ -66,7 +66,7 @@ int main()
            { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
            { "S", {-2, +0} },{ "x", {+0, +0} }
     };
-    GeneratePointersConditionsActionsCode(rs, true, block_positions);
+    GeneratePointersConditionsActionsCode(rs, GenerateActionCodeFlags::ACTIONS_WITH_CONDITIONS | GenerateActionCodeFlags::ACTIONS_WITH_CONTINUE, block_positions);
     
     return EXIT_SUCCESS;
 }
