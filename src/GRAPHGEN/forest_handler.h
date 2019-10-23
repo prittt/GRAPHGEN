@@ -90,6 +90,7 @@ public:
                       BEFORE_AFTER_FUN(after_end_no_loop) = AfterEndNoLoop,
                       int flags = 0 /* no flags available right now */)
     {
+        int last_id = 0;
         for (const auto& i : f_) {
             std::filesystem::path filepath = conf.GetForestCodePath(names[i.first] + "_line");
             std::ofstream os(filepath);
@@ -98,11 +99,11 @@ public:
                 return;
             }
             if (i.first != CENTER_LINES) {
-                GenerateLineForestCode(os, i.second, prefixs[i.first] + "_", 0, before_main, after_main, before_end, after_end_no_loop);
+                last_id = GenerateLineForestCode(os, i.second, prefixs[i.first] + "_", last_id, before_main, after_main, before_end, after_end_no_loop);
                 os << prefixs[i.first] + "_" << ":;\n";
             }
             else {
-                GenerateLineForestCode(os, i.second, prefixs[i.first] + "_", 0, before_main, after_main, before_end, after_end);
+                last_id = GenerateLineForestCode(os, i.second, prefixs[i.first] + "_", last_id, before_main, after_main, before_end, after_end);
             }
         }
     }

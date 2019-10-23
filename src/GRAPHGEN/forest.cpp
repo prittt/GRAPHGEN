@@ -70,7 +70,6 @@ LineForestHandler::LineForestHandler(const BinaryDrag<conact>& bd,
                 start_constr[p.name_] = 0;
         }
         f_.AddRoot(Reduce(tmp.GetRoot(), f_, start_constr));
-        // TODO qui bisogna comprimere le condizioni inutili
     }
     // Note that the start line tree is generated in a different
     // way but it is part of the main forest. 

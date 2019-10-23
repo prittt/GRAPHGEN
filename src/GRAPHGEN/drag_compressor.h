@@ -259,7 +259,7 @@ private:
     bool changes_;
 
     bool early_stopping_active_;
-    bool early_stopping_reached_;
+    bool early_stopping_reached_ = false;
     int iterations_max_;
     int iterations_left_;
 
@@ -287,6 +287,7 @@ public:
                 changes_ = false;
                 FastDragOptimizerRec(bd, flags);
                 bd = best_bd_;
+                ResetIterations();
             } while (changes_);
         
             UpdateProgress(flags);
@@ -311,12 +312,13 @@ public:
                 lfh.f_ = best_bd_;
                 ResetIterations();
             }while(changes_);
-            UpdateProgress(flags);)
+            UpdateProgress(flags);
+        )
 
         int fn = 0;
         for (auto& f : lfh.end_forests_) {
             progress_counter_ = 0;
-            iterations_left_ = iterations_max_;
+            ResetIterations();
             msg = conf.algorithm_name_ + " - compressing end forest #" + std::to_string(fn++) + "\n";
             TLOG(msg,
                 RemoveEqualSubtrees{ f };
@@ -325,6 +327,7 @@ public:
                     changes_ = false;
                     FastDragOptimizerRec(f, flags);
                     f = best_bd_;
+                    ResetIterations();
                 } while (changes_);
                 UpdateProgress(flags);)
         }
