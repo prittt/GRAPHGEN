@@ -473,7 +473,7 @@ private:
             ++progress_counter_;
             if (print_status_bar) {
                 if (progress_counter_ % 1000 == 0) {
-                    std::cout << "\r" << progress_counter_;
+                    std::cout << "\r" << progress_counter_ << std::flush;
                 }
             }
 

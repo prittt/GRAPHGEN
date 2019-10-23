@@ -76,7 +76,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 
 	for (size_t iNumIndifference = 1; iNumIndifference <= m_iDim; iNumIndifference++) {
 		if (!bVerbose)
-			std::cout << iNumIndifference << " ";
+			std::cout << iNumIndifference << " " << std::flush;
 		// Inizializzo le indifferenze
 		bool bFine;
 		std::vector<size_t> arrPosIndifference(iNumIndifference);
