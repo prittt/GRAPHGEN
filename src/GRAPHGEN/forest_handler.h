@@ -109,7 +109,7 @@ public:
 
     void Compress(DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
        for (auto& x : f_) {
-           DragCompressor(x.second, flags);
+           DragCompressor(x.second, 5000, flags);
        }
         
     }
