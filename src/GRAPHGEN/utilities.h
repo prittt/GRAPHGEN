@@ -44,11 +44,17 @@ using uint = uint32_t;
 
 std::string binary(uint u, uint nbits);
 
+/** @brief This macro serves to simplify the definition of flags, it takes the name of an enum class as 
+input and defines the operator| for that class.
+*/
 #define DEFINE_ENUM_CLASS_OR_OPERATOR(class_name)                                                              \
 constexpr enum class_name operator|(const enum class_name self_value, const enum class_name in_value) {        \
     return static_cast<enum class_name>(static_cast<uint32_t>(self_value) | static_cast<uint32_t>(in_value));  \
 }                                                                                                              \
 
+/** @brief This macro serves to simplify the definition of flags, it takes the name of an enum class as
+input and defines the operator& for that class.
+*/
 #define DEFINE_ENUM_CLASS_AND_OPERATOR(class_name)                                                             \
 constexpr bool operator&(const enum class_name self_value, const enum class_name in_value) {                   \
     return static_cast<bool>(static_cast<uint32_t>(self_value) & static_cast<uint32_t>(in_value));             \
