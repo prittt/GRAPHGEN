@@ -107,11 +107,10 @@ public:
         }
     }
 
-    void Compress(DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
+    void Compress(DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES, int iterations = - 1) {
        for (auto& x : f_) {
-           DragCompressor(x.second, 5000, flags);
+           DragCompressor(x.second, iterations, flags);
        }
-        
     }
 
     LineForestHandler& GetLineForestHandler(int forest_id) {

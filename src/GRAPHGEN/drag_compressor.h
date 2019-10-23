@@ -257,10 +257,15 @@ DEFINE_ENUM_CLASS_AND_OPERATOR(DragCompressorFlags)
 class DragCompressor {
 private:
     bool changes_;
+
     bool early_stopping_active_;
     bool early_stopping_reached_;
     int iterations_max_;
     int iterations_left_;
+
+    size_t progress_counter_ = 0;
+    size_t best_nodes_ = std::numeric_limits<size_t >::max();
+    size_t best_leaves_ = std::numeric_limits<size_t >::max();
 public:
 
     void UpdateProgress(DragCompressorFlags flags) {
@@ -369,9 +374,6 @@ private:
         }
     };
 
-    size_t progress_counter_ = 0;
-    size_t best_nodes_ = std::numeric_limits<size_t >::max();
-    size_t best_leaves_ = std::numeric_limits<size_t >::max();
     BinaryDrag<conact> best_bd_;
 
     void FastDragOptimizerRec(BinaryDrag<conact>& bd, DragCompressorFlags flags)
