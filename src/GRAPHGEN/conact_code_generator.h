@@ -37,19 +37,17 @@
 #include "rule_set.h"
 
 // TODO add documentation here
-enum class GenerateActionCodeFlags : uint32_t {
-    NONE                    = 0,
-    ACTIONS_WITH_CONDITIONS = (1 << 0),
-    ACTIONS_WITH_CONTINUE   = (1 << 1),
+enum class GenerateConditionActionCodeFlags : uint32_t {
+    NONE                    = 0,          /**< @brief No flags */
+    CONDITIONS_WITH_IFS     = (1 << 0),   /**< @brief Whether to add if statements or not when generating conditions code. 
+                                                      They serve to check if the pixel we want to check is inside the image 
+                                                      or not. All the algorithms that make use of prediction can avoid these
+                                                      checks because they are inbuilt in the forest. */
+    ACTIONS_WITH_CONTINUE   = (1 << 1),   /**< @brief Whether to add continues at the end of each action or not */
 };
 
-constexpr enum GenerateActionCodeFlags operator|(const enum GenerateActionCodeFlags self_value, const enum GenerateActionCodeFlags in_value) {
-    return static_cast<enum GenerateActionCodeFlags>(static_cast<uint32_t>(self_value) | static_cast<uint32_t>(in_value));
-}
-
-constexpr bool operator&(const enum GenerateActionCodeFlags self_value, const enum GenerateActionCodeFlags in_value) {
-    return static_cast<bool>(static_cast<uint32_t>(self_value) & static_cast<uint32_t>(in_value));
-}
+DEFINE_ENUM_CLASS_OR_OPERATOR(GenerateConditionActionCodeFlags)
+DEFINE_ENUM_CLASS_AND_OPERATOR(GenerateConditionActionCodeFlags)
 
 // TODO fix documentation
 // This function generates code for conditions and actions' macros and rows' pointers
@@ -58,7 +56,7 @@ constexpr bool operator&(const enum GenerateActionCodeFlags self_value, const en
 // names contains the position in the labels image corresponding to the names used in labeling actions. 
 // It is necessary to handle blocks names and defaults to mask pixel set if not provided. 
 bool GeneratePointersConditionsActionsCode(const rule_set& rs,
-                                           GenerateActionCodeFlags flag = GenerateActionCodeFlags::ACTIONS_WITH_CONDITIONS | GenerateActionCodeFlags::ACTIONS_WITH_CONTINUE,
+                                           GenerateConditionActionCodeFlags flag = GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE,
                                            std::optional<pixel_set> names = std::nullopt);
 
 //bool GenerateActionsForCtbe(const std::string& filename, const rule_set& rs);

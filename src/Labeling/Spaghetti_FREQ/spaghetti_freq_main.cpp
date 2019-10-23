@@ -88,7 +88,7 @@ int main()
            { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
            { "S", {-2, +0} },{ "x", {+0, +0} }
     };
-    GeneratePointersConditionsActionsCode(rs, GenerateActionCodeFlags::NONE, block_positions);
+    GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::NONE, block_positions);
 
     return EXIT_SUCCESS;
 }

@@ -294,10 +294,10 @@ void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& name
     }
 }
 
-bool GeneratePointersConditionsActionsCode(const rule_set& rs, GenerateActionCodeFlags flag, std::optional<pixel_set> names) {
+bool GeneratePointersConditionsActionsCode(const rule_set& rs, GenerateConditionActionCodeFlags flag, std::optional<pixel_set> names) {
 
-    bool actions_with_conditions = flag & GenerateActionCodeFlags::ACTIONS_WITH_CONDITIONS;
-    bool actions_with_continue = flag & GenerateActionCodeFlags::ACTIONS_WITH_CONTINUE;
+    bool actions_with_conditions = flag & GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS;
+    bool actions_with_continue = flag & GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE;
 
     ofstream os(conf.code_path_);
     if (!os) {

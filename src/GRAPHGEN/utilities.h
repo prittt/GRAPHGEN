@@ -44,18 +44,28 @@ using uint = uint32_t;
 
 std::string binary(uint u, uint nbits);
 
+#define DEFINE_ENUM_CLASS_OR_OPERATOR(class_name)                                                              \
+constexpr enum class_name operator|(const enum class_name self_value, const enum class_name in_value) {        \
+    return static_cast<enum class_name>(static_cast<uint32_t>(self_value) | static_cast<uint32_t>(in_value));  \
+}                                                                                                              \
+
+#define DEFINE_ENUM_CLASS_AND_OPERATOR(class_name)                                                             \
+constexpr bool operator&(const enum class_name self_value, const enum class_name in_value) {                   \
+    return static_cast<bool>(static_cast<uint32_t>(self_value) & static_cast<uint32_t>(in_value));             \
+}                                                                                                              \
+
 struct nodeid {
     int _id = 0;
     int next() { return ++_id; }
     int get() { return _id; }
 
-	void Clear() {
-		_id = 0;
-	}
+    void Clear() {
+        _id = 0;
+    }
 
-	void SetId(int new_id) {
-		_id = new_id;
-	}
+    void SetId(int new_id) {
+        _id = new_id;
+    }
 };
 
 static inline void RemoveCharacter(std::string& s, const char c) {
@@ -65,20 +75,20 @@ static inline void RemoveCharacter(std::string& s, const char c) {
 // Convert value into string filling the head of the string with zeros up to n characters
 template <typename T>
 std::string zerostr(const T& val, size_t n) {
-	std::stringstream ss;
-	ss << std::setw(n) << std::setfill('0') << val;
-	return ss.str();
+    std::stringstream ss;
+    ss << std::setw(n) << std::setfill('0') << val;
+    return ss.str();
 }
 
 // This function tokenize an input string
 template <typename T>
 void StringSplit(const std::string& str, T& cont, char delim = '+')
 {
-	std::stringstream ss(str);
-	std::string token;
-	while (std::getline(ss, token, delim)) {
-		cont.push_back(token);
-	}
+    std::stringstream ss(str);
+    std::string token;
+    while (std::getline(ss, token, delim)) {
+        cont.push_back(token);
+    }
 }
 
 // Function to automatically print a message before and after each operation

@@ -238,6 +238,16 @@ public:
     }
 };
 
+enum class DragCompressorFlags : uint32_t {
+    NONE                      = 0, /**< @brief No flags */
+    PRINT_STATUS_BAR          = 1, /**< @brief Whether to print a sort of progress bar or not */
+    IGNORE_LEAVES             = 2, /**< @brief Whether to ignore leaves or not during the compression.
+                                                            Please note that compressing the leaves will significantly
+                                                            increase the total execution time without improving the
+                                                            final compression result in anyway. */
+    SAVE_INTERMEDIATE_RESULTS = 4, /**< @brief Whether to delete or not the dot code used to draw the drag */
+};
+
 // Compress a tree / forest into a DRAG solving equivalences
 class DragCompressor {
 public:
@@ -257,14 +267,16 @@ public:
 
     // BinaryDrag 
     DragCompressor(BinaryDrag<conact>& bd, int flags = PRINT_STATUS_BAR | IGNORE_LEAVES) {
-        RemoveEqualSubtrees{ bd };
-        do {
-            changes_ = false;
-            FastDragOptimizerRec(bd, flags);
-            bd = best_bd_;
-        } while (changes_);
+        TLOG("Compressing BinaryDrag",
+            RemoveEqualSubtrees{ bd };
+            do {
+                changes_ = false;
+                FastDragOptimizerRec(bd, flags);
+                bd = best_bd_;
+            } while (changes_);
         
-        UpdateProgress(flags);
+            UpdateProgress(flags);
+        )
     }
 
     bool changes_;
