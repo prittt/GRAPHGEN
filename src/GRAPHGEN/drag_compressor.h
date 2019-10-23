@@ -244,9 +244,9 @@ DEFINE_ENUM_CLASS_FLAGS(DragCompressorFlags,
     NONE                      = 0, /**< @brief No flags */
     PRINT_STATUS_BAR          = 1, /**< @brief Whether to print a sort of progress bar or not */
     IGNORE_LEAVES             = 2, /**< @brief Whether to ignore leaves or not during the compression.
-                                                            Please note that compressing the leaves will significantly
-                                                            increase the total execution time without improving the
-                                                            final compression result in anyway. */
+                                               Please note that compressing the leaves will significantly
+                                               increase the total execution time without improving the
+                                               final compression result in anyway. */
     SAVE_INTERMEDIATE_RESULTS = 4, /**< @brief Whether to delete or not the dot code used to draw the drag */
 )
 
