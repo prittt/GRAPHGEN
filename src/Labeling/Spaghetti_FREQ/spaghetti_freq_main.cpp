@@ -76,7 +76,7 @@ int main()
     fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
 
     // 6) Compress the forests
-    fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES);
+    fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES, 1);
 
     // 7) Draw the compressed forests on file
     fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);

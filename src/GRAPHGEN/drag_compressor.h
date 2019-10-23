@@ -240,7 +240,7 @@ public:
 
 
 /** @brief This enum class defines the available flags for the DragCompression class. */
-enum class DragCompressorFlags : uint32_t {
+DEFINE_ENUM_CLASS_FLAGS(DragCompressorFlags, 
     NONE                      = 0, /**< @brief No flags */
     PRINT_STATUS_BAR          = 1, /**< @brief Whether to print a sort of progress bar or not */
     IGNORE_LEAVES             = 2, /**< @brief Whether to ignore leaves or not during the compression.
@@ -248,22 +248,25 @@ enum class DragCompressorFlags : uint32_t {
                                                             increase the total execution time without improving the
                                                             final compression result in anyway. */
     SAVE_INTERMEDIATE_RESULTS = 4, /**< @brief Whether to delete or not the dot code used to draw the drag */
-};
+)
 
-DEFINE_ENUM_CLASS_OR_OPERATOR(DragCompressorFlags)
-DEFINE_ENUM_CLASS_AND_OPERATOR(DragCompressorFlags)
+//DEFINE_ENUM_CLASS_OR_OPERATOR(DragCompressorFlags)
+//DEFINE_ENUM_CLASS_AND_OPERATOR(DragCompressorFlags)
 
 // Compress a tree / forest into a DRAG solving equivalences
 class DragCompressor {
 private:
     bool changes_;
+
+    bool early_stopping_active_;
+    bool early_stopping_reached_ = false;
+    int iterations_max_;
+    int iterations_left_;
+
+    size_t progress_counter_ = 0;
+    size_t best_nodes_ = std::numeric_limits<size_t >::max();
+    size_t best_leaves_ = std::numeric_limits<size_t >::max();
 public:
-    //static const int PRINT_STATUS_BAR          = 1; /**< @brief Whether to print a sort of progress bar or not */
-    //static const int IGNORE_LEAVES             = 2; /**< @brief Whether to ignore leaves or not during the compression.
-    //                                                            Please note that compressing the leaves will significantly
-    //                                                            increase the total execution time without improving the
-    //                                                            final compression result in anyway. */
-    //static const int SAVE_INTERMEDIATE_RESULTS = 4; /**< @brief Whether to delete or not the dot code used to draw the drag */
 
     void UpdateProgress(DragCompressorFlags flags) {
         bool print_status_bar = flags & DragCompressorFlags::PRINT_STATUS_BAR;
@@ -273,43 +276,60 @@ public:
     }
 
     // BinaryDrag 
-    DragCompressor(BinaryDrag<conact>& bd, DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
+    // Iteration is the early stopping criteria and represents the number of "iteration" 
+    // after a new optimal is found. -1 means no early stopping and it's the dafult
+    DragCompressor(BinaryDrag<conact>& bd, int iterations = -1, DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
+        early_stopping_active_ = iterations != -1;
+        iterations_left_ = iterations_max_ = iterations;
         TLOG("Compressing BinaryDrag",
             RemoveEqualSubtrees{ bd };
             do {
                 changes_ = false;
                 FastDragOptimizerRec(bd, flags);
                 bd = best_bd_;
+                ResetIterations();
             } while (changes_);
         
             UpdateProgress(flags);
         )
     }
 
+    void ResetIterations() {
+        iterations_left_ = iterations_max_;
+        early_stopping_reached_ = false;
+    }
+
     // LineForestHandler
-    DragCompressor(LineForestHandler& lfh, DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
-        std::cout << "main forest: \n";
-        RemoveEqualSubtrees{ lfh.f_ };
-        do {
-            changes_ = false;
-            FastDragOptimizerRec(lfh.f_, flags);
-            lfh.f_ = best_bd_;
-        }while(changes_);
-        
-        UpdateProgress(flags);
+    DragCompressor(LineForestHandler& lfh, int iterations = -1, DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES) {
+        early_stopping_active_ = iterations != -1;
+        iterations_left_ = iterations_max_ = iterations;
+        std::string msg = conf.algorithm_name_ + " - compressing main forest\n";
+        TLOG(msg,
+            RemoveEqualSubtrees{ lfh.f_ };
+            do {
+                changes_ = false;
+                FastDragOptimizerRec(lfh.f_, flags);
+                lfh.f_ = best_bd_;
+                ResetIterations();
+            }while(changes_);
+            UpdateProgress(flags);
+        )
 
         int fn = 0;
         for (auto& f : lfh.end_forests_) {
-            std::cout << "end forest " << fn++ << ": \n";
-            progress_counter_ = 0; 
-            RemoveEqualSubtrees{ f };
-            ResetBest();
-            do {
-                changes_ = false;
-                FastDragOptimizerRec(f, flags);
-                f = best_bd_;
-            } while (changes_);
-            UpdateProgress(flags);
+            progress_counter_ = 0;
+            ResetIterations();
+            msg = conf.algorithm_name_ + " - compressing end forest #" + std::to_string(fn++) + "\n";
+            TLOG(msg,
+                RemoveEqualSubtrees{ f };
+                ResetBest();
+                do {
+                    changes_ = false;
+                    FastDragOptimizerRec(f, flags);
+                    f = best_bd_;
+                    ResetIterations();
+                } while (changes_);
+                UpdateProgress(flags);)
         }
     }
 
@@ -357,13 +377,14 @@ private:
         }
     };
 
-    size_t progress_counter_ = 0;
-    size_t best_nodes_ = std::numeric_limits<size_t >::max();
-    size_t best_leaves_ = std::numeric_limits<size_t >::max();
     BinaryDrag<conact> best_bd_;
 
     void FastDragOptimizerRec(BinaryDrag<conact>& bd, DragCompressorFlags flags)
     {
+        if (early_stopping_reached_ && early_stopping_active_) {
+            return;
+        }
+
         bool print_status_bar = flags & DragCompressorFlags::PRINT_STATUS_BAR;
         bool ignore_leaves = flags & DragCompressorFlags::IGNORE_LEAVES;
         bool save_intermediate_results = flags & DragCompressorFlags::SAVE_INTERMEDIATE_RESULTS;
@@ -452,14 +473,19 @@ private:
             ++progress_counter_;
             if (print_status_bar) {
                 if (progress_counter_ % 1000 == 0) {
-                    std::cout << "\r" << progress_counter_;
+                    std::cout << "\r" << progress_counter_ << std::flush;
                 }
+            }
+
+            if (--iterations_left_ <= 0) {
+                early_stopping_reached_ = true;
             }
 
             BinaryDragStatistics bds(bd);
             if (bds.Nodes() < best_nodes_) {
                 // New better binary drag found ...
                 changes_ = true;
+                iterations_left_ = iterations_max_;
 
                 // ... compress the leaves of the current optimal binary drag
                 MergeSpecialLeaves{ bd };
