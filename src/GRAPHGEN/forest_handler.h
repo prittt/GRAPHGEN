@@ -50,6 +50,11 @@ the latter case the mask has a vertical shift of 2 pixels. In this case four dif
     - last line
     - single line
 
+A forest group, defined by the LineForestHandler is composed by a main forest and multiple end of the line forests.
+The number of the end of the line forest depends on the mask horizontal shift. For unitary shift we will have just
+one end of the line forest, when the mask has a horizontal shift of two pixels we will have two end of the line 
+forests and so on.
+
 The forests generation requires the original decision tree associated to the algorithm on which apply the prediction
 optimization and the pixel set associated to the mask. The ForestHandlerFlagg enum class allows to select which kind
 of forests groups you want the ForestHandler generates for you.
@@ -116,7 +121,32 @@ public:
         }
     }
 
-    // TODO add documentation here and move the implementation in the cpp file
+    /** @brief Generates the code for the all the forests groups, each of them in a separate file.
+
+    @param[in] before_main Pointer to the function* which defines what the code generator has to write 
+                           before printing the code of a tree from the main group of a line. An example 
+                           is provided with the BeforeMainShiftOne (default value), or by the BeforeMainShifTwo
+                           function. The function behavior should depends on the horizontal shift of
+                           the mask involved
+    @param[in] after_main Pointer to the function* which defines what the code generator has to write 
+                          after printing the code of a tree from the main group of a line. Usually 
+                          it is empty. The default value is DefaultEmptyFunc.
+    @param[in] before_end Pointer to the function* which defines what the code generator has to write 
+                          before printing the code of a tree from the end of the line groups. Usually 
+                          it is just a label. The default value is BeforeEnd.
+    @param[in] after_end Pointer to the function* which defines what the code generator has to write 
+                         after printing the code of a tree from the end of the (CENTER!) line groups. 
+                         Usually it is just a "continue;" or a "goto". The default value is AfterEnd.
+    @param[in] after_end_no_loop Pointer to the function* which defines what the code generator has to write 
+                                 after printing the code of a tree from the end of the (NON CENTER!) lines groups. 
+                                 The default value is AfterEndNoLoop.
+
+    @param[in] flag Not used yet. Default value is zero.
+
+    * all the functions must have the following signature:
+    std::string fun_name(int index, const std::string& prefix, const std::vector<std::vector<int>>& mapping, int end_group_id)
+
+    */
     void GenerateCode(BEFORE_AFTER_FUN(before_main)       = BeforeMainShiftOne,
                       BEFORE_AFTER_FUN(after_main)        = DefaultEmptyFunc,
                       BEFORE_AFTER_FUN(before_end)        = BeforeEnd,
@@ -142,6 +172,15 @@ public:
         }
     }
 
+    /** @brief Compresses all the drags of the forest using an exhaustive approach.
+
+    @param[in] flags Flags to be used. Available flags are the ones from the DragCompressorFlags
+                     enum class. Use the or to combine multiple flags. Default value is 
+                     DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES.
+    @param[in] iterations Allows to introduce an early stopping criteria. If it is different 
+                          from -1 the procedure will stop after "iterations" steps, otherwise
+                          it will continue until end. Default value is -1.
+    */
     void Compress(DragCompressorFlags flags = DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES, int iterations = - 1) {
        for (auto& x : f_) {
            DragCompressor(x.second, iterations, flags);
