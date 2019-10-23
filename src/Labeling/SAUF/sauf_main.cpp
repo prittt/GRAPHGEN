@@ -44,7 +44,7 @@ int main()
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
-    BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
+    BinaryDrag<conact> bd = GetOdt(rs);
 
     // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";

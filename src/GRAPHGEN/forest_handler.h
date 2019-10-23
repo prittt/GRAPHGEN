@@ -83,11 +83,11 @@ public:
     }
 
     // TODO add documentation here and move the implementation in the cpp file
-    void GenerateCode(BEFORE_AFTER_FUN(before_main)       = BeforeMainShiftOne,
-                      BEFORE_AFTER_FUN(after_main)        = DefaultEmptyFunc,
-                      BEFORE_AFTER_FUN(before_end)        = BeforeEnd,
-                      BEFORE_AFTER_FUN(after_end)         = AfterEnd,
-                      BEFORE_AFTER_FUN(after_end_no_loop) = AfterEndNoLoop,
+    void GenerateCode(BEFORE_AFTER_FUNC(before_main)       = BeforeMainShiftOne,
+                      BEFORE_AFTER_FUNC(after_main)        = DefaultEmptyFunc,
+                      BEFORE_AFTER_FUNC(before_end)        = BeforeEnd,
+                      BEFORE_AFTER_FUNC(after_end)         = AfterEnd,
+                      BEFORE_AFTER_FUNC(after_end_no_loop) = AfterEndNoLoop,
                       int flags = 0 /* no flags available right now */)
     {
         for (const auto& i : f_) {

@@ -174,19 +174,33 @@ BinaryDrag<conact> GenerateOdt(const rule_set& rs, const std::string& filename);
 
 /** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
 
-This function generates from the given rule set the optimal decision tree generated. When the number
-of rules is too high a pseudo optimal tree is generated. If the tree is already been generated it
+This function generates the optimal decision tree from the given rule set. When the number
+of rules is too high, a pseudo optimal tree is generated. If the tree has already been generated, it
 is loaded from file, unless the "force_generation" parameter is set to true. In this case the tree
-is always regenerated. The loaded/generated tree is then returned.
+is always regenerated. The loaded/generated tree is then returned from the function.
 
 @param[in] rs Rule set from which generate the decision tree.
-@param[in] algorithm_name Name of the algorithm for which he tree must be generated.
+@param[in] algorithm_name Name of the algorithm for which the tree must be generated.
 @param[in] force_generation Whether the tree must be generated or can be loaded from file.
 
 @return The optimal decision tree associated to the specified rule set.
 */
-BinaryDrag<conact> GetOdt(const rule_set& rs, const std::string& algorithm_name, bool force_generation = false);
+BinaryDrag<conact> GetOdt(const rule_set& rs, bool force_generation = false);
 
+
+/** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
+
+This function generates the optimal decision tree from the given rule set. When the number
+of rules is too high, a pseudo optimal tree is generated. If the tree has already been generated, it
+is loaded from file, unless the "force_generation" parameter is set to true. In this case the tree
+is always regenerated. The loaded/generated tree is then returned from the function.
+
+@param[in] rs Rule set from which generate the decision tree.
+@param[in] file_suffix Suffix that is appended to the file name of the decision tree file.
+@param[in] force_generation Whether the tree must be generated or can be loaded from file.
+
+@return The optimal decision tree associated to the specified rule set.
+*/
 BinaryDrag<conact> GetOdtWithFileSuffix(const rule_set& rs, const std::string& file_suffix, bool force_generation = false);
 
 

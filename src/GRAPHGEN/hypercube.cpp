@@ -217,8 +217,7 @@ BinaryDrag<conact> GenerateOdt(const rule_set& rs, const string& filename)
 	return t;
 }
 
-BinaryDrag<conact> GetOdt(const rule_set& rs, const string& algorithm_name, bool force_generation) {
-    //string odt_filename = global_output_path.string() + "/" + algorithm_name + "_odt.txt";
+BinaryDrag<conact> GetOdt(const rule_set& rs, bool force_generation) {
     string odt_filename = conf.odt_path_.string();
     BinaryDrag<conact> t;
     if (force_generation || !LoadConactTree(t, odt_filename)) {
