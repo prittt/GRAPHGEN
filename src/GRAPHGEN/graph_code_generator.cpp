@@ -34,7 +34,7 @@
 
 using namespace std;
 
-BEFORE_AFTER_FUN(DefaultEmptyFunc)
+BEFORE_AFTER_FUNC(DefaultEmptyFunc)
 { 
     return std::string(); 
 }
@@ -47,7 +47,7 @@ BEFORE_AFTER_FUN(DefaultEmptyFunc)
 // SAUF, CTB and so on. When the end line forest is not generated a different string 
 // should be used, for example replacing the goto with a continue and changing the if
 // condition accordingly. 
-BEFORE_AFTER_FUN(BeforeMainShiftOne)
+BEFORE_AFTER_FUNC(BeforeMainShiftOne)
 {
     return prefix + "tree_" + to_string(index) + ": if ((c+=1) >= w - 1) goto " +
            prefix + "break_0_" + to_string(mapping[0][index]) + ";\n";
@@ -60,24 +60,24 @@ BEFORE_AFTER_FUN(BeforeMainShiftOne)
 // mask with a horizontal shift of two pixels like BBDT, DRAG, Spaghetti and so on. 
 // When the end line forest is not generated a different string should be used, for 
 // example replacing the goto with a continue and changing the if condition accordingly.
-BEFORE_AFTER_FUN(BeforeMainShiftTwo)
+BEFORE_AFTER_FUNC(BeforeMainShiftTwo)
 {
     return prefix + "tree_" + to_string(index) + ": if ((c+=2) >= w - 2) { if (c > w - 2) { goto " +
            prefix + "break_0_" + to_string(mapping[0][index]) + "; } else { goto " +
            prefix + "break_1_" + to_string(mapping[1][index]) + "; } } \n";
 }
 
-BEFORE_AFTER_FUN(BeforeEnd)
+BEFORE_AFTER_FUNC(BeforeEnd)
 {
     return prefix + "break_" + to_string(end_group_id) + "_" + to_string(index) + ":\n";
 }
 
-BEFORE_AFTER_FUN(AfterEnd)
+BEFORE_AFTER_FUNC(AfterEnd)
 {
     return std::string(2, '\t') + "continue;\n";
 }
 
-BEFORE_AFTER_FUN(AfterEndNoLoop) 
+BEFORE_AFTER_FUNC(AfterEndNoLoop) 
 {
     return std::string(2, '\t') + "goto " + prefix + ";\n";
 }
@@ -267,8 +267,8 @@ public:
 
 bool GenerateDragCode(const BinaryDrag<conact>& bd, 
                       bool with_gotos,
-                      BEFORE_AFTER_FUN(before),
-                      BEFORE_AFTER_FUN(after),
+                      BEFORE_AFTER_FUNC(before),
+                      BEFORE_AFTER_FUNC(after),
                       const std::string prefix,
                       int start_id,
                       const std::vector<std::vector<int>> mapping, 
@@ -287,8 +287,8 @@ bool GenerateDragCode(const BinaryDrag<conact>& bd,
 int GenerateDragCode(std::ostream& os, 
                      const BinaryDrag<conact>& bd, 
                      bool with_gotos,
-                     BEFORE_AFTER_FUN(before),
-                     BEFORE_AFTER_FUN(after),
+                     BEFORE_AFTER_FUNC(before),
+                     BEFORE_AFTER_FUNC(after),
                      const std::string prefix,
                      int start_id,
                      const std::vector<std::vector<int>> mapping, 
@@ -321,10 +321,10 @@ int GenerateLineForestCode(std::ostream& os,
                            const LineForestHandler& lfh,
                            std::string prefix,
                            int start_id,
-                           BEFORE_AFTER_FUN(before_main),
-                           BEFORE_AFTER_FUN(after_main),
-                           BEFORE_AFTER_FUN(before_end),
-                           BEFORE_AFTER_FUN(after_end))
+                           BEFORE_AFTER_FUNC(before_main),
+                           BEFORE_AFTER_FUNC(after_main),
+                           BEFORE_AFTER_FUNC(before_end),
+                           BEFORE_AFTER_FUNC(after_end))
 {
     // Generate the code for the main forest
     int last_id = GenerateDragCode(os, lfh.f_, true, before_main, after_main, prefix, start_id, lfh.main_end_tree_mapping_);
