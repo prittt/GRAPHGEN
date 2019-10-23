@@ -33,7 +33,7 @@
 
 using namespace std;
 
-static ltree::node* LoadConactTreeRec(ltree& t, ifstream& is)
+static BinaryDrag<conact>::node* LoadConactTreeRec(BinaryDrag<conact>& t, ifstream& is)
 {
 	string s;
 	while (is >> s) {
@@ -43,7 +43,7 @@ static ltree::node* LoadConactTreeRec(ltree& t, ifstream& is)
 			break;
 	}
 
-	ltree::node* n = t.make_node();
+	BinaryDrag<conact>::node* n = t.make_node();
 	if (s == ".") {
 		// leaf
 		n->data.t = conact::type::ACTION;
@@ -65,7 +65,7 @@ static ltree::node* LoadConactTreeRec(ltree& t, ifstream& is)
 	return n;
 }
 
-bool LoadConactTree(ltree& t, const string& filename)
+bool LoadConactTree(BinaryDrag<conact>& t, const string& filename)
 {
     ifstream is(filename);
     if (!is) {
@@ -76,7 +76,7 @@ bool LoadConactTree(ltree& t, const string& filename)
     return true;
 }
 
-static void WriteConactTreeRec(const ltree::node* n, ofstream& os, size_t tab = 0)
+static void WriteConactTreeRec(const BinaryDrag<conact>::node* n, ofstream& os, size_t tab = 0)
 {
     os << string(tab, '\t');
     if (n->isleaf()) {
@@ -95,7 +95,7 @@ static void WriteConactTreeRec(const ltree::node* n, ofstream& os, size_t tab = 
     }
 }
 
-bool WriteConactTree(const ltree& t, const string& filename)
+bool WriteConactTree(const BinaryDrag<conact>& t, const string& filename)
 {
     ofstream os(filename);
     if (!os)
@@ -105,7 +105,7 @@ bool WriteConactTree(const ltree& t, const string& filename)
 }
 
 // Checks if two subtrees 'n1' and 'n2' are equivalent or not 
-bool equivalent_trees(const ltree::node* n1, const ltree::node* n2) {
+bool equivalent_trees(const BinaryDrag<conact>::node* n1, const BinaryDrag<conact>::node* n2) {
     if (n1->data.neq(n2->data))
         return false;
 
@@ -115,7 +115,7 @@ bool equivalent_trees(const ltree::node* n1, const ltree::node* n2) {
         return equivalent_trees(n1->left, n2->left) && equivalent_trees(n1->right, n2->right);
 }
 
-void intersect_leaves(ltree::node* n1, ltree::node* n2) {
+void intersect_leaves(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2) {
     if (n1->isleaf()) {
         n2->data.action = n1->data.action &= n2->data.action;
     }
@@ -126,7 +126,7 @@ void intersect_leaves(ltree::node* n1, ltree::node* n2) {
 }
 
 // Checks if two (sub)trees 'n1' and 'n2' are equal
-bool EqualTrees(const ltree::node* n1, const ltree::node* n2) {
+bool EqualTrees(const BinaryDrag<conact>::node* n1, const BinaryDrag<conact>::node* n2) {
     if (n1->data != n2->data)
         return false;
 
@@ -137,7 +137,7 @@ bool EqualTrees(const ltree::node* n1, const ltree::node* n2) {
 }
 
 // Works only with equivalent trees
-void IntersectTrees(ltree::node* n1, ltree::node* n2) {
+void IntersectTrees(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2) {
 	if (n1->isleaf()) {
 		n1->data.action &= n2->data.action;
 		n2->data.action = n1->data.action;
@@ -148,7 +148,7 @@ void IntersectTrees(ltree::node* n1, ltree::node* n2) {
 	}
 }
 
-bool LoadConactDrag(ltree& t, const string& filename)
+bool LoadConactDrag(BinaryDrag<conact>& t, const string& filename)
 {
 	if (!LoadConactTree(t, filename))
 		return false;
@@ -158,7 +158,7 @@ bool LoadConactDrag(ltree& t, const string& filename)
 	return true;
 }
 
-bool WriteConactDrag(ltree& t, const string& filename)
+bool WriteConactDrag(BinaryDrag<conact>& t, const string& filename)
 {
 	return WriteConactTree(t, filename);
 }

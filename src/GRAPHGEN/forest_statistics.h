@@ -34,13 +34,13 @@
 #include "forest.h"
 
 class ForestStatistics {
-	std::set<const ltree::node*> visited_nodes;
-	std::set<const ltree::node*> visited_leaves;
+	std::set<const BinaryDrag<conact>::node*> visited_nodes;
+	std::set<const BinaryDrag<conact>::node*> visited_leaves;
 
-	std::set<const ltree::node*> visited_end_nodes;
-	std::set<const ltree::node*> visited_end_leaves;
+	std::set<const BinaryDrag<conact>::node*> visited_end_nodes;
+	std::set<const BinaryDrag<conact>::node*> visited_end_leaves;
 
-	void PerformStatistics(const ltree::node *n) {
+	void PerformStatistics(const BinaryDrag<conact>::node *n) {
 		if (n->isleaf()) {
 			visited_leaves.insert(n);
 			return;
@@ -52,7 +52,7 @@ class ForestStatistics {
 		}
 	}
 
-	void PerformEndStatistics(const ltree::node *n) {
+	void PerformEndStatistics(const BinaryDrag<conact>::node *n) {
 		if (n->isleaf()) {
 			visited_end_leaves.insert(n);
 			return;

@@ -29,7 +29,7 @@
 #include "tree2dag_identities.h"
 
 // Search in tree n2 there is a subtree equal to n1, which is not n1
-void FindAndLinkIdentiesRec(ltree::node* n1, ltree::node* n2) {
+void FindAndLinkIdentiesRec(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2) {
     if (n2->isleaf() || n1 == n2)
         return;
 
@@ -45,7 +45,7 @@ void FindAndLinkIdentiesRec(ltree::node* n1, ltree::node* n2) {
     FindAndLinkIdentiesRec(n1, n2->right);
 }
 
-void Tree2DagUsingIdentitiesRec(ltree::node *n, ltree& t) {
+void Tree2DagUsingIdentitiesRec(BinaryDrag<conact>::node *n, BinaryDrag<conact>& t) {
     FindAndLinkIdentiesRec(n, t.GetRoot());
 
     if (!n->isleaf()) {
@@ -55,6 +55,6 @@ void Tree2DagUsingIdentitiesRec(ltree::node *n, ltree& t) {
 }
 
 // Converts a tree into dag considering only equal subtrees
-void Tree2DagUsingIdentities(ltree& t) {
+void Tree2DagUsingIdentities(BinaryDrag<conact>& t) {
     Tree2DagUsingIdentitiesRec(t.GetRoot(), t);
 }

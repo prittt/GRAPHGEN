@@ -42,11 +42,11 @@
 #include "remove_equal_subtrees.h"
 
 struct FindOptimalDrag {
-    std::vector<ltree::node*> lma_; // leaves with multiple actions
-    std::unordered_set<ltree::node*> visited_; // utility set to remember already visited nodes
-    ltree t_;
+    std::vector<BinaryDrag<conact>::node*> lma_; // leaves with multiple actions
+    std::unordered_set<BinaryDrag<conact>::node*> visited_; // utility set to remember already visited nodes
+    BinaryDrag<conact> t_;
 
-    ltree best_tree_;
+    BinaryDrag<conact> best_tree_;
     uint counter_ = 0;
     uint best_nodes_ = std::numeric_limits<uint>::max();
     uint best_leaves_ = std::numeric_limits<uint>::max();
@@ -54,14 +54,14 @@ struct FindOptimalDrag {
     std::mutex best_tree_mutex_;
     thread_pool *pool_ = nullptr;
 
-    FindOptimalDrag(ltree t) : t_{ std::move(t) } {
+    FindOptimalDrag(BinaryDrag<conact> t) : t_{ std::move(t) } {
         GetLeavesWithMultipleActionsRec(t_.GetRoot());
     }
 
     // This method fill the lma_ variable with all the leaves that have multiple actions. This
     // vector (lma_) will be used by the backtrack algorithm to generate all the possible trees 
     // (i.e all the possible trees with one action per leaf).
-    void GetLeavesWithMultipleActionsRec(ltree::node* n) {
+    void GetLeavesWithMultipleActionsRec(BinaryDrag<conact>::node* n) {
         if (visited_.count(n) > 0) {
             return;
         }
@@ -76,7 +76,7 @@ struct FindOptimalDrag {
         GetLeavesWithMultipleActionsRec(n->right);
     }
 
-    void ReduceAndUpdateBest(ltree t)
+    void ReduceAndUpdateBest(BinaryDrag<conact> t)
     {
         //RemoveEqualSubtrees sc(t.GetRoot()); TODO originale
         RemoveEqualSubtrees sc(t);

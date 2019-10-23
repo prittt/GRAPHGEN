@@ -32,7 +32,7 @@
 
 using namespace std;
 
-void CreateTree_rec(ltree& t, ltree::node *n, const rule_set& rs, const VHyperCube &hcube, const VIndex &idx) {
+void CreateTree_rec(BinaryDrag<conact>& t, BinaryDrag<conact>::node *n, const rule_set& rs, const VHyperCube &hcube, const VIndex &idx) {
 	VNode node = hcube[idx];
 	if (node.uiAction == 0) {
 		n->data.t = conact::type::CONDITION;
@@ -54,7 +54,7 @@ void CreateTree_rec(ltree& t, ltree::node *n, const rule_set& rs, const VHyperCu
 	}
 }
 
-ltree VHyperCube::optimize(bool bVerbose)
+BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 {
 	std::string s;
 	s.resize(m_iDim, '0');
@@ -193,12 +193,12 @@ ltree VHyperCube::optimize(bool bVerbose)
 			std::cout << "------------------------\n";
 	}
 
-	ltree t;
+	BinaryDrag<conact> t;
 	CreateTree_rec(t, t.make_root(), m_rs, *this, string(m_iDim, '-'));
 	return t;
 }
 
-ltree GenerateOdt(const rule_set& rs) {
+BinaryDrag<conact> GenerateOdt(const rule_set& rs) {
     TLOG("Allocating hypercube",
         VHyperCube hcube(rs);
     );
@@ -210,26 +210,26 @@ ltree GenerateOdt(const rule_set& rs) {
     return t;
 }
 
-ltree GenerateOdt(const rule_set& rs, const string& filename) 
+BinaryDrag<conact> GenerateOdt(const rule_set& rs, const string& filename) 
 {
     auto t = GenerateOdt(rs);
 	WriteConactTree(t, filename);
 	return t;
 }
 
-ltree GetOdt(const rule_set& rs, const string& algorithm_name, bool force_generation) {
+BinaryDrag<conact> GetOdt(const rule_set& rs, const string& algorithm_name, bool force_generation) {
     //string odt_filename = global_output_path.string() + "/" + algorithm_name + "_odt.txt";
     string odt_filename = conf.odt_path_.string();
-    ltree t;
+    BinaryDrag<conact> t;
     if (force_generation || !LoadConactTree(t, odt_filename)) {
         t = GenerateOdt(rs, odt_filename);
     }
     return t;
 }
 
-ltree GetOdtWithFileSuffix(const rule_set& rs, const string& file_suffix, bool force_generation) {
+BinaryDrag<conact> GetOdtWithFileSuffix(const rule_set& rs, const string& file_suffix, bool force_generation) {
     string odt_filename = conf.GetCustomOdtPath(file_suffix).string();
-    ltree t;
+    BinaryDrag<conact> t;
     if (force_generation || !LoadConactTree(t, odt_filename)) {
         t = GenerateOdt(rs, odt_filename);
     }

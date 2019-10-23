@@ -43,13 +43,13 @@
 #include "forest_statistics.h"
 #include "graph_code_generator.h"
 
-/*ltree::node* MergeEquivalentTreesRec(ltree::node* a, ltree::node* b, std::unordered_map<ltree::node*, ltree::node*> &merged)
+/*BinaryDrag<conact>::node* MergeEquivalentTreesRec(BinaryDrag<conact>::node* a, BinaryDrag<conact>::node* b, std::unordered_map<BinaryDrag<conact>::node*, BinaryDrag<conact>::node*> &merged)
     {
         auto it = merged.find(a);
         if (it != end(merged))
             return it->second;
 
-        auto n = new ltree::node(*a);
+        auto n = new BinaryDrag<conact>::node(*a);
         if (a->isleaf()) {
             n->data.action &= b->data.action;
         }
@@ -61,7 +61,7 @@
         return n;
     }
 
-    void DeleteTreeRec(ltree::node* n, std::unordered_map<ltree::node*, bool> &deleted)
+    void DeleteTreeRec(BinaryDrag<conact>::node* n, std::unordered_map<BinaryDrag<conact>::node*, bool> &deleted)
     {
         auto it = deleted.find(n);
         if (it != end(deleted))
@@ -75,7 +75,7 @@
         delete n;
     }*/
 
-    /*void PrintTreeRec(std::ostream& os, ltree::node* n, std::set<ltree::node*>& visited, int tab = 0) {
+    /*void PrintTreeRec(std::ostream& os, BinaryDrag<conact>::node* n, std::set<BinaryDrag<conact>::node*>& visited, int tab = 0) {
                 os << std::string(tab, '\t');
 
                 auto it = visited.find(n);
@@ -305,7 +305,7 @@ private:
     // This class perform the merge of equivalent trees updating links
     struct MergeEquivalentTreesAndUpdate {
         std::unordered_set<BinaryDrag<conact>::node*> visited_;
-        std::unordered_map<BinaryDrag<conact>::node*, std::vector<ltree::node*>>& parents_;
+        std::unordered_map<BinaryDrag<conact>::node*, std::vector<BinaryDrag<conact>::node*>>& parents_;
 
         MergeEquivalentTreesAndUpdate(BinaryDrag<conact>::node* a, 
                                       BinaryDrag<conact>::node* b, 
@@ -315,7 +315,7 @@ private:
             MergeEquivalentTreesAndUpdateRec(a, b);
         }
 
-        void MergeEquivalentTreesAndUpdateRec(ltree::node* a, ltree::node* b)
+        void MergeEquivalentTreesAndUpdateRec(BinaryDrag<conact>::node* a, BinaryDrag<conact>::node* b)
         {
             auto it = visited_.find(a);
             if (it != end(visited_))

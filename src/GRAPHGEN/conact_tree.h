@@ -35,9 +35,6 @@
 #include "tree.h"
 
 #include "drag.h"
-//using ltree = tree<conact>;
-using ltree = BinaryDrag<conact>;
-
 
 /**
 * Load tree from file. The tree must be saved in a file with the following structure:
@@ -58,28 +55,28 @@ using ltree = BinaryDrag<conact>;
 *
 * @return whether the tree has been loaded or not
 */
-bool LoadConactTree(ltree& t, const std::string& filename);
+bool LoadConactTree(BinaryDrag<conact>& t, const std::string& filename);
 
 // Write a tree into a txt file structured as in the example above
-bool WriteConactTree(const ltree& t, const std::string& filename);
+bool WriteConactTree(const BinaryDrag<conact>& t, const std::string& filename);
 
-bool equivalent_trees(const ltree::node* n1, const ltree::node* n2);
-void intersect_leaves(ltree::node* n1, ltree::node* n2);
+bool equivalent_trees(const BinaryDrag<conact>::node* n1, const BinaryDrag<conact>::node* n2);
+void intersect_leaves(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2);
 
 // Checks if two (sub)trees 'n1' and 'n2' are equal
-bool EqualTrees(const ltree::node* n1, const ltree::node* n2);
+bool EqualTrees(const BinaryDrag<conact>::node* n1, const BinaryDrag<conact>::node* n2);
 
-void IntersectTrees(ltree::node* n1, ltree::node* n2);
-
-// Instead of defining a novel format to save DRAGS, we save them as trees, then link
-// identical sub-trees. Since the order of traversal is the same, the result should be the same.
-// Should...
-bool LoadConactDrag(ltree& t, const std::string& filename);
+void IntersectTrees(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2);
 
 // Instead of defining a novel format to save DRAGS, we save them as trees, then link
 // identical sub-trees. Since the order of traversal is the same, the result should be the same.
 // Should...
-bool WriteConactDrag(ltree& t, const std::string& filename);
+bool LoadConactDrag(BinaryDrag<conact>& t, const std::string& filename);
+
+// Instead of defining a novel format to save DRAGS, we save them as trees, then link
+// identical sub-trees. Since the order of traversal is the same, the result should be the same.
+// Should...
+bool WriteConactDrag(BinaryDrag<conact>& t, const std::string& filename);
 
 struct Save {
     std::ostream& os_;

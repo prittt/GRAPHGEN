@@ -94,7 +94,7 @@ struct LineForestHandler {
         }
 
         // See CreateReducedTrees 
-        void CreateReducedTreesRec(const ltree::node* n, const constraints& constr) {
+        void CreateReducedTreesRec(const BinaryDrag<conact>::node* n, const constraints& constr) {
             if (n->isleaf()) {
                 // Create a reduced version of the tree based on what we learned on the path to this leaf. The new tree is stored in t_ as well.
                 f_.AddRoot(Reduce(bd_.roots_[0], f_, constr));
@@ -116,10 +116,10 @@ struct LineForestHandler {
 
     std::vector<int> next_tree_; // This vector contains the equivalences between main trees
     BinaryDrag<conact> f_;
-    std::vector<ltree> trees_; // TO BE REMOVED
+    std::vector<BinaryDrag<conact>> trees_; // TO BE REMOVED
 
     std::vector<BinaryDrag<conact>> end_forests_;
-    std::vector<std::vector<ltree>> end_trees_; // TO BE REMOVED
+    std::vector<std::vector<BinaryDrag<conact>>> end_trees_; // TO BE REMOVED
 
     std::vector<std::vector<int>> end_next_tree_; // This vectors contain the equivalences between end trees
     std::vector<std::vector<int>> main_end_tree_mapping_; // This is the mapping between main trees and end trees
@@ -130,7 +130,7 @@ struct LineForestHandler {
     void RemoveUselessConditions();
     void RemoveEndTreesUselessConditions();
 
-    void UpdateNext(ltree::node* n);
+    void UpdateNext(BinaryDrag<conact>::node* n);
 
     // Removes duplicate trees
     bool RemoveEqualTrees();
@@ -142,12 +142,12 @@ struct LineForestHandler {
     bool RemoveEqualEndTrees();
     bool RemoveEquivalentEndTrees();
 
-    void InitNextRec(ltree::node* n);
+    void InitNextRec(BinaryDrag<conact>::node* n);
 
-    static ltree::node* Reduce(const ltree::node* n, ltree& t, const constraints& constr);
+    static BinaryDrag<conact>::node* Reduce(const BinaryDrag<conact>::node* n, BinaryDrag<conact>& t, const constraints& constr);
 
-    void CreateReducedTreesRec(const ltree::node* n, const constraints& constr = {});
-    void CreateReducedTrees(const ltree& t, const constraints& initial_constr);
+    void CreateReducedTreesRec(const BinaryDrag<conact>::node* n, const constraints& constr = {});
+    void CreateReducedTrees(const BinaryDrag<conact>& t, const constraints& initial_constr);
 
 private:
     bool RemoveEqualEndTreesSeparately();
@@ -157,7 +157,7 @@ private:
     void RebuildDisjointEndTrees();
 
     // Actual implementation of RemoveEqualTrees, RemoveEquivalentTrees, RemoveEqualEndTrees, RemoveEquivalentEndTrees
-    bool RemoveTrees(bool(*FunctionPrt)(const ltree::node* n1, const ltree::node* n2),
+    bool RemoveTrees(bool(*FunctionPrt)(const BinaryDrag<conact>::node* n1, const BinaryDrag<conact>::node* n2),
         std::vector<int>& next_tree,
         BinaryDrag<conact>& f,
         bool are_end_trees = false,

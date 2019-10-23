@@ -34,7 +34,7 @@
 using namespace std;
 
 // Converts a tree into unique string exploiting memoization 
-string Forest2Dag::Tree2String(ltree::node* n) {
+string Forest2Dag::Tree2String(BinaryDrag<conact>::node* n) {
 	auto it = ps_.find(n);
 	if (it != end(ps_))
 		return it->second;
@@ -59,7 +59,7 @@ string Forest2Dag::Tree2String(ltree::node* n) {
 // contains the tree identifier string) the function updates the link, otherwise it updates the 
 // hash table with the "new" subtree. This must be repeated for every root of the forest (see Forest2Dag) 
 // TODO sistemare la funzione evitando la ripetizione sinistra/destra.
-void Forest2Dag::FindAndLink(ltree::node* n) {
+void Forest2Dag::FindAndLink(BinaryDrag<conact>::node* n) {
 	if (!n->isleaf()) {
 		auto s = Tree2String(n->left);
 
