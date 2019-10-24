@@ -220,7 +220,7 @@ BinaryDrag<conact> GenerateOdt(const rule_set& rs, const string& filename)
 BinaryDrag<conact> GetOdt(const rule_set& rs, bool force_generation) {
     string odt_filename = conf.odt_path_.string();
     BinaryDrag<conact> t;
-    if (force_generation || !LoadConactTree(t, odt_filename)) {
+    if (conf.force_odt_generation_ || force_generation || !LoadConactTree(t, odt_filename)) {
         t = GenerateOdt(rs, odt_filename);
     }
     return t;
@@ -229,7 +229,7 @@ BinaryDrag<conact> GetOdt(const rule_set& rs, bool force_generation) {
 BinaryDrag<conact> GetOdtWithFileSuffix(const rule_set& rs, const string& file_suffix, bool force_generation) {
     string odt_filename = conf.GetCustomOdtPath(file_suffix).string();
     BinaryDrag<conact> t;
-    if (force_generation || !LoadConactTree(t, odt_filename)) {
+    if (conf.force_odt_generation_ || force_generation || !LoadConactTree(t, odt_filename)) {
         t = GenerateOdt(rs, odt_filename);
     }
     return t;

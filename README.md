@@ -9,6 +9,7 @@ Can be displayed only if the repo is public.
 
 **GRAPHGEN** is a framework for generating decision trees in various formats for different algorithmic problems of binary image processing (Connected Components Labeling, Thinning and Contour Tracing). 
 
+*Supported platforms*: Windows (VS2017), Linux (GCC 9.x or later).
 
 ## Requirements
 ### Windows

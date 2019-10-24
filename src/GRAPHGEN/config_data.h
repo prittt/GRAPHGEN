@@ -88,6 +88,8 @@ struct ConfigData {
     std::filesystem::path frequencies_path_;
     std::string frequencies_suffix_ = ".bin";
 
+	bool force_odt_generation_ = false;
+
     ConfigData() {}
 
     ConfigData(std::string algorithm_name, std::string mask_name);

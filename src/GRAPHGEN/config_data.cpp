@@ -105,5 +105,8 @@ ConfigData::ConfigData(string algorithm_name, string mask_name) : algorithm_name
     else {
         cout << "WARNING: missing output file format, 'pdf' will be used.\n";
     }
-        
+
+	if (config["force_odt_generation"]) {
+		force_odt_generation_ = config["force_odt_generation"].as<bool>();
+	}        
 }
