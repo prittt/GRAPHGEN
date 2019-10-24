@@ -174,35 +174,35 @@ LineForestHandler::LineForestHandler(const BinaryDrag<conact>& bd,
     }
 }
 
-void LineForestHandler::RebuildDisjointTrees() {
+//void LineForestHandler::RebuildDisjointTrees() {
+//
+//    vector<BinaryDrag<conact>> new_trees;
+//
+//    for (auto& t : trees_) {
+//        // Here Reduce() is used just to recreate trees 
+//        BinaryDrag<conact> new_t;
+//        new_t.SetRoot(Reduce(t.GetRoot(), new_t, {}));
+//        new_trees.push_back(move(new_t));
+//    }
+//
+//    trees_ = move(new_trees);
+//}
 
-    vector<BinaryDrag<conact>> new_trees;
-
-    for (auto& t : trees_) {
-        // Here Reduce() is used just to recreate trees 
-        BinaryDrag<conact> new_t;
-        new_t.SetRoot(Reduce(t.GetRoot(), new_t, {}));
-        new_trees.push_back(move(new_t));
-    }
-
-    trees_ = move(new_trees);
-}
-
-void LineForestHandler::RebuildDisjointEndTrees() {
-
-    vector<vector<BinaryDrag<conact>>> new_trees;
-    for (auto& tg : end_trees_) {
-        new_trees.emplace_back();
-        for (auto& t : tg) {
-            // Here Reduce() is used just to recreate trees 
-            BinaryDrag<conact> new_t;
-            new_t.SetRoot(Reduce(t.GetRoot(), new_t, {}));
-            new_trees.back().push_back(move(new_t));
-        }
-    }
-    end_trees_ = new_trees;
-
-}
+//void LineForestHandler::RebuildDisjointEndTrees() {
+//
+//    vector<vector<BinaryDrag<conact>>> new_trees;
+//    for (auto& tg : end_trees_) {
+//        new_trees.emplace_back();
+//        for (auto& t : tg) {
+//            // Here Reduce() is used just to recreate trees 
+//            BinaryDrag<conact> new_t;
+//            new_t.SetRoot(Reduce(t.GetRoot(), new_t, {}));
+//            new_trees.back().push_back(move(new_t));
+//        }
+//    }
+//    end_trees_ = new_trees;
+//
+//}
 
 // See RemoveUselessConditions
 void RemoveUselessConditionsRec(BinaryDrag<conact>::node* n, bool& changed) {

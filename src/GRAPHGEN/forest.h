@@ -111,15 +111,12 @@ struct LineForestHandler {
         }
     };
 
-    bool separately = false; // TO BE REMOVED Specify if end trees from different groups should be treated separately during Tree2Dag conversion
+    
+    BinaryDrag<conact> f_;
+    std::vector<BinaryDrag<conact>> end_forests_;
 
     std::vector<int> next_tree_; // This vector contains the equivalences between main trees
-    BinaryDrag<conact> f_;
-    std::vector<BinaryDrag<conact>> trees_; // TO BE REMOVED
-
-    std::vector<BinaryDrag<conact>> end_forests_;
-    std::vector<std::vector<BinaryDrag<conact>>> end_trees_; // TO BE REMOVED
-
+    
     std::vector<std::vector<int>> end_next_tree_; // This vectors contain the equivalences between end trees
     std::vector<std::vector<int>> main_end_tree_mapping_; // This is the mapping between main trees and end trees
 
