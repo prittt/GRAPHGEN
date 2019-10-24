@@ -30,10 +30,10 @@
 
 #include <iostream>
 
-void PrintStats(const Forest& f) {
-	ForestStatistics fs(f);
-	std::cout << "Nodes = " << fs.nodes() << "\n";
-	std::cout << "Leaves = " << fs.leaves() << "\n";
-	std::cout << "End Nodes = " << fs.end_nodes() << "\n";
-	std::cout << "End Leaves = " << fs.end_leaves() << "\n";
-}
+//void PrintStats(const LineForestHandler& f) {
+//	ForestStatistics fs(f);
+//	std::cout << "Nodes = " << fs.nodes() << "\n";
+//	std::cout << "Leaves = " << fs.leaves() << "\n";
+//	std::cout << "End Nodes = " << fs.end_nodes() << "\n";
+//	std::cout << "End Leaves = " << fs.end_leaves() << "\n";
+//}
