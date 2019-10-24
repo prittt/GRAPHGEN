@@ -4,13 +4,14 @@
 # This is the GRAPHGEN configuration file #
 ############################################
 
-use_frequencies: false
-
-force_frequencies_count: false
+# Forces the optimal decision tree to be generated in every execution
 force_odt_generation: false
 
+# Datasets used for frequency calculation
 datasets: ["fingerprints", "hamlet"]
 
+# Input path: path to the folder containing the datasets
+# Output path: path where all outputs (code, graphs) will be stored
 paths: {input: "${GRAPHGEN_INPUT_PATH}", output: "${GRAPHGEN_OUTPUT_PATH}"}
 
 # Currently supported output formats are "pdf", "png", and "svg"

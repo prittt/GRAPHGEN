@@ -14,7 +14,7 @@ Can be displayed only if the repo is public.
 ### Windows
 * For compiling: Visual Studio 2017 (later versions are not tested).
 * [CMake](https://cmake.org/) 3.12 or later.
-* *OpenCV 3.x (optional, only needed for frequency calculation in Connected Components Labeling).*
+* *OpenCV 3.x (optional, only needed for frequency calculation).*
 * *graphviz (included in the repository as executable).*
 * *yaml-cpp (included in the repository as submodule).*
 
@@ -23,7 +23,7 @@ Can be displayed only if the repo is public.
 * For compiling: GCC 9.x or later (for full std::filesystem support).
 * [CMake](https://cmake.org/) 3.12 or later.
 * [graphviz](https://www.graphviz.org/download/) for producing SVG representations of the generated graphs, using the `dot` command. Can be installed e.g. through apt: `sudo apt install graphviz`.
-* *OpenCV 3.x (optional, only needed for frequency calculation in Connected Components Labeling).*
+* *OpenCV 3.x (optional, only needed for frequency calculation).*
 * *yaml-cpp (included in the repository as submodule).*
 
 ## Setup
@@ -31,7 +31,7 @@ Can be displayed only if the repo is public.
 2) Open CMake and point it to the root directory of this repository. The build folder can be e.g. a subfolder called "bin" or "build".
 3) Press "Configure".
 4) These are important variables to set:
-    * `GRAPHGEN_FREQUENCIES_CCL_ENABLED`: Enables frequency calculation for Connected Components Labeling and corresponding build targets (e.g. `Spaghetti_FREQ`). If enabled:
+    * `GRAPHGEN_FREQUENCIES_CCL_ENABLED`: Enables frequency calculation and corresponding build targets (e.g. `Spaghetti_FREQ`). If enabled:
         * `OpenCV_DIR`: Point to the build folder of an OpenCV 3.x install with identical architecture and compiler.
         * `GRAPHGEN_FREQUENCIES_CCL_DATASET_DOWNLOAD`: Enable if you wish to download the datasets used in frequency calculation (archive size: ca. 2-3 GB). Obligatory for frequency calculation if you have not downloaded them before.
     * On Linux: if you wish to change the architecture to 64-bit (default is 32-bit), change occurences of `-m32` to `-m64` in `CMAKE_CXX_FLAGS` and `CMAKE_C_FLAGS`.
