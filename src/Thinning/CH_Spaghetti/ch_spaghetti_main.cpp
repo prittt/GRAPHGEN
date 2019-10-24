@@ -30,21 +30,21 @@
 
 #include "graphgen.h"
 
-#include "guohall_ruleset.h"
+#include "chenhsu_ruleset.h"
 
 using namespace std;
 
 int main()
 {
-    string algo_name = "GH_Spaghetti";
+    string algo_name = "ZS_Spaghetti";
     string mask_name = "3x3";
     conf = ConfigData(algo_name, mask_name);
 
-    GuoHallRS zs_rs;
+    ChenHsuRS zs_rs;
     auto rs = zs_rs.GetRuleSet();
 
     // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Guo-Hall algorithm
+    // 1) Load or generate Optimal Decision Tree based on Chen-Hsu algorithm
     BinaryDrag<conact> bd = GetOdt(rs);
 
     // 2) Draw the generated tree on file

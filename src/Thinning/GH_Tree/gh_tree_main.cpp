@@ -44,7 +44,7 @@ int main()
     auto rs = zs_rs.GetRuleSet();
 
     // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Zang-Suen mask
+    // 1) Load or generate Optimal Decision Tree based on Guo-Hall algorithm
     BinaryDrag<conact> bd = GetOdt(rs);
 
     // 2) Draw the generated tree on file

@@ -107,7 +107,7 @@ foreach(ALGO ${LABELING_ALGORITHMS})
 	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
 
-set(THINNING_ALGORITHMS ZS_Tree ZS_Spaghetti GH_Tree GH_Spaghetti CACHE INTERNAL ON FORCE)
+set(THINNING_ALGORITHMS ZS_Tree ZS_Spaghetti GH_Tree GH_Spaghetti CH_Tree CH_Spaghetti CACHE INTERNAL ON FORCE)
 #set(THINNING_ALGORITHMS CACHE INTERNAL ON FORCE)
 foreach(ALGO ${THINNING_ALGORITHMS})
 	add_executable(${ALGO} "")
