@@ -114,7 +114,7 @@ public:
         }
     }
 
-    void DrawOnFile(const std::string& prefix, int flags = 0)
+    void DrawOnFile(const std::string& prefix, DrawDagFlags flags = DrawDagFlags::NONE)
     {
         for (auto& x : f_) {
             DrawForestOnFile(prefix + "_" + names[x.first], x.second, flags);

@@ -86,7 +86,7 @@ string CreateAssignmentCode(const string& action, const pixel_set& names) {
     return CreateAssignmentCodeRec(pixels_names, names);
 }
 
-// Scritta per ctbe
+// This is the version for CTBE algorithm, still very raw
 string CreateActionCodeCtbe(const string& action, const pixel_set& names, const string& assignment_variable) {
     if (action == "nothing") {
         return "NOTHING";
@@ -267,6 +267,7 @@ void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditio
     }
 }
 
+// This is the function to generate Connected Component Labeling action code
 void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& names, bool with_continues = true)
 {
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
@@ -293,8 +294,34 @@ void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& name
     }
 }
 
-bool GeneratePointersConditionsActionsCode(const rule_set& rs, GenerateConditionActionCodeFlags flag, std::optional<pixel_set> names) {
+// This is the function to generate Connected Component Labeling action code
+void GenerateThinningActionsCode(ofstream& os, const rule_set& rs, bool with_continues = true) {
+    // Actions:
+    os << "\n\n//Actions:\n";
+    for (size_t a = 0; a < rs.actions.size(); ++a) {
+        const auto& action = rs.actions[a];
 
+        os << "#define ACTION_" + std::to_string(a + 1);
+
+        if (action == "keep0") {
+            os << " ; // keep0\n";
+        }
+
+        if (action == "keep1") {
+            os << " img_row00[c] = 1; // keep1\n";
+        }
+
+        if (action == "change0") {
+            os << " modified = true; // change0\n";
+        }
+    }
+}
+
+bool GeneratePointersConditionsActionsCode(const rule_set& rs, 
+                                           GenerateConditionActionCodeFlags flag,
+                                           GenerateActionCodeTypes type,
+                                           std::optional<pixel_set> names) 
+{
     bool actions_with_conditions = flag & GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS;
     bool actions_with_continue = flag & GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE;
 
@@ -309,7 +336,20 @@ bool GeneratePointersConditionsActionsCode(const rule_set& rs, GenerateCondition
 
     GeneratePointersCode(os, rs);
     GenerateConditionsCode(os, rs, actions_with_conditions);
-    GenerateActionsCode(os, rs, names.value(), actions_with_continue);
+
+    switch (type) {
+    case GenerateActionCodeTypes::LABELING:
+        GenerateActionsCode(os, rs, names.value(), actions_with_continue);
+        break;
+    case GenerateActionCodeTypes::THINNING:
+        GenerateThinningActionsCode(os, rs, actions_with_continue);
+        break;
+    case GenerateActionCodeTypes::CHAIN_CODE:
+        std::cout << "Chain code ACTION code generation NOT IMPLEMENTED!\n";
+        break;
+    default:
+        std::cout << "WARNING: the specified algorithms type is not valid. The ACTION code won't be generated\n";
+    }
 
     return true;
 }

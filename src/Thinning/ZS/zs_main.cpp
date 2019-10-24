@@ -38,100 +38,41 @@ using namespace std;
 
 int main()
 {
-    string algorithm_name = "ZS";
-    conf = ConfigData(algorithm_name);
+    string algo_name = "ZS_Spaghetti";
+    string mask_name = "3x3";
+    conf = ConfigData(algo_name, mask_name);
 
     ZangSuenRS zs_rs;
     auto rs = zs_rs.GetRuleSet();
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Zang-Suen mask
-    ltree t = GetOdt(rs, algorithm_name);
+    BinaryDrag<conact> bd = GetOdt(rs);
 
-    string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, false, true, false);
-    PrintStats(t);
+    // 2) Draw the generated tree on file
+    string tree_filename = algo_name + "_tree";
+    DrawDagOnFile(tree_filename, bd);
 
-    //string tree_code_filename = global_output_path + algorithm_name + "tree_code.txt";
-    //GenerateCode(tree_code_filename, t);
-
-    LOG("Making forest",
-        Forest f(t, rs.ps_);
-    );
-    for (size_t i = 0; i < f.trees_.size(); ++i) {
-        DrawDagOnFile(algorithm_name + "tree" + zerostr(i, 4), f.trees_[i], true);
-    }
-    PrintStats(f);
-
-    string forest_code_nodag = conf.global_output_path_.string() + algorithm_name + "_forest_nodag_frequencies_code.txt";
-    {
-        ofstream os(forest_code_nodag);
-        if (!os) {
-            throw;
-        }
-        GenerateForestCode(os, f);
-    }
-
-    for (size_t i = 0; i < f.end_trees_.size(); ++i) {
-        for (size_t j = 0; j < f.end_trees_[i].size(); ++j) {
-            DrawDagOnFile(algorithm_name + "_end_tree_" + zerostr(i, 2) + "_" + zerostr(j, 2), f.end_trees_[i][j], false);
-        }
-    }
-
-    LOG("Converting forest to dag",
-        Forest2Dag x(f);
-        for (size_t i = 0; i < f.trees_.size(); ++i) {
-            DrawDagOnFile(algorithm_name + "drag" + zerostr(i, 4), f.trees_[i], true);
-        }
-        );
-    PrintStats(f);
-
-    DrawForestOnFile(algorithm_name + "forest", f, true);
-
-    string forest_code = conf.global_output_path_.string() + algorithm_name + "_forest_identities_code.txt";
-    {
-        ofstream os(forest_code);
-        GenerateForestCode(os, f);
-    }
-
-    // First line constraints
-    constraints first_line_constr;
-    using namespace std;
-    for (const auto& p : rs.ps_) {
-        if (p.GetDy() < 0)
-            first_line_constr[p.name_] = 0;
-    }
-
-    LOG("Making forest",
-        Forest flf(t, rs.ps_, first_line_constr);
-    );
-    
-    LOG("Converting forest to dag",
-        Forest2Dag x2(flf);
+    // 3) Generate forests of trees
+    LOG(algo_name + " - making forests",
+        ForestHandler fh(bd, rs.ps_, 
+                         ForestHandlerFlags::FIRST_LINE  |
+                         ForestHandlerFlags::LAST_LINE   |
+                         ForestHandlerFlags::SINGLE_LINE |
+                         ForestHandlerFlags::CENTER_LINES);
     );
 
-    string fl_forest_code = conf.global_output_path_.string() + algorithm_name + "_flf_forest_identities_code.txt";
-    {
-        ofstream os(fl_forest_code);
-        GenerateForestCode(os, flf);
-    }
+    // 4) Compress the forest
+    fh.Compress();
 
-    //ltree t = GetOdt(rs, algorithm_name);
+    // 5) Draw the compressed forests on file
+    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
 
-    //// 2) Draw the generated tree to pdf
-    //string tree_filename = algorithm_name + "_tree";
-    //DrawDagOnFile(tree_filename, t, false, true, false);
-
-    //// 3) Generate the C++ source code for the ODT
-    //GenerateDragCode(algorithm_name, t);
-
-    //// 4) Generate the C++ source code for pointers, 
-    //// conditions to check and actions to perform
-    //pixel_set block_positions{
-    //      { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
-    //      { "S", {-2, +0} },{ "x", {+0, +0} }
-    //};
-    //GeneratePointersConditionsActionsCode(algorithm_name, rs, block_positions);
+    // 6) Generate the C/C++ source code
+    fh.GenerateCode();
+    GeneratePointersConditionsActionsCode(rs, 
+                                          GenerateConditionActionCodeFlags::NONE, 
+                                          GenerateActionCodeTypes::THINNING);
 
     return EXIT_SUCCESS;
 }

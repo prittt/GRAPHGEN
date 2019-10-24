@@ -37,19 +37,26 @@
 #include "rule_set.h"
 
 
-/** @brief This is the enum class that defines the available flags for the GeneratePointersConditionsActionsCode function.
+/** @brief This is the enum class that defines the available flags for the 
+GeneratePointersConditionsActionsCode function.
 */
-enum class GenerateConditionActionCodeFlags : uint32_t {
+DEFINE_ENUM_CLASS_FLAGS(GenerateConditionActionCodeFlags,
     NONE                    = 0,          /**< @brief No flags */
     CONDITIONS_WITH_IFS     = (1 << 0),   /**< @brief Whether to add if statements or not when generating conditions code. 
                                                       They serve to check if the pixel we want to check is inside the image 
                                                       or not. All the algorithms that make use of prediction can avoid these
                                                       checks because they are inbuilt in the forest. */
     ACTIONS_WITH_CONTINUE   = (1 << 1),   /**< @brief Whether to add continues at the end of each action or not */
-};
+)
 
-DEFINE_ENUM_CLASS_OR_OPERATOR(GenerateConditionActionCodeFlags)
-DEFINE_ENUM_CLASS_AND_OPERATOR(GenerateConditionActionCodeFlags)
+/** @brief This is the enum class that defines the available algorithms types for
+the GenerateActionsCode function.
+*/
+DEFINE_ENUM_CLASS_FLAGS(GenerateActionCodeTypes,
+    LABELING   = (1 << 0), /**< @brief Connected Components Labeling */
+    THINNING   = (1 << 1), /**< @brief Thinning */
+    CHAIN_CODE = (1 << 2), /**< @brief Chain Code */
+)
 
 /** @brief
 
@@ -60,6 +67,7 @@ It is necessary to handle blocks names and defaults to mask pixel set if not pro
 */
 bool GeneratePointersConditionsActionsCode(const rule_set& rs,
                                            GenerateConditionActionCodeFlags flag = GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE,
+                                           GenerateActionCodeTypes type = GenerateActionCodeTypes::LABELING,
                                            std::optional<pixel_set> names = std::nullopt);
 
 // This is the version for CTBE algorithm. It is very raw and it is based on the previous versione of graphgen

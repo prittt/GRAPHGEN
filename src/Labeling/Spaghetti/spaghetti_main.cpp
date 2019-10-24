@@ -63,13 +63,13 @@ int main()
     );
 
     // 4) Draw the generated forests on file
-    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+    fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
 
     // 5) Compress the forests
     fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES);
 
     // 6) Draw the compressed forests on file
-    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+    fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
 
     // 7) Generate the C/C++ code taking care of the names used
     //    in the Grana's rule set GranaRS
@@ -78,7 +78,10 @@ int main()
            { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
            { "S", {-2, +0} },{ "x", {+0, +0} }
     };
-    GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::NONE, block_positions);
+    GeneratePointersConditionsActionsCode(rs, 
+                                          GenerateConditionActionCodeFlags::NONE, 
+                                          GenerateActionCodeTypes::LABELING,
+                                          block_positions);
 
     return EXIT_SUCCESS;
 }
