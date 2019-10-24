@@ -71,7 +71,11 @@ int main()
 
     // 4) Generate forests of trees
     LOG(algorithm_name + " - making forests",
-        ForestHandler fh(bd, rs.ps_, ForestHandler::CENTER_LINES | ForestHandler::FIRST_LINE | ForestHandler::LAST_LINE | ForestHandler::SINGLE_LINE);
+        ForestHandler fh(bd, rs.ps_, 
+                         ForestHandlerFlags::CENTER_LINES |
+                         ForestHandlerFlags::FIRST_LINE   |
+                         ForestHandlerFlags::LAST_LINE    |
+                         ForestHandlerFlags::SINGLE_LINE);
     );
 
     // 5) Draw the generated forests on file
