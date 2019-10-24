@@ -267,7 +267,6 @@ void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditio
     }
 }
 
-// This function .. it works only for 2d and 3d images TODO description.
 void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& names, bool with_continues = true)
 {
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
