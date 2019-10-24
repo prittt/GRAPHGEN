@@ -92,7 +92,7 @@ struct ConfigData {
 
     ConfigData() {}
 
-    ConfigData(std::string algorithm_name, std::string mask_name);
+    ConfigData(std::string algorithm_name, std::string mask_name, bool use_frequencies = false);
 
     // Dot code
     std::filesystem::path GetDotCodePath(const std::string& out_base_name) {
@@ -118,6 +118,24 @@ struct ConfigData {
     std::filesystem::path GetCustomOdtPath(const std::string& custom_suffix) const {
         return algorithm_output_path_ / std::filesystem::path(algorithm_name_ + "_" + custom_suffix + odt_suffix_);
     }
+
+    // This serves to use a special algorithm name when using frequencies
+    void UpdateAlgoNameWithDatasets() {
+        // Add names of used data sets to file names
+        std::string dataset_names;
+        bool first = true;
+        for (const auto &d : datasets_) {
+            if (!first) {
+                dataset_names += '-';
+            }
+            else {
+                first = false;
+            }
+            dataset_names += d;
+        }
+        algorithm_name_ += "_" + dataset_names;
+    }
+
 };
 
 #endif // GRAPGHSGEN_CONFIG_DATA_H_

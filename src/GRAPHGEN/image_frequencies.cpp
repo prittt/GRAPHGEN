@@ -194,9 +194,9 @@ bool LoadFileList(vector<pair<string, bool>>& filenames, const string& files_pat
 //    return existing_datasets > 0;
 //}
 
-bool CountFrequenciesOnDataset(const ConfigData& config, const string& dataset, rule_set& rs, bool force) {
+bool CountFrequenciesOnDataset(const string& dataset, rule_set& rs, bool force) {
 
-    path frequencies_output_path = config.frequencies_path_ / config.mask_name_ / (dataset + config.frequencies_suffix_);
+    path frequencies_output_path = conf.frequencies_path_ / conf.mask_name_ / (dataset + conf.frequencies_suffix_);
 
     if (!force) {
         // Try to load frequencies from file
@@ -223,7 +223,7 @@ bool CountFrequenciesOnDataset(const ConfigData& config, const string& dataset, 
 
     cv::Mat1b img;
 
-    path dataset_path = config.global_input_path_ / path(dataset);
+    path dataset_path = conf.global_input_path_ / path(dataset);
     vector<pair<string, bool>> files_list;
     if (!LoadFileList(files_list, (dataset_path / path("files.txt")).string())) {
         cout << "Unable to find 'files.txt' of " << dataset_path << ", dataset skipped.\n";
@@ -362,13 +362,13 @@ bool CountFrequenciesOnDataset(const ConfigData& config, const string& dataset, 
 //    return true;
 //}
 
-bool AddFrequenciesToRuleset(const ConfigData& config, rule_set& rs, bool force) {
+bool AddFrequenciesToRuleset(rule_set& rs, bool force) {
 
     int n = 0;
 
-    for (const string& dataset : config.datasets_) {
+    for (const string& dataset : conf.datasets_) {
 
-        n += CountFrequenciesOnDataset(config, dataset, rs, force);
+        n += CountFrequenciesOnDataset(dataset, rs, force);
 
     }
 

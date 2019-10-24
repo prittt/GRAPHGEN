@@ -33,7 +33,7 @@
 using namespace std;
 using namespace filesystem;
 
-ConfigData::ConfigData(string algorithm_name, string mask_name) : algorithm_name_{ algorithm_name }, mask_name_{mask_name} {
+ConfigData::ConfigData(string algorithm_name, string mask_name, bool use_frequencies) : algorithm_name_{ algorithm_name }, mask_name_{ mask_name } {
     YAML::Node config;
     try {
         config = YAML::LoadFile(config_file_);
@@ -106,7 +106,11 @@ ConfigData::ConfigData(string algorithm_name, string mask_name) : algorithm_name
         cout << "WARNING: missing output file format, 'pdf' will be used.\n";
     }
 
-	if (config["force_odt_generation"]) {
-		force_odt_generation_ = config["force_odt_generation"].as<bool>();
-	}        
+    if (config["force_odt_generation"]) {
+        force_odt_generation_ = config["force_odt_generation"].as<bool>();
+    }
+
+    if (use_frequencies) {
+        UpdateAlgoNameWithDatasets();
+    }
 }
