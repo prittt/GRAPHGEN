@@ -147,11 +147,11 @@ public:
     std::string fun_name(int index, const std::string& prefix, const std::vector<std::vector<int>>& mapping, int end_group_id)
 
     */
-    void GenerateCode(BEFORE_AFTER_FUN(before_main)       = BeforeMainShiftOne,
-                      BEFORE_AFTER_FUN(after_main)        = DefaultEmptyFunc,
-                      BEFORE_AFTER_FUN(before_end)        = BeforeEnd,
-                      BEFORE_AFTER_FUN(after_end)         = AfterEnd,
-                      BEFORE_AFTER_FUN(after_end_no_loop) = AfterEndNoLoop,
+    void GenerateCode(BEFORE_AFTER_FUNC(before_main)       = BeforeMainShiftOne,
+                      BEFORE_AFTER_FUNC(after_main)        = DefaultEmptyFunc,
+                      BEFORE_AFTER_FUNC(before_end)        = BeforeEnd,
+                      BEFORE_AFTER_FUNC(after_end)         = AfterEnd,
+                      BEFORE_AFTER_FUNC(after_end_no_loop) = AfterEndNoLoop,
                       int flags = 0 /* no flags available right now */)
     {
         int last_id = 0;

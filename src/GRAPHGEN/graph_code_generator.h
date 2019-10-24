@@ -37,18 +37,17 @@
 
 /** @brief
 */
-#define BEFORE_AFTER_FUN(fun_name) std::string fun_name(int index,                                     \
-                                                        const std::string& prefix,                     \
-                                                        const std::vector<std::vector<int>>& mapping,  \
-                                                        int end_group_id)                              \
+#define BEFORE_AFTER_FUNC(func_name) std::string func_name(int index,                                     \
+                                                          const std::string& prefix,                     \
+                                                          const std::vector<std::vector<int>>& mapping,  \
+                                                          int end_group_id)                              \
 
-BEFORE_AFTER_FUN(DefaultEmptyFunc);
-BEFORE_AFTER_FUN(BeforeMainShiftOne);
-BEFORE_AFTER_FUN(BeforeMainShiftTwo);
-BEFORE_AFTER_FUN(BeforeEnd);
-BEFORE_AFTER_FUN(AfterEnd);
-BEFORE_AFTER_FUN(AfterEndNoLoop);
-
+BEFORE_AFTER_FUNC(DefaultEmptyFunc);
+BEFORE_AFTER_FUNC(BeforeMainShiftOne);
+BEFORE_AFTER_FUNC(BeforeMainShiftTwo);
+BEFORE_AFTER_FUNC(BeforeEnd);
+BEFORE_AFTER_FUNC(AfterEnd);
+BEFORE_AFTER_FUNC(AfterEndNoLoop);
 /** @brief This function generates the code for the given drag reversing the output into the specified stream
 
 @param[in] os Where to write the code.
@@ -91,8 +90,8 @@ BEFORE_AFTER_FUN(AfterEndNoLoop);
 int GenerateDragCode(std::ostream& os, 
                      const BinaryDrag<conact>& bd, 
                      bool with_gotos = false,
-                     BEFORE_AFTER_FUN(before) = DefaultEmptyFunc,
-                     BEFORE_AFTER_FUN(after)  = DefaultEmptyFunc,
+                     BEFORE_AFTER_FUNC(before) = DefaultEmptyFunc,
+                     BEFORE_AFTER_FUNC(after)  = DefaultEmptyFunc,
                      const std::string prefix = "",
                      int start_id = 0,
                      const std::vector<std::vector<int>> mapping = {}, 
@@ -109,8 +108,8 @@ This function works only when all nodes of the DRAG have both left and right chi
 */
 bool GenerateDragCode(const BinaryDrag<conact>& bd, 
                       bool with_gotos = false,
-                      BEFORE_AFTER_FUN(before) = DefaultEmptyFunc,
-                      BEFORE_AFTER_FUN(after)  = DefaultEmptyFunc,
+                      BEFORE_AFTER_FUNC(before) = DefaultEmptyFunc,
+                      BEFORE_AFTER_FUNC(after)  = DefaultEmptyFunc,
                       const std::string prefix = "",
                       int start_id = 0,
                       const std::vector<std::vector<int>> mapping = {}, 
@@ -127,10 +126,10 @@ int GenerateLineForestCode(std::ostream& os,
                            const LineForestHandler& lfh,
                            std::string prefix,
                            int start_id,
-                           BEFORE_AFTER_FUN(before_main) = BeforeMainShiftOne,
-                           BEFORE_AFTER_FUN(after_main) = DefaultEmptyFunc,
-                           BEFORE_AFTER_FUN(before_end) = BeforeEnd,
-                           BEFORE_AFTER_FUN(after_end) = AfterEnd);
+                           BEFORE_AFTER_FUNC(before_main) = BeforeMainShiftOne,
+                           BEFORE_AFTER_FUNC(after_main)  = DefaultEmptyFunc,
+                           BEFORE_AFTER_FUNC(before_end)  = BeforeEnd,
+                           BEFORE_AFTER_FUNC(after_end)   = AfterEnd);
 
 
 #endif // GRAPHGEN_GRAPH_CODE_GENERATOR_H_

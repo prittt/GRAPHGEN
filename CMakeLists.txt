@@ -36,7 +36,10 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Install prefix" FORCE
 
 #Set GRAPHGEN variables
 set(GRAPHGEN_OUTPUT_PATH "${CMAKE_INSTALL_PREFIX}/outputs" CACHE PATH "'output' results path")
-set(GRAPHGEN_INPUT_PATH "" CACHE PATH "input path with datasets for counting frequencies")
+set(GRAPHGEN_INPUT_PATH "${CMAKE_INSTALL_PREFIX}/input" CACHE PATH "'input' dataset path")
+
+set(GRAPHGEN_DOWNLOAD_DATASET OFF CACHE BOOL "If flagged the GRAPHGEN dataset will be automatically downloaded")
+
 
 if(MSVC)
   set(CMAKE_USE_RELATIVE_PATHS ON CACHE INTERNAL "" FORCE)
@@ -114,10 +117,39 @@ set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPE
 configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/config.yaml")
 
 
-#set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set YACCLAB as startup group instead of ALL_BUILD
+#set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set GRAPHGEN as startup group instead of ALL_BUILD
 target_link_libraries (${ProjectName} ${OpenCV_LIBS})
 
 # Creation of output directory
+if(GRAPHGEN_DOWNLOAD_DATASET)
+	# Creation of the input directory
+	if (NOT EXISTS "${GRAPHGEN_INPUT_PATH}")
+		file(MAKE_DIRECTORY ${GRAPHGEN_INPUT_PATH})
+	endif()
+	
+	if (EXISTS "${GRAPHGEN_INPUT_PATH}/dataset.zip")
+		message(STATUS "${GRAPHGEN_INPUT_PATH}/dataset.zip already exists, download skipped!")
+	else()
+		message(STATUS "Downloading dataset...")
+		file(DOWNLOAD http://imagelab.ing.unimore.it/files/YACCLAB_dataset_new.zip "${GRAPHGEN_INPUT_PATH}/dataset.zip" STATUS status SHOW_PROGRESS)
+		list( GET status 0 error_code )
+		if( error_code )
+			message(ERROR " Cmake is not able to download the GRAPHGEN dataset. \nPlease, retry or download it manually and put all unzipped dataset directories in the 'input' path:\n'" ${GRAPHGEN_INPUT_PATH} "'. \n(The dataset is available at http://imagelab.ing.unimore.it/files/GRAPHGEN_dataset_new.zip).")
+			if(EXISTS "${GRAPHGEN_INPUT_PATH}/dataset.zip")
+				file(REMOVE "${GRAPHGEN_INPUT_PATH}/dataset.zip")
+			endif()
+		else()
+			message(STATUS "Downloading done.")
+		endif()
+		
+		if(EXISTS "${GRAPHGEN_INPUT_PATH}/dataset.zip")
+			message(STATUS "Unpacking (it may take a while)...")
+			execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf "${GRAPHGEN_INPUT_PATH}/dataset.zip" WORKING_DIRECTORY "${GRAPHGEN_INPUT_PATH}" OUTPUT_QUIET)
+			message(STATUS "Unpacking done.")
+		endif()
+	endif()
+endif()
+
 if (NOT EXISTS "${GRAPHGEN_OUTPUT_PATH}")
 	file(MAKE_DIRECTORY ${GRAPHGEN_OUTPUT_PATH})
 endif()

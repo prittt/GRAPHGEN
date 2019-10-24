@@ -38,7 +38,7 @@ int main()
 {
     // Setup configuration
     string algorithm_name = "PRED";
-    conf = ConfigData(algorithm_name);
+    conf = ConfigData(algorithm_name, "Rosenfeld");
 
     // Load or generate rules
     RosenfeldRS r_rs;
@@ -46,7 +46,7 @@ int main()
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
-    BinaryDrag<conact> bd = GetOdt(rs, algorithm_name);
+    BinaryDrag<conact> bd = GetOdt(rs);
     
     // 2) Draw the generated tree on file
     string tree_filename = algorithm_name + "_tree";
