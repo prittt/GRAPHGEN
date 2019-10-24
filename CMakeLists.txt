@@ -107,8 +107,7 @@ foreach(ALGO ${LABELING_ALGORITHMS})
 	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
 
-set(THINNING_ALGORITHMS ZS_Tree ZS_Spaghetti GH_Tree GH_Spaghetti CH_Tree CH_Spaghetti CACHE INTERNAL ON FORCE)
-#set(THINNING_ALGORITHMS CACHE INTERNAL ON FORCE)
+set(THINNING_ALGORITHMS ZS_Tree ZS_Spaghetti ZS_Spaghetti_FREQ GH_Tree GH_Spaghetti CH_Tree CH_Spaghetti CACHE INTERNAL ON FORCE)
 foreach(ALGO ${THINNING_ALGORITHMS})
 	add_executable(${ALGO} "")
 	set_target_properties(${ALGO} PROPERTIES FOLDER "Thinning")
@@ -125,6 +124,9 @@ set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPE
 #add_definitions(-D_CRT_SECURE_NO_WARNINGS) #To suppress 'fopen' opencv warning/bug  
 # Set configuration file	
 configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/config.yaml")
+
+# Copy frequencies files into bin folder
+file(COPY "${CMAKE_SOURCE_DIR}/frequencies" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
 
 #set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set GRAPHGEN as startup group instead of ALL_BUILD
 if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)

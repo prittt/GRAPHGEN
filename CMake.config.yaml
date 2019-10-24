@@ -8,7 +8,7 @@
 force_odt_generation: false
 
 # Datasets used for frequency calculation
-datasets: ["fingerprints", "hamlet"]
+datasets: ["fingerprints", "hamlet", "3dpes", "xdocs", "tobacco800", "mirflickr", "medical"]
 
 # Input path: path to the folder containing the datasets
 # Output path: path where all outputs (code, graphs) will be stored

@@ -32,8 +32,6 @@
 
 #include "grana_ruleset.h"
 
-#include "image_frequencies.h"
-
 using namespace std;
 
 int main()
