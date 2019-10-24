@@ -6,6 +6,7 @@
 #include "conact_tree.h"
 #include "config_data.h"
 #include "connectivity_graph.h"
+#include "drag.h"
 #include "drag_compressor.h"
 #include "drag_statistics.h"
 #include "drag2optimal.h"
