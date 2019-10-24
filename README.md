@@ -1,4 +1,6 @@
-# GRAPHGEN
+![Header Image](./doc/logo/graphgen_inline.png)
+
+---
 
 <!--
 Can be displayed only if the repo is public.
@@ -12,9 +14,6 @@ Can be displayed only if the repo is public.
 ### Windows
 * For compiling: Visual Studio 2017 (later versions are not tested).
 * [CMake](https://cmake.org/) 3.12 or later.
-
----
-
 * *OpenCV 3.x (optional, only needed for frequency calculation in Connected Components Labeling).*
 * *graphviz (included in the repository as executable).*
 * *yaml-cpp (included in the repository as submodule).*
@@ -24,9 +23,6 @@ Can be displayed only if the repo is public.
 * For compiling: GCC 9.x or later (for full std::filesystem support).
 * [CMake](https://cmake.org/) 3.12 or later.
 * [graphviz](https://www.graphviz.org/download/) for producing SVG representations of the generated graphs, using the `dot` command. Can be installed e.g. through apt: `sudo apt install graphviz`.
-
----
-
 * *OpenCV 3.x (optional, only needed for frequency calculation in Connected Components Labeling).*
 * *yaml-cpp (included in the repository as submodule).*
 
