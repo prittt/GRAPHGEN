@@ -65,7 +65,7 @@ class ForestStatistics {
 	}
 
 public:
-	ForestStatistics(const Forest& f) {
+	ForestStatistics(const LineForestHandler& f) {
 		// Internal trees statistics
 		for (const auto& t : f.trees_) {
 			PerformStatistics(t.GetRoot());
@@ -85,7 +85,7 @@ public:
 	auto end_leaves() const { return visited_end_leaves.size(); }
 };
 
-void PrintStats(const Forest& f);
+void PrintStats(const LineForestHandler& f);
 
 
 #endif // !GRAPHGEN_FOREST_STATISTICS_H_

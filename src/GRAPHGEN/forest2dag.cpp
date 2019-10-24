@@ -86,7 +86,7 @@ void Forest2Dag::FindAndLink(BinaryDrag<conact>::node* n) {
 }
 
 // Calls FindAndLink for each root of the forest
-Forest2Dag::Forest2Dag(Forest& f) : f_(f) {
+Forest2Dag::Forest2Dag(LineForestHandler& f) : f_(f) {
 	// Conversion to DAG for the main forest
 	for (auto& t : f_.trees_) {
 		FindAndLink(t.GetRoot());

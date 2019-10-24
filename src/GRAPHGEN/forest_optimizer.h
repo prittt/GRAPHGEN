@@ -102,7 +102,7 @@ struct STree {
 		}
 	};
 	map<BinaryDrag<conact>::node*, STreeProp> np_;
-	Forest& f_;
+	LineForestHandler& f_;
 
 	STreeProp CollectStatsRec(BinaryDrag<conact>::node * n) {
 		auto it = np_.find(n);
@@ -321,7 +321,7 @@ struct STree {
 		return true;
 	}
 
-	STree(Forest& f) : f_(f) {
+	STree(LineForestHandler& f) : f_(f) {
 		while (LetsDoIt()) {
 			f_.RemoveUselessConditions();
 			//f_.RemoveEqualTrees();

@@ -30,7 +30,7 @@
 
 #include <iostream>
 
-void PrintStats(const Forest& f) {
+void PrintStats(const LineForestHandler& f) {
 	ForestStatistics fs(f);
 	std::cout << "Nodes = " << fs.nodes() << "\n";
 	std::cout << "Leaves = " << fs.leaves() << "\n";

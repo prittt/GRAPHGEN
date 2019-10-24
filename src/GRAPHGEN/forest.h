@@ -71,7 +71,6 @@ static std::vector<int> DEFAULT_VECTOR; // Dummy vector for the default value of
 
 /** @brief Generates all the forests needed to handle one line of the image.
 */
-using Forest = struct LineForestHandler; // TO BE REMOVED
 struct LineForestHandler {
 
     /** @brief Creates forest of trees pruning original tree. 
