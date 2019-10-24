@@ -1,6 +1,12 @@
+
+if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)
+	target_sources(GRAPHGEN PRIVATE
+		image_frequencies.cpp
+		image_frequencies.h
+	)
+endif()
+
 target_sources(GRAPHGEN PRIVATE
-    image_frequencies.cpp
-    image_frequencies.h
     drag_statistics.cpp
 	drag_statistics.h
 	drag2optimal.cpp

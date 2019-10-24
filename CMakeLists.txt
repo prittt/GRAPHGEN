@@ -38,7 +38,11 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Install prefix" FORCE
 set(GRAPHGEN_OUTPUT_PATH "${CMAKE_INSTALL_PREFIX}/outputs" CACHE PATH "'output' results path")
 set(GRAPHGEN_INPUT_PATH "${CMAKE_INSTALL_PREFIX}/input" CACHE PATH "'input' dataset path")
 
-set(GRAPHGEN_DOWNLOAD_DATASET OFF CACHE BOOL "If flagged the GRAPHGEN dataset will be automatically downloaded")
+set(GRAPHGEN_FREQUENCIES_CCL_ENABLED OFF CACHE BOOL "Enable Frequency Calculation in Connected Components Labeling.")
+
+if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)
+	set(GRAPHGEN_FREQUENCIES_CCL_DOWNLOAD_DATASET OFF CACHE BOOL "Enable automatic download of the dataset used for frequency calculation.")
+endif()
 
 
 if(MSVC)
@@ -54,15 +58,17 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # --------------------
 # OpenCV 
 # --------------------
-set(OpenCV_REQUIRED_PACKAGES "core;imgcodecs;imgproc" CACHE STRING "OpenCV packages required by GRAPHGEN are already set")
-FIND_PACKAGE(OpenCV REQUIRED ${OpenCV_REQUIRED_PACKAGES})
-include_directories( ${OpenCV_INCLUDE_DIRS} )
-if(MSVC)
-	if("${OpenCV_STATIC}" STREQUAL "ON" OR "${OpenCV_SHARED}" STREQUAL "OFF")
-		message(STATUS "Setting static runtime for MSVC")
-		foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO) 
-			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-		endforeach(flag_var)
+if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)
+	set(OpenCV_REQUIRED_PACKAGES "core;imgcodecs;imgproc" CACHE STRING "OpenCV packages required by GRAPHGEN are already set")
+	FIND_PACKAGE(OpenCV REQUIRED ${OpenCV_REQUIRED_PACKAGES})
+	include_directories( ${OpenCV_INCLUDE_DIRS} )
+	if(MSVC)
+		if("${OpenCV_STATIC}" STREQUAL "ON" OR "${OpenCV_SHARED}" STREQUAL "OFF")
+			message(STATUS "Setting static runtime for MSVC")
+			foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO) 
+				string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+			endforeach(flag_var)
+		endif()
 	endif()
 endif()
 
@@ -88,7 +94,11 @@ if (WIN32)
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
 endif (WIN32)
 
-set(LABELING_ALGORITHMS SAUF PRED PRED++ BBDT DRAG Spaghetti Spaghetti_FREQ Tagliatelle CACHE INTERNAL ON FORCE)
+set(LABELING_ALGORITHMS SAUF PRED PRED++ BBDT DRAG Spaghetti Tagliatelle CACHE INTERNAL ON FORCE)
+if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)
+	set(LABELING_ALGORITHMS ${LABELING_ALGORITHMS} Spaghetti_FREQ)
+endif()
+
 foreach(ALGO ${LABELING_ALGORITHMS})
 	add_executable(${ALGO} "")
 	set_target_properties(${ALGO} PROPERTIES FOLDER "Labeling")
@@ -116,12 +126,13 @@ set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPE
 # Set configuration file	
 configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/config.yaml")
 
-
 #set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set GRAPHGEN as startup group instead of ALL_BUILD
-target_link_libraries (${ProjectName} ${OpenCV_LIBS})
+if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)
+	target_link_libraries (${ProjectName} ${OpenCV_LIBS})
+endif()
 
 # Creation of output directory
-if(GRAPHGEN_DOWNLOAD_DATASET)
+if(GRAPHGEN_FREQUENCIES_CCL_DOWNLOAD_DATASET)
 	# Creation of the input directory
 	if (NOT EXISTS "${GRAPHGEN_INPUT_PATH}")
 		file(MAKE_DIRECTORY ${GRAPHGEN_INPUT_PATH})
