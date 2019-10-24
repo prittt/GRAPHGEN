@@ -39,7 +39,7 @@ using namespace std;
 int main()
 {
     string algorithm_name = "DRAG";
-    conf = ConfigData(algorithm_name);
+    conf = ConfigData(algorithm_name, "Grana");
 
     GranaRS g_rs;
     auto rs = g_rs.GetRuleSet();

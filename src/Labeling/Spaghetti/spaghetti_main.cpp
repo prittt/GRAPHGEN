@@ -37,7 +37,10 @@ using namespace std;
 int main()
 {
     string algorithm_name = "Spaghetti";
-    conf = ConfigData(algorithm_name);
+
+    string mask_name = "Grana";
+
+    conf = ConfigData(algorithm_name, mask_name);
 
     GranaRS g_rs;
     auto rs = g_rs.GetRuleSet();

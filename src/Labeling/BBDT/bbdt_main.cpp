@@ -37,7 +37,7 @@ using namespace std;
 int main()
 {
     string algorithm_name = "BBDT";
-    conf = ConfigData(algorithm_name);
+    conf = ConfigData(algorithm_name, "Grana");
 
     GranaRS g_rs;
     auto rs = g_rs.GetRuleSet();

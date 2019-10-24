@@ -41,8 +41,10 @@ struct ConfigData {
 
     // Global names/paths
     std::filesystem::path global_output_path_;
+    std::filesystem::path algorithm_output_path_;
     std::filesystem::path global_input_path_;
     std::string algorithm_name_;
+    std::string mask_name_;
 
     // Dot configurations
     std::string dot_background_color_ = "\"transparent\"";
@@ -82,35 +84,37 @@ struct ConfigData {
     std::vector<std::filesystem::path> datasets_path_;
 
     // Frequencies
-    std::string frequencies_suffix_ = "_frequencies.bin";
+    std::string frequencies_local_path_ = "frequencies";
+    std::filesystem::path frequencies_path_;
+    std::string frequencies_suffix_ = ".bin";
 
     ConfigData() {}
 
-    ConfigData(std::string algorithm_name);
+    ConfigData(std::string algorithm_name, std::string mask_name);
 
     // Dot code
     std::filesystem::path GetDotCodePath(const std::string& out_base_name) {
-        return global_output_path_ / std::filesystem::path(out_base_name + dotcode_suffix_);
+        return algorithm_output_path_ / std::filesystem::path(out_base_name + dotcode_suffix_);
     }
 
     // Dot output
     std::filesystem::path GetDotOutPath(const std::string& out_base_name) {
-        return global_output_path_ / std::filesystem::path(out_base_name + dot_output_format_);
+        return algorithm_output_path_ / std::filesystem::path(out_base_name + dot_output_format_);
     }
 
     // Forest code
     std::filesystem::path GetForestCodePath(const std::string& out_base_name) {
-        return global_output_path_ / std::filesystem::path(algorithm_name_ + "_" + out_base_name + forestcode_suffix_);
+        return algorithm_output_path_ / std::filesystem::path(algorithm_name_ + "_" + out_base_name + forestcode_suffix_);
     }
 
     // Frequencies cache
     std::filesystem::path GetFrequenciesPath(const std::string& datasets_name) const {
-        return global_output_path_ / std::filesystem::path(algorithm_name_ + "_" + datasets_name + frequencies_suffix_);
+        return algorithm_output_path_ / std::filesystem::path(algorithm_name_ + "_" + datasets_name + frequencies_suffix_);
     }
 
     // Get ODT path with custom suffix (used in conjunction with frequencies)
     std::filesystem::path GetCustomOdtPath(const std::string& custom_suffix) const {
-        return global_output_path_ / std::filesystem::path(algorithm_name_ + "_" + custom_suffix + odt_suffix_);
+        return algorithm_output_path_ / std::filesystem::path(algorithm_name_ + "_" + custom_suffix + odt_suffix_);
     }
 };
 

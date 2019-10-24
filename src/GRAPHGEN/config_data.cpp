@@ -33,7 +33,7 @@
 using namespace std;
 using namespace filesystem;
 
-ConfigData::ConfigData(string algorithm_name) : algorithm_name_{ algorithm_name } {
+ConfigData::ConfigData(string algorithm_name, string mask_name) : algorithm_name_{ algorithm_name }, mask_name_{mask_name} {
     YAML::Node config;
     try {
         config = YAML::LoadFile(config_file_);
@@ -44,23 +44,29 @@ ConfigData::ConfigData(string algorithm_name) : algorithm_name_{ algorithm_name 
     }
 
     if (config["paths"]["output"]) {
-        global_output_path_ = path(config["paths"]["output"].as<string>()) / path(algorithm_name);
-        create_directories(global_output_path_);
+
+        global_output_path_ = path(config["paths"]["output"].as<string>());
+        algorithm_output_path_ = global_output_path_ / path(algorithm_name);
+        create_directories(algorithm_output_path_);
 
         // ODT
-        odt_path_ = global_output_path_ / path(algorithm_name + odt_suffix_);
+        odt_path_ = algorithm_output_path_ / path(algorithm_name + odt_suffix_);
 
         // Code
-        code_path_ = global_output_path_ / path(algorithm_name + code_suffix_);
+        code_path_ = algorithm_output_path_ / path(algorithm_name + code_suffix_);
 
         // Rule Set / Decision Table
-        rstable_path_ = global_output_path_ / path(algorithm_name + rstable_suffix_);
+        rstable_path_ = algorithm_output_path_ / path(algorithm_name + rstable_suffix_);
 
         // Tree / Forest / Dag (.inc) // TODO the following variables are probably useless
-        treecode_path_ = global_output_path_ / path(algorithm_name + treecode_suffix_);
-        forestcode_path_ = global_output_path_ / path(algorithm_name + forestcode_suffix_);
-        treedagcode_path_ = global_output_path_ / path(algorithm_name + treedagcode_suffix_);
-        forestdagcode_path_ = global_output_path_ / path(algorithm_name + forestdagcode_suffix_);
+        treecode_path_ = algorithm_output_path_ / path(algorithm_name + treecode_suffix_);
+        forestcode_path_ = algorithm_output_path_ / path(algorithm_name + forestcode_suffix_);
+        treedagcode_path_ = algorithm_output_path_ / path(algorithm_name + treedagcode_suffix_);
+        forestdagcode_path_ = algorithm_output_path_ / path(algorithm_name + forestdagcode_suffix_);
+
+        // Frequencies
+        frequencies_path_ = global_output_path_ / frequencies_local_path_;
+        create_directories(frequencies_path_ / mask_name_);
     }
     else {
         cout << "ERROR: missing output path in configuration file.\n";

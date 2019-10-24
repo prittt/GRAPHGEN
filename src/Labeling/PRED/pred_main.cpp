@@ -38,7 +38,7 @@ int main()
 {
     // Setup configuration
     string algorithm_name = "PRED";
-    conf = ConfigData(algorithm_name);
+    conf = ConfigData(algorithm_name, "Rosenfeld");
 
     // Load or generate rules
     RosenfeldRS r_rs;

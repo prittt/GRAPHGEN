@@ -37,7 +37,9 @@ using namespace std;
 int main()
 {
     string algorithm_name = "SAUF";
-    conf = ConfigData(algorithm_name);
+    string mask_name = "Rosenfeld";
+
+    conf = ConfigData(algorithm_name, mask_name);
 
     RosenfeldRS r_rs;
     auto rs = r_rs.GetRuleSet();
