@@ -1,17 +1,19 @@
 %YAML:1.2
 ---
-############################################
-# This is the GRAPHGEN configuration file #
-############################################
+###############################
+# GRAPHGEN configuration file #
+###############################
 
 # Forces the optimal decision tree to be generated in every execution
 force_odt_generation: false
 
-# Datasets used for frequency calculation
+#   Available from the downloadable YACCLAB dataset (via CMake option, see README): 
+#   "3dpes", "check", "fingerprints", "hamlet", "medical", "mirflickr",
+#   "tobacco800", "xdocs", "random/classical", "random/granularity"
 datasets: ["fingerprints", "hamlet", "3dpes", "xdocs", "tobacco800", "mirflickr", "medical", "classical"]
 
 # Input path: path to the folder containing the datasets
-# Output path: path where all outputs (code, graphs) will be stored
+# Output path: path where all outputs (code, graphs, frequencies) will be stored
 paths: {input: "${GRAPHGEN_INPUT_PATH}", output: "${GRAPHGEN_OUTPUT_PATH}"}
 
 # Output settings for the generated graphs.
@@ -20,7 +22,3 @@ paths: {input: "${GRAPHGEN_INPUT_PATH}", output: "${GRAPHGEN_OUTPUT_PATH}"}
 #                   as "white", "red", "turquoise", "sienna", "transparent", etc 
 # - Ranksep:        is the vertical space between nodes
 dot: {out_format: "svg", background: "transparent", ranksep: "0.5"}
-
-############################################
-# This is the GRAPHGEN configuration file #
-############################################

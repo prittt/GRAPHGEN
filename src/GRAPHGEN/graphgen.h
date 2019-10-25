@@ -22,5 +22,7 @@
 #include "output_generator.h"
 #include "tree2dag_identities.h"
 
+#include "yaml-cpp/yaml.h"
+
 
 #endif // !GRAPHGEN_GRAPHGEN_H_

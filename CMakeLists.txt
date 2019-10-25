@@ -38,10 +38,10 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Install prefix" FORCE
 set(GRAPHGEN_OUTPUT_PATH "${CMAKE_INSTALL_PREFIX}/outputs" CACHE PATH "'output' results path")
 set(GRAPHGEN_INPUT_PATH "${CMAKE_INSTALL_PREFIX}/input" CACHE PATH "'input' dataset path")
 
-set(GRAPHGEN_FREQUENCIES_CCL_ENABLED OFF CACHE BOOL "Enable Frequency Calculation in Connected Components Labeling.")
+set(GRAPHGEN_FREQUENCIES_ENABLED OFF CACHE BOOL "Enable Frequency Calculation in Connected Components Labeling.")
 
-if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)
-	set(GRAPHGEN_FREQUENCIES_CCL_DOWNLOAD_DATASET OFF CACHE BOOL "Enable automatic download of the dataset used for frequency calculation.")
+if(GRAPHGEN_FREQUENCIES_ENABLED)
+	set(GRAPHGEN_FREQUENCIES_DOWNLOAD_DATASET OFF CACHE BOOL "Enable automatic download of the dataset used for frequency calculation.")
 endif()
 
 
@@ -58,7 +58,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # --------------------
 # OpenCV 
 # --------------------
-if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)
+if(GRAPHGEN_FREQUENCIES_ENABLED)
 	set(OpenCV_REQUIRED_PACKAGES "core;imgcodecs;imgproc" CACHE STRING "OpenCV packages required by GRAPHGEN are already set")
 	FIND_PACKAGE(OpenCV REQUIRED ${OpenCV_REQUIRED_PACKAGES})
 	include_directories( ${OpenCV_INCLUDE_DIRS} )
@@ -95,7 +95,7 @@ if (WIN32)
 endif (WIN32)
 
 set(LABELING_ALGORITHMS SAUF PRED PRED++ BBDT DRAG Spaghetti Tagliatelle CACHE INTERNAL ON FORCE)
-if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)
+if(GRAPHGEN_FREQUENCIES_ENABLED)
 	set(LABELING_ALGORITHMS ${LABELING_ALGORITHMS} Spaghetti_FREQ)
 endif()
 
@@ -129,12 +129,12 @@ configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/
 file(COPY "${CMAKE_SOURCE_DIR}/frequencies" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
 
 #set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set GRAPHGEN as startup group instead of ALL_BUILD
-if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)
+if(GRAPHGEN_FREQUENCIES_ENABLED)
 	target_link_libraries (${ProjectName} ${OpenCV_LIBS})
 endif()
 
 # Creation of output directory
-if(GRAPHGEN_FREQUENCIES_CCL_DOWNLOAD_DATASET)
+if(GRAPHGEN_FREQUENCIES_DOWNLOAD_DATASET)
 	# Creation of the input directory
 	if (NOT EXISTS "${GRAPHGEN_INPUT_PATH}")
 		file(MAKE_DIRECTORY ${GRAPHGEN_INPUT_PATH})
