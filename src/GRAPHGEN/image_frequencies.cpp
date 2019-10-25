@@ -196,7 +196,11 @@ bool LoadFileList(vector<pair<string, bool>>& filenames, const string& files_pat
 
 bool CountFrequenciesOnDataset(const ConfigData& config, const string& dataset, rule_set& rs, bool force) {
 
-    path frequencies_output_path = config.frequencies_path_ / config.mask_name_ / (dataset + config.frequencies_suffix_);
+	// replace slashes with underscores in output names
+	std::string dataset_output_name = dataset;
+	std::replace(dataset_output_name.begin(), dataset_output_name.end(), '/', '_');
+
+    path frequencies_output_path = config.frequencies_path_ / config.mask_name_ / (dataset_output_name + config.frequencies_suffix_);
 
     if (!force) {
         // Try to load frequencies from file
