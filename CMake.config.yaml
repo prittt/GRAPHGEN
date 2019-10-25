@@ -8,7 +8,7 @@
 force_odt_generation: false
 
 # Datasets used for frequency calculation
-datasets: ["fingerprints", "hamlet", "3dpes", "xdocs", "tobacco800", "mirflickr", "medical"]
+datasets: ["fingerprints", "hamlet", "3dpes", "xdocs", "tobacco800", "mirflickr", "medical", "classical"]
 
 # Input path: path to the folder containing the datasets
 # Output path: path where all outputs (code, graphs) will be stored
@@ -18,6 +18,7 @@ paths: {input: "${GRAPHGEN_INPUT_PATH}", output: "${GRAPHGEN_OUTPUT_PATH}"}
 # - Output Format:  currently supported: "pdf", "png", and "svg"
 # - Background:     can be one of the color supported by dot, such 
 #                   as "white", "red", "turquoise", "sienna", "transparent", etc 
+# - Ranksep:        is the vertical space between nodes
 dot: {out_format: "svg", background: "transparent", ranksep: "0.5"}
 
 ############################################
