@@ -30,18 +30,18 @@
 
 #include "graphgen.h"
 
-#include "guohall_ruleset.h"
+#include "hscp_ruleset.h"
 
 using namespace std;
 
 int main()
 {
-    string algo_name = "GH_Tree";
-    string mask_name = "3x3";
+    string algo_name = "HSCP_Tree";
+    string mask_name = "4x4";
     conf = ConfigData(algo_name, mask_name);
 
-    GuoHallRS gh_rs;
-    auto rs = gh_rs.GetRuleSet();
+    HscpRS hscp_rs;
+    auto rs = hscp_rs.GetRuleSet();
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Guo-Hall algorithm

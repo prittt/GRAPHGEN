@@ -40,8 +40,8 @@ int main()
     string mask_name = "3x3";
     conf = ConfigData(algo_name, mask_name);
 
-    GuoHallRS zs_rs;
-    auto rs = zs_rs.GetRuleSet();
+    GuoHallRS gh_rs;
+    auto rs = gh_rs.GetRuleSet();
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Guo-Hall algorithm

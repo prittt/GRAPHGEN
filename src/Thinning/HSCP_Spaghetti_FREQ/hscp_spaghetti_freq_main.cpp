@@ -30,29 +30,47 @@
 
 #include "graphgen.h"
 
-#include "guohall_ruleset.h"
+#include "hscp_ruleset.h"
 
 using namespace std;
 
 int main()
 {
-    string algo_name = "GH_Tree";
-    string mask_name = "3x3";
+    string algo_name = "HSCP_Spaghetti";
+    string mask_name = "4x4";
     conf = ConfigData(algo_name, mask_name);
 
-    GuoHallRS gh_rs;
-    auto rs = gh_rs.GetRuleSet();
+    HscpRS hscp_rs;
+    auto rs = hscp_rs.GetRuleSet();
 
     // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Guo-Hall algorithm
+    // 1) Count frequencies
+    AddFrequenciesToRuleset(rs);
+
+    // 2) Load or generate Optimal Decision Tree based on Guo-Hall algorithm
     BinaryDrag<conact> bd = GetOdt(rs);
 
-    // 2) Draw the generated tree on file
+    // 3) Draw the generated tree on file
     string tree_filename = algo_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
-    // 3) Generate the C/C++ source code
-    GenerateDragCode(bd);
+    // 4) Generate forests of trees
+    LOG(algo_name + " - making forests",
+        ForestHandler fh(bd, rs.ps_, 
+                         ForestHandlerFlags::FIRST_LINE  |
+                         ForestHandlerFlags::LAST_LINE   |
+                         ForestHandlerFlags::SINGLE_LINE |
+                         ForestHandlerFlags::CENTER_LINES);
+    );
+
+    // 5) Compress the forest
+    fh.Compress();
+
+    // 6) Draw the compressed forests on file
+    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
+
+    // 7) Generate the C/C++ source code
+    fh.GenerateCode();
     GeneratePointersConditionsActionsCode(rs, 
                                           GenerateConditionActionCodeFlags::NONE, 
                                           GenerateActionCodeTypes::THINNING);

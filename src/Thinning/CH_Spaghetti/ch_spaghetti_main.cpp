@@ -40,8 +40,8 @@ int main()
     string mask_name = "3x3";
     conf = ConfigData(algo_name, mask_name);
 
-    ChenHsuRS zs_rs;
-    auto rs = zs_rs.GetRuleSet();
+    ChenHsuRS ch_rs;
+    auto rs = ch_rs.GetRuleSet();
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Chen-Hsu algorithm
