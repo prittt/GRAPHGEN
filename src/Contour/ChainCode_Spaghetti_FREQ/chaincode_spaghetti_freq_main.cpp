@@ -26,33 +26,35 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "graphgen.h"
+#include "chaincode_ruleset.h"
 
-#include "grana_ruleset.h"
+#include "graphgen.h"
 
 using namespace std;
 
 int main()
 {
-    string algorithm_name = "Spaghetti";
+    string algo_name = "ChainCode_Spaghetti_FREQ";
+    string mask_name = "Cederberg";
 
-    string mask_name = "Grana";
+    conf = ConfigData(algo_name, mask_name, true);
 
-    conf = ConfigData(algorithm_name, mask_name);
-
-    GranaRS g_rs;
-    auto rs = g_rs.GetRuleSet();
+	ChainCodeRS cc_rs;
+	auto rs = cc_rs.GetRuleSet();
 
     // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Grana mask
+    // 1) Count frequencies
+    AddFrequenciesToRuleset(rs);
+
+    // 2) Load or generate Optimal Decision Tree based on Cederberg mask
     BinaryDrag<conact> bd = GetOdt(rs);
 
-    // 2) Draw the generated tree to pdf
-    string tree_filename = algorithm_name + "_tree";
+    // 3) Draw the generated tree to pdf
+    string tree_filename = algo_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
-    // 3) Generate forests of trees
-    LOG(algorithm_name + " - making forests",
+    // 4) Generate forests of trees
+    LOG(algo_name + " - making forests",
         ForestHandler fh(bd, rs.ps_, 
                          ForestHandlerFlags::CENTER_LINES |
                          ForestHandlerFlags::FIRST_LINE   |
@@ -60,16 +62,16 @@ int main()
                          ForestHandlerFlags::SINGLE_LINE);
     );
 
-    // 4) Draw the generated forests on file
-    fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
+    // 5) Draw the generated forests on file
+    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
 
-    // 5) Compress the forests
-    fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES);
+    // 6) Compress the forests
+    fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES, 1);
 
-    // 6) Draw the compressed forests on file
-    fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
+    // 7) Draw the compressed forests on file
+    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
 
-    // 7) Generate the C/C++ code taking care of the names used
+    // 8) Generate the C/C++ code taking care of the names used
     //    in the Grana's rule set GranaRS
     fh.GenerateCode(BeforeMainShiftTwo);
     pixel_set block_positions{

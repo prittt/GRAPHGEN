@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,69 +26,41 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHGEN_BASE_RULESET_H_
-#define GRAPHGEN_BASE_RULESET_H_
+#include "chaincode_ruleset.h"
 
-#include <fstream>
-#include <filesystem>
-#include <string>
-#include <utility>
+#include "graphgen.h"
 
-#include "yaml-cpp/yaml.h"
+using namespace std;
 
-#include "rule_set.h"
+int main()
+{
+    string algorithm_name = "ChainCode_Tree";
+    string mask_name = "Cederberg";
 
-class BaseRuleSet {
-    std::filesystem::path p_;
-    bool force_;
-    rule_set rs_;
+    conf = ConfigData(algorithm_name, mask_name);
 
-    bool LoadRuleSet() {
+	ChainCodeRS cc_rs;
+	auto rs = cc_rs.GetRuleSet();
 
-        YAML::Node rs_node;
-        try {
-            rs_node = YAML::LoadFile(p_.string());
-        }
-        catch (...){
-            return false;
-        }
+    // Call GRAPHGEN:
+    // 1) Load or generate Optimal Decision Tree based on Cederberg mask
+    BinaryDrag<conact> bd = GetOdt(rs);
 
-        rs_ = rule_set(rs_node);
-        return true;
+    // 2) Draw the generated tree to pdf
+    string tree_filename = algorithm_name + "_tree";
+    DrawDagOnFile(tree_filename, bd);
+
+    // 3) Generate the C++ source code for the ODT
+    ofstream os(conf.treecode_path_);
+    if (os){
+        GenerateDragCode(os, bd);
     }
 
-    void SaveRuleSet() {
-        std::ofstream os(p_.string());
-        if (os) {
-            YAML::Node n = rs_.Serialize();
-            YAML::Emitter emitter(os);
-            emitter.SetSeqFormat(YAML::EMITTER_MANIP::Flow);
-            emitter << n;
-        }
-    }
+    // 4) Generate the C++ source code for pointers,
+    // conditions to check and actions to perform
+    GeneratePointersConditionsActionsCode(rs, 
+		GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | 
+		GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE);
 
-public:
-
-    BaseRuleSet(bool force_generation = false) : force_{ force_generation }
-    {
-        p_ = conf.rstable_path_;
-    }
-
-	BaseRuleSet(std::filesystem::path custom_path) : force_{false}
-	{
-		p_ = custom_path;
-	}
-
-    rule_set GetRuleSet() {
-        if (force_ || !LoadRuleSet()) {
-            rs_ = GenerateRuleSet();
-            SaveRuleSet();
-        }
-        return rs_;
-    }
-
-    virtual rule_set GenerateRuleSet() = 0;
-
-};
-
-#endif //GRAPHGEN_BASE_RULESET_H_
+    return EXIT_SUCCESS;
+}

@@ -1,4 +1,4 @@
-target_sources(SAUF PRIVATE
-	sauf_main.cpp
-    ../rosenfeld_ruleset.h
+target_sources(ChainCode_Tree PRIVATE
+    chaincode_tree_main.cpp
+    ../chaincode_ruleset.h
 )

@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,39 +26,28 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef GRAPHGEN_ROSENFELD_RULESET_H_
+#define GRAPHGEN_ROSENFELD_RULESET_H_
+
+#include <string>
+
 #include "graphgen.h"
 
-#include "rosenfeld_ruleset.h"
+class ChainCodeRS : public BaseRuleSet {
 
-using namespace std;
+public:
 
-int main()
-{
-    string algorithm_name = "SAUF";
-    string mask_name = "Rosenfeld";
+    using BaseRuleSet::BaseRuleSet;
 
-    conf = ConfigData(algorithm_name, mask_name);
+	// ChainCode ruleset is always read from file and never generated
 
-    RosenfeldRS r_rs;
-    auto rs = r_rs.GetRuleSet();
+	ChainCodeRS() : BaseRuleSet(conf.chaincode_rstable_path_) {	}
 
-    // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
-    BinaryDrag<conact> bd = GetOdt(rs);
-
-    // 2) Draw the generated tree to pdf
-    string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, bd);
-
-    // 3) Generate the C++ source code for the ODT
-    ofstream os(conf.treecode_path_);
-    if (os){
-        GenerateDragCode(os, bd);
+    rule_set GenerateRuleSet()
+    {
+		return rule_set();
     }
 
-    // 4) Generate the C++ source code for pointers,
-    // conditions to check and actions to perform
-    GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE);
+};
 
-    return EXIT_SUCCESS;
-}
+#endif // GRAPHGEN_ROSENFELD_RULESET_H_

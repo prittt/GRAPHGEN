@@ -88,6 +88,10 @@ struct ConfigData {
     std::filesystem::path frequencies_path_;
     std::string frequencies_suffix_ = ".bin";
 
+	// Chaincode Ruleset Path
+	std::filesystem::path chaincode_rstable_path_;
+	std::string chaincode_rstable_filename_ = "ChainCode_rstable.yaml";
+
 	bool force_odt_generation_ = false;
 
     ConfigData() {}

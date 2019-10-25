@@ -1,4 +1,4 @@
-target_sources(Spaghetti PRIVATE
-	spaghetti_main.cpp
-    ../grana_ruleset.h
+target_sources(ChainCode_Spaghetti PRIVATE
+	chaincode_spaghetti_main.cpp
+    ../chaincode_ruleset.h
 )
