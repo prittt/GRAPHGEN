@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,11 +26,15 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "ruleset_generator.h"
-
 #include <string>
 
-using namespace std;
+#include "graphgen.h"
+
+class HscpRS : public BaseRuleSet {
+
+public:
+
+    using BaseRuleSet::BaseRuleSet;
 
 struct edge {
     bool t00 = 0, t01 = 0, t01s = 0, t11 = 0;
@@ -88,8 +92,8 @@ static bool survives_HSCP(uint16_t block)
         (edgeS && vW && vE) ||
         (edgeE && edgeSE && edgeS);
 }
-// First subiteration
-rule_set generate_thin_hscp()
+
+    rule_set GenerateRuleSet()
 {
     /*
         abcd
@@ -130,3 +134,4 @@ rule_set generate_thin_hscp()
 
     return thinning;
 }
+};

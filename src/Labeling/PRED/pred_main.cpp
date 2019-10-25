@@ -56,7 +56,7 @@ int main()
     );
     
     // 4) Draw the generated forests on file
-    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+    fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
     
     // 5) Generate the C/C++ source code
     fh.GenerateCode();

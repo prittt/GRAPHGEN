@@ -54,6 +54,6 @@ bool GetBinaryImage(const std::string &FileName, cv::Mat1b& binary);
 bool LoadFileList(std::vector<std::pair<std::string, bool>>& filenames, const std::string& files_path);
 //bool CalculateRulesFrequencies(const pixel_set& ps, std::vector<std::pair<std::filesystem::path, bool>>& paths, rule_set& rs);
 //void CalculateRulesFrequencies(const pixel_set &ps, const std::vector<std::string> &paths, rule_set &rs);
-bool AddFrequenciesToRuleset(const ConfigData& config, rule_set& rs, bool force);
+bool AddFrequenciesToRuleset(rule_set& rs, bool force = false);
 
 #endif // !GRAPHGEN_IMAGE_FREQUENCIES_H_

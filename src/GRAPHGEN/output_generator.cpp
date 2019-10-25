@@ -188,7 +188,7 @@ string GetDotCallString(const filesystem::path& code_path, filesystem::path outp
     return GetDotCallString(code_path.string(), output_path.string());
 }
 
-bool DrawDagOnFile(const string& base_filename, const BinaryDrag<conact> &t, int flags) {
+bool DrawDagOnFile(const string& base_filename, const BinaryDrag<conact> &t, DrawDagFlags flags) {
 
     bool with_next = flags & DrawDagFlags::WITH_NEXT;
     bool verbose = flags & DrawDagFlags::VERBOSE;
@@ -226,7 +226,7 @@ bool DrawDagOnFile(const string& base_filename, const BinaryDrag<conact> &t, int
     return true;
 }
 
-bool DrawForestOnFile(const string& output_file, const LineForestHandler& lfh, int flags)
+bool DrawForestOnFile(const string& output_file, const LineForestHandler& lfh, DrawDagFlags flags)
 {
     bool result = DrawDagOnFile(output_file + "_main_forest", lfh.f_, flags | DrawDagFlags::WITH_NEXT | DrawDagFlags::WITH_ROOT_ID);
     for (size_t i = 0; i < lfh.end_forests_.size(); ++i) {

@@ -30,45 +30,30 @@
 
 #include "grana_ruleset.h"
 
-#include "image_frequencies.h"
-
 using namespace std;
 
 int main()
 {
-    string algorithm_name = "Spaghetti_FREQ";
-    conf = ConfigData(algorithm_name, "Grana");
+    string algo_name = "Spaghetti_FREQ";
+    string mask_name = "Grana";
+    conf = ConfigData(algo_name, mask_name, true);
 
     GranaRS g_rs;
     auto rs = g_rs.GetRuleSet();
 
-    // Add names of used data sets to file names
-    std::string dataset_names;
-    bool first = true;
-    for (const auto &d : conf.datasets_) {
-        if (!first) {
-            dataset_names += '-';
-        }
-        else {
-            first = false;
-        }
-        dataset_names += d;
-    }
-    algorithm_name += "_" + dataset_names;
-
     // Call GRAPHGEN:
     // 1) Count frequencies
-    AddFrequenciesToRuleset(conf, rs, false);
+    AddFrequenciesToRuleset(rs);
 
     // 2) Load or generate Optimal Decision Tree based on Grana mask
-    BinaryDrag<conact> bd = GetOdtWithFileSuffix(rs, dataset_names);
+    BinaryDrag<conact> bd = GetOdt(rs);
 
     // 3) Draw the generated tree to pdf
-    string tree_filename = algorithm_name + "_tree";
+    string tree_filename = algo_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
     // 4) Generate forests of trees
-    LOG(algorithm_name + " - making forests",
+    LOG(algo_name + " - making forests",
         ForestHandler fh(bd, rs.ps_, 
                          ForestHandlerFlags::CENTER_LINES |
                          ForestHandlerFlags::FIRST_LINE   |
@@ -77,13 +62,13 @@ int main()
     );
 
     // 5) Draw the generated forests on file
-    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
 
     // 6) Compress the forests
     fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES, 1);
 
     // 7) Draw the compressed forests on file
-    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
 
     // 8) Generate the C/C++ code taking care of the names used
     //    in the Grana's rule set GranaRS
@@ -92,7 +77,10 @@ int main()
            { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
            { "S", {-2, +0} },{ "x", {+0, +0} }
     };
-    GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::NONE, block_positions);
+    GeneratePointersConditionsActionsCode(rs, 
+                                          GenerateConditionActionCodeFlags::NONE, 
+                                          GenerateActionCodeTypes::LABELING,
+                                          block_positions);
 
     return EXIT_SUCCESS;
 }

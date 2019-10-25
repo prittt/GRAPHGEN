@@ -59,7 +59,7 @@ int main()
     fh.Compress();
 
     // 5) Draw the compressed forests on file
-    fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
+    fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
     
     // 6) Generate the C/C++ source code
     fh.GenerateCode();
