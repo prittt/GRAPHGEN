@@ -120,10 +120,22 @@ foreach(ALGO ${THINNING_ALGORITHMS})
 	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
 
+set(CONTOUR_ALGORITHMS ChainCode_Tree ChainCode_Spaghetti CACHE INTERNAL ON FORCE)
+if(GRAPHGEN_FREQUENCIES_ENABLED)
+	set(CONTOUR_ALGORITHMS ${CONTOUR_ALGORITHMS} ChainCode_Spaghetti_FREQ)
+endif()
+
+foreach(ALGO ${CONTOUR_ALGORITHMS})
+	add_executable(${ALGO} "")
+	set_target_properties(${ALGO} PROPERTIES FOLDER "Contour")
+	include_directories(src/Contour)
+	add_subdirectory(src/Contour/${ALGO})
+	target_link_libraries (${ALGO} GRAPHGEN)
+endforeach()
 
 # Check for c++17 support (TODO check if it actually works)
-set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD 17)
-set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} ${CONTOUR_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} ${CONTOUR_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD_REQUIRED ON)
 
 #add_definitions(-D_CRT_SECURE_NO_WARNINGS) #To suppress 'fopen' opencv warning/bug  
 # Set configuration file	
@@ -171,6 +183,3 @@ if (NOT EXISTS "${GRAPHGEN_OUTPUT_PATH}")
 	file(MAKE_DIRECTORY ${GRAPHGEN_OUTPUT_PATH})
 endif()
 
-#target_include_directories(SAUF PUBLIC 
-#                                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdparty/yaml-cpp/include> 
-#                                $<INSTALL_INTERFACE:include>)
