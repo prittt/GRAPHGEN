@@ -26,8 +26,6 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "yaml-cpp/yaml.h"
-
 #include "graphgen.h"
 
 #include "hscp_ruleset.h"
@@ -36,7 +34,7 @@ using namespace std;
 
 int main()
 {
-    string algo_name = "HSCP_Spaghetti";
+    string algo_name = "HSCP_Spaghetti_FREQ";
     string mask_name = "4x4";
     conf = ConfigData(algo_name, mask_name);
 
