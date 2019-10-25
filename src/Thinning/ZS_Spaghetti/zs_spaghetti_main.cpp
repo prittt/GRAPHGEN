@@ -30,8 +30,6 @@
 
 #include "zangsuen_ruleset.h"
 
-#include "drag.h"
-
 using namespace std;
 
 int main()
