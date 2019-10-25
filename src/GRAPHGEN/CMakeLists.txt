@@ -1,5 +1,5 @@
 
-if(GRAPHGEN_FREQUENCIES_CCL_ENABLED)
+if(GRAPHGEN_FREQUENCIES_ENABLED)
 	target_sources(GRAPHGEN PRIVATE
 		image_frequencies.cpp
 		image_frequencies.h
