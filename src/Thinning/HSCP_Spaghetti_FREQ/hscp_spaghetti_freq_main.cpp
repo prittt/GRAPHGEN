@@ -36,7 +36,7 @@ int main()
 {
     string algo_name = "HSCP_Spaghetti_FREQ";
     string mask_name = "4x4";
-    conf = ConfigData(algo_name, mask_name);
+    conf = ConfigData(algo_name, mask_name, true);
 
     HscpRS hscp_rs;
     auto rs = hscp_rs.GetRuleSet();

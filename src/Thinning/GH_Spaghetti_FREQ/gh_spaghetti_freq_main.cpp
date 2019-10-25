@@ -36,7 +36,7 @@ int main()
 {
     string algo_name = "GH_Spaghetti_FREQ";
     string mask_name = "3x3";
-    conf = ConfigData(algo_name, mask_name);
+    conf = ConfigData(algo_name, mask_name, true);
 
     GuoHallRS gh_rs;
     auto rs = gh_rs.GetRuleSet();
