@@ -142,7 +142,7 @@ set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} ${CHAINCODE_AL
 configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/config.yaml")
 
 # Copy frequencies files into bin folder
-file(COPY "${CMAKE_SOURCE_DIR}/frequencies" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
+#file(COPY "${CMAKE_SOURCE_DIR}/frequencies" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
 
 # Copy ChainCode rules into corresponding folders
 foreach(ALGO ${CHAINCODE_ALGORITHMS})
