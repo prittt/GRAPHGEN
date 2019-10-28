@@ -44,8 +44,9 @@ struct mask {
     int border_ = 0;
     int exp_;
     int increment_ = 0;
+	const rule_set& rs_;
 
-    mask(const pixel_set& ps);
+	mask(const rule_set& rs);
     size_t MaskToLinearMask(const cv::Mat1b& r_img) const;
 };
 

@@ -41,7 +41,8 @@ using namespace std;
 using namespace filesystem;
 using namespace cv;
 
-mask::mask(const pixel_set& ps) {
+mask::mask(const rule_set& rs) : rs_{ rs } {
+	const auto& ps = rs.ps_;
     increment_ = ps.GetShiftX();
     exp_ = ps.pixels_.size();
     for (int i = 0; i < exp_; ++i) {
@@ -64,12 +65,10 @@ mask::mask(const pixel_set& ps) {
 size_t mask::MaskToLinearMask(const cv::Mat1b& r_img) const {
     size_t linearMask = 0;
 
-    for (int r = 0; r < r_img.rows; ++r) {
-        for (int c = 0; c < r_img.cols; ++c) {
-            linearMask <<= (1 & mask_(r, c));
-            linearMask |= (r_img(r, c) & mask_(r, c));
-        }
-    }
+	for (const auto& p : rs_.ps_) {
+		linearMask |= r_img(p.GetDy() + top_, p.GetDx() + left_) << rs_.conditions_pos.at(p.name_);
+	}
+
     return linearMask;
 }
 
@@ -206,7 +205,11 @@ bool CountFrequenciesOnDataset(const string& dataset, rule_set& rs, bool force) 
         try {
             is.open(frequencies_output_path, ios::binary);
             vector<rule> new_rules = rs.rules;
-            std::for_each(new_rules.begin(), new_rules.end(), [&is](rule& r) { is.read(reinterpret_cast<char*>(&r.frequency), 8); });
+            std::for_each(new_rules.begin(), new_rules.end(), [&is](rule& r) { 
+				unsigned long long v;
+				is.read(reinterpret_cast<char*>(&v), 8);
+				r.frequency += v;
+			});
             rs.rules = new_rules;
             cout << "Frequencies of " << dataset << " were loaded from file.\n";
             return true;
@@ -219,7 +222,7 @@ bool CountFrequenciesOnDataset(const string& dataset, rule_set& rs, bool force) 
         }
     }
 
-    mask msk(rs.ps_);
+    mask msk(rs);
 
     cv::Mat1b img;
 
