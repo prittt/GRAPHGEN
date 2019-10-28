@@ -71,9 +71,8 @@ int main()
     // 7) Draw the compressed forests on file
     fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
 
-    // 8) Generate the C/C++ code taking care of the names used
-    //    in the Cederberg's rule set CederbergRS
-    fh.GenerateCode(BeforeMainShiftTwo);
+    // 8) Generate the C/C++ code
+    fh.GenerateCode();
 	GeneratePointersConditionsActionsCode(rs,
 		GenerateConditionActionCodeFlags::NONE,
 		GenerateActionCodeTypes::CHAIN_CODE);

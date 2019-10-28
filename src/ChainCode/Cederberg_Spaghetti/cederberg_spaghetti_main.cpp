@@ -69,7 +69,7 @@ int main()
     fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
 
     // 7) Generate the C/C++ code
-    fh.GenerateCode(BeforeMainShiftTwo);
+    fh.GenerateCode();
     GeneratePointersConditionsActionsCode(rs, 
                                           GenerateConditionActionCodeFlags::NONE, 
                                           GenerateActionCodeTypes::CHAIN_CODE);

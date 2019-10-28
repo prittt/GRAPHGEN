@@ -58,10 +58,10 @@ int main()
 
     // 4) Generate the C++ source code for pointers,
     // conditions to check and actions to perform
-    /*GeneratePointersConditionsActionsCode(rs,
+    GeneratePointersConditionsActionsCode(rs,
 		GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | 
 		GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE,
-		GenerateActionCodeTypes::CHAIN_CODE);*/
+		GenerateActionCodeTypes::CHAIN_CODE);
 
     return EXIT_SUCCESS;
 }
