@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,54 +34,34 @@ using namespace std;
 
 int main()
 {
-    string algo_name = "ChainCode_Spaghetti_FREQ";
+    string algorithm_name = "Cederberg_Tree";
     string mask_name = "Cederberg";
 
-    conf = ConfigData(algo_name, mask_name, true);
+    conf = ConfigData(algorithm_name, mask_name);
 
 	ChainCodeRS cc_rs;
 	auto rs = cc_rs.GetRuleSet();
 
     // Call GRAPHGEN:
-    // 1) Count frequencies
-    AddFrequenciesToRuleset(rs);
-
-    // 2) Load or generate Optimal Decision Tree based on Cederberg mask
+    // 1) Load or generate Optimal Decision Tree based on Cederberg mask
     BinaryDrag<conact> bd = GetOdt(rs);
 
-    // 3) Draw the generated tree to pdf
-    string tree_filename = algo_name + "_tree";
+    // 2) Draw the generated tree to pdf
+    string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
-    // 4) Generate forests of trees
-    LOG(algo_name + " - making forests",
-        ForestHandler fh(bd, rs.ps_, 
-                         ForestHandlerFlags::CENTER_LINES |
-                         ForestHandlerFlags::FIRST_LINE   |
-                         ForestHandlerFlags::LAST_LINE    |
-                         ForestHandlerFlags::SINGLE_LINE);
-    );
+    // 3) Generate the C++ source code for the ODT
+    ofstream os(conf.treecode_path_);
+    if (os) {
+        GenerateDragCode(os, bd);
+    }
 
-    // 5) Draw the generated forests on file
-    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
-
-    // 6) Compress the forests
-    fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES, 1);
-
-    // 7) Draw the compressed forests on file
-    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
-
-    // 8) Generate the C/C++ code taking care of the names used
-    //    in the Grana's rule set GranaRS
-    fh.GenerateCode(BeforeMainShiftTwo);
-    pixel_set block_positions{
-           { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
-           { "S", {-2, +0} },{ "x", {+0, +0} }
-    };
-    GeneratePointersConditionsActionsCode(rs, 
-                                          GenerateConditionActionCodeFlags::NONE, 
-                                          GenerateActionCodeTypes::LABELING,
-                                          block_positions);
+    // 4) Generate the C++ source code for pointers,
+    // conditions to check and actions to perform
+    /*GeneratePointersConditionsActionsCode(rs,
+		GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | 
+		GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE,
+		GenerateActionCodeTypes::CHAIN_CODE);*/
 
     return EXIT_SUCCESS;
 }

@@ -26,28 +26,57 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHGEN_ROSENFELD_RULESET_H_
-#define GRAPHGEN_ROSENFELD_RULESET_H_
-
-#include <string>
+#include "chaincode_ruleset.h"
 
 #include "graphgen.h"
 
-class ChainCodeRS : public BaseRuleSet {
+using namespace std;
 
-public:
+int main()
+{
+    string algo_name = "Cederberg_Spaghetti_FREQ";
+    string mask_name = "Cederberg";
 
-    using BaseRuleSet::BaseRuleSet;
+    conf = ConfigData(algo_name, mask_name, true);
 
-	// ChainCode ruleset is always read from file and never generated
+	ChainCodeRS cc_rs;
+	auto rs = cc_rs.GetRuleSet();
 
-	ChainCodeRS() : BaseRuleSet(conf.chaincode_rstable_path_) {	}
+    // Call GRAPHGEN:
+    // 1) Count frequencies
+    AddFrequenciesToRuleset(rs);
 
-    rule_set GenerateRuleSet()
-    {
-		return rule_set();
-    }
+    // 2) Load or generate Optimal Decision Tree based on Cederberg mask
+    BinaryDrag<conact> bd = GetOdt(rs);
 
-};
+    // 3) Draw the generated tree to pdf
+    string tree_filename = algo_name + "_tree";
+    DrawDagOnFile(tree_filename, bd);
 
-#endif // GRAPHGEN_ROSENFELD_RULESET_H_
+    // 4) Generate forests of trees
+    LOG(algo_name + " - making forests",
+        ForestHandler fh(bd, rs.ps_, 
+                         ForestHandlerFlags::CENTER_LINES |
+                         ForestHandlerFlags::FIRST_LINE   |
+                         ForestHandlerFlags::LAST_LINE    |
+                         ForestHandlerFlags::SINGLE_LINE);
+    );
+
+    // 5) Draw the generated forests on file
+    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
+
+    // 6) Compress the forests
+    fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES, 1);
+
+    // 7) Draw the compressed forests on file
+    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
+
+    // 8) Generate the C/C++ code taking care of the names used
+    //    in the Cederberg's rule set CederbergRS
+    fh.GenerateCode(BeforeMainShiftTwo);
+	GeneratePointersConditionsActionsCode(rs,
+		GenerateConditionActionCodeFlags::NONE,
+		GenerateActionCodeTypes::CHAIN_CODE);
+
+    return EXIT_SUCCESS;
+}

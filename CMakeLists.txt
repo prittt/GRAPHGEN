@@ -120,22 +120,22 @@ foreach(ALGO ${THINNING_ALGORITHMS})
 	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
 
-set(CONTOUR_ALGORITHMS ChainCode_Tree ChainCode_Spaghetti CACHE INTERNAL ON FORCE)
+set(CHAINCODE_ALGORITHMS Cederberg_Tree Cederberg_Spaghetti CACHE INTERNAL ON FORCE)
 if(GRAPHGEN_FREQUENCIES_ENABLED)
-	set(CONTOUR_ALGORITHMS ${CONTOUR_ALGORITHMS} ChainCode_Spaghetti_FREQ)
+	set(CHAINCODE_ALGORITHMS ${CHAINCODE_ALGORITHMS} Cederberg_Spaghetti_FREQ)
 endif()
 
-foreach(ALGO ${CONTOUR_ALGORITHMS})
+foreach(ALGO ${CHAINCODE_ALGORITHMS})
 	add_executable(${ALGO} "")
-	set_target_properties(${ALGO} PROPERTIES FOLDER "Contour")
-	include_directories(src/Contour)
-	add_subdirectory(src/Contour/${ALGO})
+	set_target_properties(${ALGO} PROPERTIES FOLDER "ChainCode")
+	include_directories(src/ChainCode)
+	add_subdirectory(src/ChainCode/${ALGO})
 	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
 
 # Check for c++17 support (TODO check if it actually works)
-set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} ${CONTOUR_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD 17)
-set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} ${CONTOUR_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} ${CHAINCODE_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} ${CHAINCODE_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD_REQUIRED ON)
 
 #add_definitions(-D_CRT_SECURE_NO_WARNINGS) #To suppress 'fopen' opencv warning/bug  
 # Set configuration file	
@@ -145,7 +145,7 @@ configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/
 file(COPY "${CMAKE_SOURCE_DIR}/frequencies" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
 
 # Copy ChainCode rules into corresponding folders
-foreach(ALGO ${CONTOUR_ALGORITHMS})
+foreach(ALGO ${CHAINCODE_ALGORITHMS})
 	file(COPY "${CMAKE_SOURCE_DIR}/rules/ChainCode_rstable.yaml" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/${ALGO}/")
 endforeach()
 

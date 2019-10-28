@@ -40,7 +40,8 @@
 
 class BaseRuleSet {
     std::filesystem::path p_;
-    bool force_;
+    bool force_generation_;
+	bool disable_generation_;
     rule_set rs_;
 
     bool LoadRuleSet() {
@@ -69,18 +70,23 @@ class BaseRuleSet {
 
 public:
 
-    BaseRuleSet(bool force_generation = false) : force_{ force_generation }
+    BaseRuleSet(bool force_generation = false) : force_generation_{ force_generation }, disable_generation_{ false }
     {
         p_ = conf.rstable_path_;
     }
 
-	BaseRuleSet(std::filesystem::path custom_path) : force_{false}
+	BaseRuleSet(std::filesystem::path custom_path) : force_generation_{ false }, disable_generation_{ true }, p_{ custom_path } 
 	{
-		p_ = custom_path;
 	}
 
     rule_set GetRuleSet() {
-        if (force_ || !LoadRuleSet()) {
+		if (force_generation_ || !LoadRuleSet()) {
+			if (disable_generation_) {
+				auto msg = "Could not load rule set " + p_.string() + " from file (generation disabled).\n";
+				std::cerr << msg;
+				throw std::exception((msg).c_str());
+			}
+
             rs_ = GenerateRuleSet();
             SaveRuleSet();
         }

@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,7 @@ using namespace std;
 
 int main()
 {
-    string algorithm_name = "ChainCode_Tree";
+    string algorithm_name = "Cederberg_Spaghetti";
     string mask_name = "Cederberg";
 
     conf = ConfigData(algorithm_name, mask_name);
@@ -50,17 +50,29 @@ int main()
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
-    // 3) Generate the C++ source code for the ODT
-    ofstream os(conf.treecode_path_);
-    if (os){
-        GenerateDragCode(os, bd);
-    }
+    // 3) Generate forests of trees
+    LOG(algorithm_name + " - making forests",
+        ForestHandler fh(bd, rs.ps_, 
+                         ForestHandlerFlags::CENTER_LINES |
+                         ForestHandlerFlags::FIRST_LINE   |
+                         ForestHandlerFlags::LAST_LINE    |
+                         ForestHandlerFlags::SINGLE_LINE);
+    );
 
-    // 4) Generate the C++ source code for pointers,
-    // conditions to check and actions to perform
+    // 4) Draw the generated forests on file
+    fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
+
+    // 5) Compress the forests
+    fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES);
+
+    // 6) Draw the compressed forests on file
+    fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
+
+    // 7) Generate the C/C++ code
+    fh.GenerateCode(BeforeMainShiftTwo);
     GeneratePointersConditionsActionsCode(rs, 
-		GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | 
-		GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE);
+                                          GenerateConditionActionCodeFlags::NONE, 
+                                          GenerateActionCodeTypes::CHAIN_CODE);
 
     return EXIT_SUCCESS;
 }
