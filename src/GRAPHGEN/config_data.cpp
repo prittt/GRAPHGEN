@@ -33,7 +33,7 @@
 using namespace std;
 using namespace filesystem;
 
-ConfigData::ConfigData(string algorithm_name, string mask_name, bool use_frequencies) : algorithm_name_{ algorithm_name }, mask_name_{ mask_name } {
+ConfigData::ConfigData(string& algorithm_name, const string& mask_name, bool use_frequencies) : algorithm_name_{ algorithm_name }, mask_name_{ mask_name } {
     YAML::Node config;
     try {
         config = YAML::LoadFile(config_file_);
@@ -41,6 +41,20 @@ ConfigData::ConfigData(string algorithm_name, string mask_name, bool use_frequen
     catch (...) {
         cout << "ERROR: Unable to read configuration file '" << config_file_ << "'.\n";
         exit(EXIT_FAILURE);
+    }
+
+    if (config["paths"]["input"]) {
+        global_input_path_ = path(config["paths"]["input"].as<string>());
+        if (config["datasets"]) {
+            datasets_ = config["datasets"].as<vector<string>>();
+            datasets_path_.resize(datasets_.size());
+            generate(datasets_path_.begin(), datasets_path_.end(), [this, datasets_it = datasets_.begin()]() mutable { return global_input_path_ / path(*datasets_it++); });
+        }
+    }
+
+    if (use_frequencies) {
+        UpdateAlgoNameWithDatasets();
+        algorithm_name = algorithm_name_;
     }
 
     if (config["paths"]["output"]) {
@@ -58,7 +72,7 @@ ConfigData::ConfigData(string algorithm_name, string mask_name, bool use_frequen
         // Rule Set / Decision Table
         rstable_path_ = algorithm_output_path_ / path(algorithm_name + rstable_suffix_);
 
-        // Tree / Forest / Dag (.inc) // TODO the following variables are probably useless
+        // Tree / Forest / Dag (.inc)
         treecode_path_ = algorithm_output_path_ / path(algorithm_name + treecode_suffix_);
         forestcode_path_ = algorithm_output_path_ / path(algorithm_name + forestcode_suffix_);
         treedagcode_path_ = algorithm_output_path_ / path(algorithm_name + treedagcode_suffix_);
@@ -71,18 +85,6 @@ ConfigData::ConfigData(string algorithm_name, string mask_name, bool use_frequen
     else {
         cout << "ERROR: missing output path in configuration file.\n";
         exit(EXIT_FAILURE);
-    }
-
-    if (config["paths"]["input"]) {
-        global_input_path_ = path(config["paths"]["input"].as<string>());
-        if (config["datasets"]) {
-            datasets_ = config["datasets"].as<vector<string>>();
-            //for (const string& dataset : datasets_) {
-            //    datasets_path_.emplace_back(global_input_path_ / path(dataset));
-            //}
-            datasets_path_.resize(datasets_.size());
-            generate(datasets_path_.begin(), datasets_path_.end(), [this, datasets_it = datasets_.begin()]() mutable { return global_input_path_ / path(*datasets_it++); });
-        }
     }
 
     if (config["dot"]["background"]) {
@@ -108,9 +110,5 @@ ConfigData::ConfigData(string algorithm_name, string mask_name, bool use_frequen
 
     if (config["force_odt_generation"]) {
         force_odt_generation_ = config["force_odt_generation"].as<bool>();
-    }
-
-    if (use_frequencies) {
-        UpdateAlgoNameWithDatasets();
     }
 }
