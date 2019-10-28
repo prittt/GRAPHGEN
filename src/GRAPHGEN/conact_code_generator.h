@@ -73,4 +73,5 @@ bool GeneratePointersConditionsActionsCode(const rule_set& rs,
 // This is the version for CTBE algorithm. It is very raw and it is based on the previous versione of graphgen
 //bool GenerateActionsForCtbe(const std::string& filename, const rule_set& rs);
 
+
 #endif // GRAPHGEN_CONACT_CODE_GENERATOR_H_

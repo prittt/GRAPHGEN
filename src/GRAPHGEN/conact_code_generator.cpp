@@ -294,7 +294,7 @@ void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& name
     }
 }
 
-// This is the function to generate Connected Component Labeling action code
+// This is the function to generate Thinning action code
 void GenerateThinningActionsCode(ofstream& os, const rule_set& rs, bool with_continues = true) {
     // Actions:
     os << "\n\n//Actions:\n";
@@ -314,6 +314,24 @@ void GenerateThinningActionsCode(ofstream& os, const rule_set& rs, bool with_con
         if (action == "change0") {
             os << " modified = true; // change0\n";
         }
+    }
+}
+
+// This is the function to generate Chain Code action code
+void GenerateChaincodeActionsCode(ofstream& os, const rule_set& rs, bool with_continues = true) {
+    // Actions:
+    os << "\n\n//Actions:\n";
+    for (size_t a = 0; a < rs.actions.size(); ++a) {
+        const auto& action = rs.actions[a];
+
+        os << "#define ACTION_" << (a + 1) << "\tpos = ProcessPixel<" << action << "\t>(r, c, rccode, chains, pos);";
+
+        if (with_continues) {
+            os << " continue;";
+        }
+            
+        os << "\n";
+
     }
 }
 
@@ -345,7 +363,7 @@ bool GeneratePointersConditionsActionsCode(const rule_set& rs,
         GenerateThinningActionsCode(os, rs, actions_with_continue);
         break;
     case GenerateActionCodeTypes::CHAIN_CODE:
-        std::cout << "Chain code ACTION code generation NOT IMPLEMENTED!\n";
+        GenerateChaincodeActionsCode(os, rs, actions_with_continue);
         break;
     default:
         std::cout << "WARNING: the specified algorithms type is not valid. The ACTION code won't be generated\n";

@@ -42,6 +42,7 @@ set(GRAPHGEN_FREQUENCIES_ENABLED OFF CACHE BOOL "Enable Frequency Calculation in
 
 if(GRAPHGEN_FREQUENCIES_ENABLED)
 	set(GRAPHGEN_FREQUENCIES_DOWNLOAD_DATASET OFF CACHE BOOL "Enable automatic download of the dataset used for frequency calculation.")
+    target_compile_definitions(GRAPHGEN PUBLIC GRAPHGEN_WITH_FREQUENCIES)
 endif()
 
 
@@ -119,7 +120,6 @@ foreach(ALGO ${THINNING_ALGORITHMS})
 	add_subdirectory(src/Thinning/${ALGO})
 	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
-
 
 # Check for c++17 support (TODO check if it actually works)
 set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD 17)
