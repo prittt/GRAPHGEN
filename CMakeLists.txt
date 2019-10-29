@@ -42,7 +42,7 @@ set(GRAPHGEN_FREQUENCIES_ENABLED OFF CACHE BOOL "Enable Frequency Calculation in
 
 if(GRAPHGEN_FREQUENCIES_ENABLED)
 	set(GRAPHGEN_FREQUENCIES_DOWNLOAD_DATASET OFF CACHE BOOL "Enable automatic download of the dataset used for frequency calculation.")
-    target_compile_definitions(GRAPHGEN PUBLIC GRAPHGEN_WITH_FREQUENCIES)
+    add_compile_definitions(GRAPHGEN_FREQUENCIES_ENABLED)
 endif()
 
 
@@ -143,7 +143,7 @@ set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} ${CHAINCODE_AL
 configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/config.yaml")
 
 # Copy frequencies files into bin folder
-#file(COPY "${CMAKE_SOURCE_DIR}/frequencies" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
+file(COPY "${CMAKE_SOURCE_DIR}/frequencies" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
 
 # Copy ChainCode rules into corresponding folders
 foreach(ALGO ${CHAINCODE_ALGORITHMS})
