@@ -7,7 +7,7 @@ Can be displayed only if the repo is public.
 [![Documentation](https://codedocs.xyz/prittt/graphgen.svg)]()
 -->
 
-**GRAPHGEN** is a framework for generating decision trees in various formats for different algorithmic problems of binary image processing (Connected Components Labeling, Thinning and Contour Tracing). 
+**GRAPHGEN** is a framework for generating decision trees in various formats for different algorithmic problems of binary image processing (Connected Components Labeling, Thinning and ChainCode (Contour Tracing)). 
 
 *Supported platforms*: Windows (VS2017), Linux (GCC 9.x or later).
 
@@ -47,7 +47,7 @@ Can be displayed only if the repo is public.
 Some application behavior can be configured by changing the `config.yaml` in the build folder.
 
 - `force_odt_generation`: Forces the optimal decision tree to be generated in every execution. This may be necessary when implementing own algorithms and debugging them. *Default: false*
-- `datasets`: Datasets used for frequency calculation. Available datasets from the [YACCLAB dataset](https://github.com/prittt/YACCLAB#the-yacclab-dataset) (downloaded with `GRAPHGEN_FREQUENCIES_DATASET_DOWNLOAD`): `"3dpes"`, `"check"`, `"fingerprints"`, `"hamlet"`, `"medical"`, `"mirflickr"`, `"tobacco800"`, `"xdocs"`, `"random/classical"`, `"random/granularity"`
+- `datasets`: Datasets used for frequency calculation. Available datasets from the [YACCLAB dataset](https://github.com/prittt/YACCLAB#the-yacclab-dataset) (downloaded with `GRAPHGEN_FREQUENCIES_DATASET_DOWNLOAD`): `"3dpes"`, `"check"`, `"fingerprints"`, `"hamlet"`, `"medical"`, `"mirflickr"`, `"tobacco800"`, `"xdocs"`, `"classical"`, `"granularity"`
 - `paths`: 
     * `input`: path to the folder containing the datasets used for frequency calculation. 
     * `output`: path where all outputs (code, graphs, frequenices) will be stored

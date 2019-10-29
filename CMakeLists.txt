@@ -108,9 +108,9 @@ foreach(ALGO ${LABELING_ALGORITHMS})
 	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
 
-set(THINNING_ALGORITHMS ZS_Tree ZS_Spaghetti GH_Tree GH_Spaghetti CH_Tree CH_Spaghetti HSCP_Tree HSCP_Spaghetti CACHE INTERNAL ON FORCE)
+set(THINNING_ALGORITHMS ZS_Tree ZS_Spaghetti GH_Tree GH_Spaghetti CH_Tree CH_Spaghetti CACHE INTERNAL ON FORCE)
 if(GRAPHGEN_FREQUENCIES_ENABLED)
-	set(THINNING_ALGORITHMS ${THINNING_ALGORITHMS} ZS_Spaghetti_FREQ GH_Spaghetti_FREQ CH_Spaghetti_FREQ HSCP_Spaghetti_FREQ)
+	set(THINNING_ALGORITHMS ${THINNING_ALGORITHMS} ZS_Spaghetti_FREQ GH_Spaghetti_FREQ CH_Spaghetti_FREQ)
 endif()
 
 foreach(ALGO ${THINNING_ALGORITHMS})
@@ -121,16 +121,34 @@ foreach(ALGO ${THINNING_ALGORITHMS})
 	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
 
+set(CHAINCODE_ALGORITHMS Cederberg_Tree Cederberg_Spaghetti CACHE INTERNAL ON FORCE)
+if(GRAPHGEN_FREQUENCIES_ENABLED)
+	set(CHAINCODE_ALGORITHMS ${CHAINCODE_ALGORITHMS} Cederberg_Spaghetti_FREQ)
+endif()
+
+foreach(ALGO ${CHAINCODE_ALGORITHMS})
+	add_executable(${ALGO} "")
+	set_target_properties(${ALGO} PROPERTIES FOLDER "ChainCode")
+	include_directories(src/ChainCode)
+	add_subdirectory(src/ChainCode/${ALGO})
+	target_link_libraries (${ALGO} GRAPHGEN)
+endforeach()
+
 # Check for c++17 support (TODO check if it actually works)
-set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD 17)
-set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} ${CHAINCODE_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${LABELING_ALGORITHMS} ${THINNING_ALGORITHMS} ${CHAINCODE_ALGORITHMS} GRAPHGEN PROPERTY CXX_STANDARD_REQUIRED ON)
 
 #add_definitions(-D_CRT_SECURE_NO_WARNINGS) #To suppress 'fopen' opencv warning/bug  
 # Set configuration file	
 configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/config.yaml")
 
 # Copy frequencies files into bin folder
-file(COPY "${CMAKE_SOURCE_DIR}/frequencies" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
+#file(COPY "${CMAKE_SOURCE_DIR}/frequencies" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
+
+# Copy ChainCode rules into corresponding folders
+foreach(ALGO ${CHAINCODE_ALGORITHMS})
+	file(COPY "${CMAKE_SOURCE_DIR}/rules/ChainCode_rstable.yaml" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/${ALGO}/")
+endforeach()
 
 #set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set GRAPHGEN as startup group instead of ALL_BUILD
 if(GRAPHGEN_FREQUENCIES_ENABLED)
@@ -171,6 +189,3 @@ if (NOT EXISTS "${GRAPHGEN_OUTPUT_PATH}")
 	file(MAKE_DIRECTORY ${GRAPHGEN_OUTPUT_PATH})
 endif()
 
-#target_include_directories(SAUF PUBLIC 
-#                                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/3rdparty/yaml-cpp/include> 
-#                                $<INSTALL_INTERFACE:include>)

@@ -26,49 +26,28 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef GRAPHGEN_ROSENFELD_RULESET_H_
+#define GRAPHGEN_ROSENFELD_RULESET_H_
+
+#include <string>
+
 #include "graphgen.h"
 
-#include "hscp_ruleset.h"
+class ChainCodeRS : public BaseRuleSet {
 
-using namespace std;
+public:
 
-int main()
-{
-    string algo_name = "HSCP_Spaghetti";
-    string mask_name = "4x4";
-    conf = ConfigData(algo_name, mask_name);
+  using BaseRuleSet::BaseRuleSet;
 
-    HscpRS hscp_rs;
-    auto rs = hscp_rs.GetRuleSet();
+	// ChainCode ruleset is always read from file and never generated
 
-    // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Guo-Hall algorithm
-    BinaryDrag<conact> bd = GetOdt(rs);
+	ChainCodeRS() : BaseRuleSet(conf.chaincode_rstable_path_) {	}
 
-    // 2) Draw the generated tree on file
-    string tree_filename = algo_name + "_tree";
-    DrawDagOnFile(tree_filename, bd);
+    rule_set GenerateRuleSet()
+    {
+		return rule_set();
+    }
 
-    // 3) Generate forests of trees
-    LOG(algo_name + " - making forests",
-        ForestHandler fh(bd, rs.ps_, 
-                         ForestHandlerFlags::FIRST_LINE  |
-                         ForestHandlerFlags::LAST_LINE   |
-                         ForestHandlerFlags::SINGLE_LINE |
-                         ForestHandlerFlags::CENTER_LINES);
-    );
+};
 
-    // 4) Compress the forest
-    fh.Compress();
-
-    // 5) Draw the compressed forests on file
-    fh.DrawOnFile(algo_name, DrawDagFlags::DELETE_DOTCODE);
-
-    // 6) Generate the C/C++ source code
-    fh.GenerateCode();
-    GeneratePointersConditionsActionsCode(rs, 
-                                          GenerateConditionActionCodeFlags::NONE, 
-                                          GenerateActionCodeTypes::THINNING);
-
-    return EXIT_SUCCESS;
-}
+#endif // GRAPHGEN_ROSENFELD_RULESET_H_

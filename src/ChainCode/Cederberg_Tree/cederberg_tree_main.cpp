@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,34 +26,42 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "graphgen.h"
+#include "chaincode_ruleset.h"
 
-#include "hscp_ruleset.h"
+#include "graphgen.h"
 
 using namespace std;
 
 int main()
 {
-    string algo_name = "HSCP_Tree";
-    string mask_name = "4x4";
-    conf = ConfigData(algo_name, mask_name);
+    string algorithm_name = "Cederberg_Tree";
+    string mask_name = "Cederberg";
 
-    HscpRS hscp_rs;
-    auto rs = hscp_rs.GetRuleSet();
+    conf = ConfigData(algorithm_name, mask_name);
+
+	ChainCodeRS cc_rs;
+	auto rs = cc_rs.GetRuleSet();
 
     // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Guo-Hall algorithm
+    // 1) Load or generate Optimal Decision Tree based on Cederberg mask
     BinaryDrag<conact> bd = GetOdt(rs);
 
-    // 2) Draw the generated tree on file
-    string tree_filename = algo_name + "_tree";
+    // 2) Draw the generated tree to pdf
+    string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
-    // 3) Generate the C/C++ source code
-    GenerateDragCode(bd);
-    GeneratePointersConditionsActionsCode(rs, 
-                                          GenerateConditionActionCodeFlags::NONE, 
-                                          GenerateActionCodeTypes::THINNING);
+    // 3) Generate the C++ source code for the ODT
+    ofstream os(conf.treecode_path_);
+    if (os) {
+        GenerateDragCode(os, bd);
+    }
+
+    // 4) Generate the C++ source code for pointers,
+    // conditions to check and actions to perform
+    GeneratePointersConditionsActionsCode(rs,
+		GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | 
+		GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE,
+		GenerateActionCodeTypes::CHAIN_CODE);
 
     return EXIT_SUCCESS;
 }
