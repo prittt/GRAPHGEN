@@ -83,7 +83,7 @@ ConfigData::ConfigData(string& algorithm_name, const string& mask_name, bool use
         create_directories(frequencies_path_ / mask_name_);
 
 		// ChainCode Ruleset Path
-		chaincode_rstable_path_ = algorithm_output_path_ / path(chaincode_rstable_filename_);
+		chaincode_rstable_path_ = global_output_path_ / path(chaincode_rstable_filename_);
     }
     else {
         cout << "ERROR: missing output path in configuration file.\n";

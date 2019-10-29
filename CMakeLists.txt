@@ -145,10 +145,8 @@ configure_file("${CMAKE_SOURCE_DIR}/CMake.config.yaml" "${CMAKE_INSTALL_PREFIX}/
 # Copy frequencies files into bin folder
 file(COPY "${CMAKE_SOURCE_DIR}/frequencies" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
 
-# Copy ChainCode rules into corresponding folders
-foreach(ALGO ${CHAINCODE_ALGORITHMS})
-	file(COPY "${CMAKE_SOURCE_DIR}/rules/ChainCode_rstable.yaml" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/${ALGO}/")
-endforeach()
+# Copy ChainCode rules into output folder
+file(COPY "${CMAKE_SOURCE_DIR}/rulesets/ChainCode_rstable.yaml" DESTINATION "${GRAPHGEN_OUTPUT_PATH}/")
 
 #set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${ProjectName}) # Set GRAPHGEN as startup group instead of ALL_BUILD
 if(GRAPHGEN_FREQUENCIES_ENABLED)

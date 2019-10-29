@@ -193,6 +193,7 @@ bool LoadFileList(vector<pair<string, bool>>& filenames, const string& files_pat
 //    return existing_datasets > 0;
 //}
 
+
 bool CountFrequenciesOnDataset(const string& dataset, rule_set& rs, bool force) {
 
     path frequencies_output_path = conf.frequencies_path_ / conf.mask_name_ / (dataset + conf.frequencies_suffix_);
@@ -365,15 +366,21 @@ bool CountFrequenciesOnDataset(const string& dataset, rule_set& rs, bool force) 
 //    return true;
 //}
 
-bool AddFrequenciesToRuleset(rule_set& rs, bool force) {
+bool AddFrequenciesToRuleset(rule_set& rs, bool force, bool is_thinning) {
 
     int n = 0;
 
     for (const string& dataset : conf.datasets_) {
-
         n += CountFrequenciesOnDataset(dataset, rs, force);
-
     }
+
+	if (is_thinning) {
+		assert((rs.rules.size() % 2) == 0);
+		size_t half = rs.rules.size() / 2;
+		for (size_t i = half; i < rs.rules.size(); i++) {
+			rs.rules[i].frequency = rs.rules[i - half].frequency;
+		}
+	}
 
     return n > 0;
 

@@ -43,7 +43,7 @@ int main()
 
     // Call GRAPHGEN:
     // 1) Count frequencies
-    AddFrequenciesToRuleset(rs);
+	AddFrequenciesToRuleset(rs, false, true);
 
     // 2) Load or generate Optimal Decision Tree based on Chen-Hsu algorithm
     BinaryDrag<conact> bd = GetOdt(rs);
