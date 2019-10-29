@@ -42,6 +42,7 @@ set(GRAPHGEN_FREQUENCIES_ENABLED OFF CACHE BOOL "Enable Frequency Calculation in
 
 if(GRAPHGEN_FREQUENCIES_ENABLED)
 	set(GRAPHGEN_FREQUENCIES_DOWNLOAD_DATASET OFF CACHE BOOL "Enable automatic download of the dataset used for frequency calculation.")
+    target_compile_definitions(GRAPHGEN PUBLIC GRAPHGEN_WITH_FREQUENCIES)
 endif()
 
 

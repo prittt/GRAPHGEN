@@ -49,7 +49,7 @@ int main()
     BinaryDrag<conact> bd = GetOdt(rs);
 
     // 3) Draw the generated tree on file
-    string tree_filename = algo_name + "_tree";
+    string tree_filename = conf.algorithm_name_ + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
     // 4) Generate forests of trees

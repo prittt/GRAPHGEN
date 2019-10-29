@@ -32,11 +32,18 @@
 
 using namespace std;
 
+string Description() {
+    return "Spaghetti_FREQ (ODT with frequencies + prediction + compression).\n  \
+            Frequencies are calculated over the following datasets: " +  
+            conf.GetDatasetsString(", ") + "\n";
+}
+
 int main()
 {
     string algo_name = "Spaghetti_FREQ";
     string mask_name = "Grana";
     conf = ConfigData(algo_name, mask_name, true);
+    conf.SetDescription(Description());
 
     GranaRS g_rs;
     auto rs = g_rs.GetRuleSet();
