@@ -29,12 +29,16 @@
 #ifndef GRAPGHSGEN_CONFIG_DATA_H_
 #define GRAPGHSGEN_CONFIG_DATA_H_
 
-#include <iostream>
 #include <filesystem>
+#include <iostream>
+#include <numeric>
 
 #include "yaml-cpp/yaml.h"
 
-struct ConfigData {
+struct ConfigData { 
+
+    // Algorithm's description
+    std::string description_ = "";
 
     // Configuration file
     std::string config_file_ = "config.yaml";
@@ -92,7 +96,7 @@ struct ConfigData {
 
     ConfigData() {}
 
-    ConfigData(std::string algorithm_name, std::string mask_name, bool use_frequencies = false);
+    ConfigData(std::string& algorithm_name, const std::string& mask_name, bool use_frequencies = false);
 
     // Dot code
     std::filesystem::path GetDotCodePath(const std::string& out_base_name) {
@@ -119,21 +123,28 @@ struct ConfigData {
         return algorithm_output_path_ / std::filesystem::path(algorithm_name_ + "_" + custom_suffix + odt_suffix_);
     }
 
-    // This serves to use a special algorithm name when using frequencies
-    void UpdateAlgoNameWithDatasets() {
-        // Add names of used data sets to file names
+    std::string GetDatasetsString(const std::string& separator = ", ") {
         std::string dataset_names;
         bool first = true;
         for (const auto &d : datasets_) {
             if (!first) {
-                dataset_names += '-';
+                dataset_names += separator;
             }
             else {
                 first = false;
             }
             dataset_names += d;
         }
-        algorithm_name_ += "_" + dataset_names;
+        return dataset_names;
+    }
+
+    // This serves to use a special algorithm name when using frequencies
+    void UpdateAlgoNameWithDatasets() {
+        algorithm_name_ += "_" + GetDatasetsString("-");
+    }
+
+    void SetDescription(std::string description) {
+        description_ = description;
     }
 
 };
