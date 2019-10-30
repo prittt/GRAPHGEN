@@ -48,6 +48,9 @@ target_sources(GRAPHGEN PRIVATE
 	graph_code_generator.cpp
     config_data.h
     config_data.cpp
+
+    thinning_zhangsuen_1984.cc
+    thinning_zhangsuen_1984.h
     
     drag_compressor.h
     magic_optimizer.h

@@ -46,7 +46,7 @@ public:
 
         rule_set thinning;
         thinning.InitConditions(zs_mask);
-        thinning.AddCondition("iter");
+        //thinning.AddCondition("iter");
         thinning.InitActions({
             "keep0",
             "keep1",
@@ -78,14 +78,14 @@ public:
 
             int B = P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9;
             int m1, m2;
-            if (r["iter"] == 0) {
-                m1 = P2 * P4 * P6;
+            //if (r["iter"] == 0) {
+               m1 = P2 * P4 * P6;
                 m2 = P4 * P6 * P8;
-            }
-            else {
-                m1 = P2 * P4 * P8;
-                m2 = P2 * P6 * P8;
-            }
+           // }
+            //else {
+               // m1 = P2 * P4 * P8;
+               // m2 = P2 * P6 * P8;
+            //}
 
             if (
                 /*(a)*/ (2 <= B && B <= 6) &&

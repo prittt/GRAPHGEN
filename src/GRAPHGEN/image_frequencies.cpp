@@ -37,39 +37,41 @@
 #include "utilities.h"
 #include "performance_evaluator.h"
 
+#include "thinning_zhangsuen_1984.h"
+
 using namespace std;
 using namespace filesystem;
 using namespace cv;
 
 mask::mask(const rule_set& rs) : rs_{ rs } {
 	const auto& ps = rs.ps_;
-    increment_ = ps.GetShiftX();
-    exp_ = ps.pixels_.size();
-    for (int i = 0; i < exp_; ++i) {
-        border_ = max(border_, max(abs(ps.pixels_[i].GetDx()), abs(ps.pixels_[i].GetDy())));
-        top_ = min(top_, ps.pixels_[i].GetDy());
-        right_ = max(right_, ps.pixels_[i].GetDx());
-        left_ = min(left_, ps.pixels_[i].GetDx());
-        bottom_ = max(bottom_, ps.pixels_[i].GetDy());
-    }
+	increment_ = ps.GetShiftX();
+	exp_ = ps.pixels_.size();
+	for (int i = 0; i < exp_; ++i) {
+		border_ = max(border_, max(abs(ps.pixels_[i].GetDx()), abs(ps.pixels_[i].GetDy())));
+		top_ = min(top_, ps.pixels_[i].GetDy());
+		right_ = max(right_, ps.pixels_[i].GetDx());
+		left_ = min(left_, ps.pixels_[i].GetDx());
+		bottom_ = max(bottom_, ps.pixels_[i].GetDy());
+	}
 
-    left_ = abs(left_);
-    top_ = abs(top_);
+	left_ = abs(left_);
+	top_ = abs(top_);
 
-    mask_ = Mat1b(top_ + bottom_ + 1, left_ + right_ + 1, uchar(0));
-    for (int i = 0; i < exp_; ++i) {
-        mask_(ps.pixels_[i].GetDy() + top_, ps.pixels_[i].GetDx() + left_) = 1;
-    }
+	mask_ = Mat1b(top_ + bottom_ + 1, left_ + right_ + 1, uchar(0));
+	for (int i = 0; i < exp_; ++i) {
+		mask_(ps.pixels_[i].GetDy() + top_, ps.pixels_[i].GetDx() + left_) = 1;
+	}
 }
 
 size_t mask::MaskToLinearMask(const cv::Mat1b& r_img) const {
-    size_t linearMask = 0;
+	size_t linearMask = 0;
 
 	for (const auto& p : rs_.ps_) {
 		linearMask |= r_img(p.GetDy() + top_, p.GetDx() + left_) << rs_.conditions_pos.at(p.name_);
 	}
 
-    return linearMask;
+	return linearMask;
 }
 
 // This function extracts all the configurations of a given mask (mask) in a given image (img) and stores the occurrences (frequencies) in the rRules vector
@@ -94,62 +96,63 @@ size_t mask::MaskToLinearMask(const cv::Mat1b& r_img) const {
 
 
 // Overloaded function that accepts a vector instead of a ruleset
-void CalculateConfigurationsFrequencyOnImage(const cv::Mat1b& img, const mask& msk, vector<unsigned long long>& freqs) {
+void CalculateConfigurationsFrequencyOnImage(const cv::Mat1b& img, const mask& msk, vector<unsigned long long>& freqs, int iter) {
 
-    cv::Mat1b clone;
-    copyMakeBorder(img, clone, msk.border_, msk.border_, msk.border_, msk.border_, cv::BORDER_CONSTANT, 0);
-    const int h = clone.rows, w = clone.cols;
+	cv::Mat1b clone;
+	copyMakeBorder(img, clone, msk.border_, msk.border_, msk.border_, msk.border_, cv::BORDER_CONSTANT, 0);
+	const int h = clone.rows, w = clone.cols;
 
-    for (int r = msk.border_; r < h - msk.border_; r += msk.increment_) {
+	for (int r = msk.border_; r < h - msk.border_; r += msk.increment_) {
 
-        for (int c = msk.border_; c < w - msk.border_; c += msk.increment_) {
+		for (int c = msk.border_; c < w - msk.border_; c += msk.increment_) {
 
-            const cv::Mat1b read_pixels = clone(cv::Rect(cv::Point(c - msk.left_, r - msk.top_), cv::Point(c + 1 + msk.right_, r + 1 + msk.bottom_)));
-            size_t rule = msk.MaskToLinearMask(read_pixels);
-            freqs[rule]++;
-            if (freqs[rule] == numeric_limits<unsigned long long>::max()) {
-                cout << "OVERFLOW freq\n";
-            }
-        }
-    }
+			const cv::Mat1b read_pixels = clone(cv::Rect(cv::Point(c - msk.left_, r - msk.top_), cv::Point(c + 1 + msk.right_, r + 1 + msk.bottom_)));
+			size_t rule = msk.MaskToLinearMask(read_pixels);
+			//rule |= iter << 9; // TODO: make this conditions size ***********************************
+			freqs[rule]++;
+			if (freqs[rule] == numeric_limits<unsigned long long>::max()) {
+				cout << "OVERFLOW freq\n";
+			}
+		}
+	}
 }
 
 bool GetBinaryImage(const string& FileName, cv::Mat1b& binary) {
-    // Image load
-    cv::Mat image;
-    image = cv::imread(FileName, cv::IMREAD_GRAYSCALE);   // Read the file
+	// Image load
+	cv::Mat image;
+	image = cv::imread(FileName, cv::IMREAD_GRAYSCALE);   // Read the file
 
-    if (image.empty()) // Check if image exists
-        return false;
+	if (image.empty()) // Check if image exists
+		return false;
 
-    //// Convert the image to grayscale
-    //Mat grayscaleMat;
-    //cvtColor(image, grayscaleMat, CV_RGB2GRAY);
+	//// Convert the image to grayscale
+	//Mat grayscaleMat;
+	//cvtColor(image, grayscaleMat, CV_RGB2GRAY);
 
-    // Adjust the threshold to actually make it binary
-    cv::threshold(image, binary, 100, 1, cv::THRESH_BINARY);
+	// Adjust the threshold to actually make it binary
+	cv::threshold(image, binary, 100, 1, cv::THRESH_BINARY);
 
-    return true;
+	return true;
 }
 
 bool LoadFileList(vector<pair<string, bool>>& filenames, const string& files_path)
 {
-    // Open files_path (files.txt)
-    ifstream is(files_path);
-    if (!is.is_open()) {
-        return false;
-    }
+	// Open files_path (files.txt)
+	ifstream is(files_path);
+	if (!is.is_open()) {
+		return false;
+	}
 
-    string cur_filename;
-    while (getline(is, cur_filename)) {
-        // To delete possible carriage return in the file name
-        // (especially designed for windows file newline format)
-        RemoveCharacter(cur_filename, '\r');
-        filenames.push_back(make_pair(cur_filename, true));
-    }
+	string cur_filename;
+	while (getline(is, cur_filename)) {
+		// To delete possible carriage return in the file name
+		// (especially designed for windows file newline format)
+		RemoveCharacter(cur_filename, '\r');
+		filenames.push_back(make_pair(cur_filename, true));
+	}
 
-    is.close();
-    return true;
+	is.close();
+	return true;
 }
 
 //bool CalculateRulesFrequencies(const pixel_set& ps, vector<pair<path, bool>>& paths, rule_set& rs) {
@@ -194,73 +197,88 @@ bool LoadFileList(vector<pair<string, bool>>& filenames, const string& files_pat
 //}
 
 
-bool CountFrequenciesOnDataset(const string& dataset, rule_set& rs, bool force) {
+bool CountFrequenciesOnDataset(const string& dataset, rule_set& rs, bool force, bool is_thinning) {
 
-    path frequencies_output_path = conf.frequencies_path_ / conf.mask_name_ / (dataset + conf.frequencies_suffix_);
+	path frequencies_output_path = conf.frequencies_path_ / conf.mask_name_ / (dataset + conf.frequencies_suffix_);
 
-    if (!force) {
-        // Try to load frequencies from file
-        ifstream is;
-        is.exceptions(fstream::badbit | fstream::failbit | fstream::eofbit);
+	if (!force) {
+		// Try to load frequencies from file
+		ifstream is;
+		is.exceptions(fstream::badbit | fstream::failbit | fstream::eofbit);
 
-        try {
-            is.open(frequencies_output_path, ios::binary);
-            vector<rule> new_rules = rs.rules;
-            std::for_each(new_rules.begin(), new_rules.end(), [&is](rule& r) { 
+		try {
+			is.open(frequencies_output_path, ios::binary);
+			vector<rule> new_rules = rs.rules;
+			std::for_each(new_rules.begin(), new_rules.end(), [&is](rule& r) {
 				unsigned long long v;
 				is.read(reinterpret_cast<char*>(&v), 8);
 				r.frequency += v;
 			});
-            rs.rules = new_rules;
-            cout << "Frequencies of " << dataset << " were loaded from file.\n";
-            return true;
-        }
-        catch (const ifstream::failure&) {
-            cout << "Frequencies of " << dataset << " couldn't be loaded from file.\n";
-        }
-        catch (const runtime_error&) {
-            cout << "Frequencies of " << dataset << " couldn't be loaded from file.\n";
-        }
-    }
+			rs.rules = new_rules;
+			cout << "Frequencies of " << dataset << " were loaded from file.\n";
+			return true;
+		}
+		catch (const ifstream::failure&) {
+			cout << "Frequencies of " << dataset << " couldn't be loaded from file.\n";
+		}
+		catch (const runtime_error&) {
+			cout << "Frequencies of " << dataset << " couldn't be loaded from file.\n";
+		}
+	}
 
-    mask msk(rs);
+	mask msk(rs);
 
-    cv::Mat1b img;
+	cv::Mat1b img;
 
-    path dataset_path = conf.global_input_path_ / path(dataset);
-    vector<pair<string, bool>> files_list;
-    if (!LoadFileList(files_list, (dataset_path / path("files.txt")).string())) {
-        cout << "Unable to find 'files.txt' of " << dataset_path << ", dataset skipped.\n";
-        return false;
-    }
-    cout << dataset << ":\n";
+	path dataset_path = conf.global_input_path_ / path(dataset);
+	vector<pair<string, bool>> files_list;
+	if (!LoadFileList(files_list, (dataset_path / path("files.txt")).string())) {
+		cout << "Unable to find 'files.txt' of " << dataset_path << ", dataset skipped.\n";
+		return false;
+	}
+	cout << dataset << ":\n";
 
-    vector<unsigned long long> freqs(rs.rules.size(), 0);
+	vector<unsigned long long> freqs(rs.rules.size(), 0);
 
-    unsigned int files_list_size = files_list.size();
-    for (uint d = 0; d < files_list_size; ++d) {
-        cout << '\r' << d << '/' << files_list_size;
-        path file_name = files_list[d].first;
-        GetBinaryImage((dataset_path / file_name).string(), img);
-        if (img.empty()) {
-            cout << "Unable to find '" << file_name << "' image in '" << dataset_path << "' dataset, image skipped\n";
-            continue;
-        }
-        CalculateConfigurationsFrequencyOnImage(img, msk, freqs);
-    }
-    cout << '\r' << files_list_size << '/' << files_list_size << '\n';
+	unsigned int files_list_size = files_list.size();
+	for (uint d = 0; d < files_list_size; ++d) {
+		cout << '\r' << d << '/' << files_list_size;
+		path file_name = files_list[d].first;
+		GetBinaryImage((dataset_path / file_name).string(), img);
+		if (img.empty()) {
+			cout << "Unable to find '" << file_name << "' image in '" << dataset_path << "' dataset, image skipped\n";
+			continue;
+		}
 
-    for_each(freqs.begin(), freqs.end(), [rs_it = rs.rules.begin()](unsigned long long f) mutable { (*rs_it++).frequency += f; });
+		if (is_thinning) {
+			ZhangSuenSpaghetti zs(img);
+			while (true) {
+				CalculateConfigurationsFrequencyOnImage(zs.img_, msk, freqs, 0);
+				bool b0 = zs.PerformOneThinningIteration0();
+				//CalculateConfigurationsFrequencyOnImage(zs.img_, msk, freqs, 1);
+				bool b1 = zs.PerformOneThinningIteration1();
+				if (!(b0 || b1)) {
+					break;
+				}
+			}
+		}
+		else {
+			CalculateConfigurationsFrequencyOnImage(img, msk, freqs, 0);
+		}
+	}
+	cout << '\r' << files_list_size << '/' << files_list_size << '\n';
 
-    ofstream os(frequencies_output_path, ios::binary);
-    if (!os) {
-        cerr << "Frequencies of " << dataset << " couldn't be stored into file.\n";
-    }
-    else {
-        for_each(freqs.begin(), freqs.end(), [&os](unsigned long long f) { os.write(reinterpret_cast<const char*>(&f), 8); });
-    }
+	for_each(freqs.begin(), freqs.end(), [rs_it = rs.rules.begin()](unsigned long long f) mutable { (*rs_it++).frequency += f; });
 
-    return true;
+	ofstream os(frequencies_output_path, ios::binary);
+	if (!os) {
+		cerr << "Frequencies of " << dataset << " couldn't be stored into file.\n";
+	}
+	else {
+		for_each(freqs.begin(), freqs.end(), [&os](unsigned long long f) { os.write(reinterpret_cast<const char*>(&f), 8); });
+	}
+
+	return true;
 }
 
 
@@ -368,20 +386,20 @@ bool CountFrequenciesOnDataset(const string& dataset, rule_set& rs, bool force) 
 
 bool AddFrequenciesToRuleset(rule_set& rs, bool force, bool is_thinning) {
 
-    int n = 0;
+	int n = 0;
 
-    for (const string& dataset : conf.datasets_) {
-        n += CountFrequenciesOnDataset(dataset, rs, force);
-    }
-
+	for (const string& dataset : conf.datasets_) {
+		n += CountFrequenciesOnDataset(dataset, rs, force, is_thinning);
+	}
+/*
 	if (is_thinning) {
 		assert((rs.rules.size() % 2) == 0);
 		size_t half = rs.rules.size() / 2;
 		for (size_t i = half; i < rs.rules.size(); i++) {
 			rs.rules[i].frequency = rs.rules[i - half].frequency;
 		}
-	}
+	}*/
 
-    return n > 0;
+	return n > 0;
 
 }
