@@ -35,8 +35,8 @@ using namespace std;
 int main()
 {
     // Setup configuration
-    string algorithm_name = "PRED3D";
-    conf = ConfigData(algorithm_name, "Rosenfeld3D");
+    string algorithm_name = "PRED++3D";
+    conf = ConfigData(algorithm_name, "Rosenfeld");
 
     // Load or generate rules
     Rosenfeld3dRS r_rs;
@@ -58,10 +58,13 @@ int main()
 			ForestHandlerFlags::CENTER_LINES);
     );
     
-    // 4) Draw the generated forests on file
+    // 4) Compress the forest
+    fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES, 1000);
+
+    // 5) Draw the compressed forests on file
     fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
     
-    // 5) Generate the C/C++ source code
+    // 6) Generate the C/C++ source code
     fh.GenerateCode();
     GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::NONE);
 

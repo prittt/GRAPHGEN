@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,36 +34,34 @@ using namespace std;
 
 int main()
 {
-    // Setup configuration
-    string algorithm_name = "PRED3D";
-    conf = ConfigData(algorithm_name, "Rosenfeld3D");
+    string algorithm_name = "SAUF++3D";
+    string mask_name = "Rosenfeld3D";
 
-    // Load or generate rules
+    conf = ConfigData(algorithm_name, mask_name);
+
     Rosenfeld3dRS r_rs;
     auto rs = r_rs.GetRuleSet();
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
     BinaryDrag<conact> bd = GetOdt(rs);
-    
-    // 2) Draw the generated tree on file
+
+    // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
-    
-    // 3) Generate forests of trees
-    LOG(algorithm_name + " - making forests",
-        ForestHandler fh(bd, rs.ps_, ForestHandlerFlags::FIRST_LINE |
-			ForestHandlerFlags::LAST_LINE |
-			ForestHandlerFlags::SINGLE_LINE |
-			ForestHandlerFlags::CENTER_LINES);
-    );
-    
-    // 4) Draw the generated forests on file
-    fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
-    
-    // 5) Generate the C/C++ source code
-    fh.GenerateCode();
-    GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::NONE);
 
-	return EXIT_SUCCESS;
+    // 3) Compress the tree
+    DragCompressor{ bd, 1000 };
+
+    // 4) Generate the C++ source code
+    ofstream os(conf.treecode_path_);
+    if (os){
+        GenerateDragCode(os, bd);
+    }
+
+    // 5) Generate the C++ source code for pointers,
+    // conditions to check and actions to perform
+    GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE);
+
+    return EXIT_SUCCESS;
 }
