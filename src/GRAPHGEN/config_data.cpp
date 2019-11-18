@@ -67,7 +67,7 @@ ConfigData::ConfigData(string& algorithm_name, const string& mask_name, bool use
         odt_path_ = algorithm_output_path_ / path(algorithm_name + odt_suffix_);
         
         // HDT
-        hdt_path_ = global_output_path_ / path(algorithm_name + hdt_suffix_);
+        hdt_path_ = algorithm_output_path_ / path(algorithm_name + hdt_suffix_);
 
         // Code
         code_path_ = algorithm_output_path_ / path(algorithm_name + code_suffix_);

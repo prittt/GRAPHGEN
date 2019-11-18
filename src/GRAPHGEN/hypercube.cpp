@@ -267,7 +267,7 @@ std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<std::bi
 	}
 
 	if (currentClassifier == Classifier::Popularity) {
-		for (int i = 0; i < combined_actions.size(); i++) {
+		for (size_t i = 0; i < combined_actions.size(); i++) {
 			for (int bit = 0; bit < maxActions; bit++) {
 				if (combined_actions[i].test(bit)) {
 					singleActionCount[bit].second++;
@@ -282,7 +282,7 @@ std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<std::bi
 	}
 
 	if (currentClassifier == Classifier::Random) {
-		auto rng = std::mt19937(std::time(nullptr));
+		auto rng = std::mt19937(static_cast<unsigned int>(std::time(nullptr)));
 		std::shuffle(singleActionCount.begin(), singleActionCount.end(), rng);
 	}
 
@@ -324,7 +324,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 
 	for (auto c : conditions) {
 		int power = 1 << rs.conditions_pos.at(c);
-		for (int i = 0; i < rs.rules.size(); ++i) {
+		for (size_t i = 0; i < rs.rules.size(); ++i) {
 			if (ViolatesSetConditions(i, set_conditions, rs)) {
 				continue;
 			}
@@ -359,7 +359,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 
 	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
 	std::string splitCandidate = conditions[0];
-	float maximum_information_gain = 0;
+	double maximum_information_gain = 0;
 
 	std::vector<std::bitset<128>> total_combined_actions;
 	total_combined_actions.reserve(combined_actions[conditions[0]][0].size() + combined_actions[conditions[0]][1].size()); 
@@ -369,14 +369,14 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	// TODO: put entropy as parameter into next recursive calls since its the same
 	total_map = FindBestSingleActionCombination(total_combined_actions, rs.actions.size(), rs);
 
-	float baseEntropy = entropy(total_map);
+	double baseEntropy = entropy(total_map);
 	//std::cout << "Base Entropy: " << baseEntropy << std::endl;
 
 	for (auto x : conditions) {
-		float leftEntropy = entropy(single_actions_counted[x][0]);
-		float rightEntropy = entropy(single_actions_counted[x][1]);
+		double leftEntropy = entropy(single_actions_counted[x][0]);
+		double rightEntropy = entropy(single_actions_counted[x][1]);
 
-		float informationGain = std::max((baseEntropy - leftEntropy), (baseEntropy - rightEntropy));
+		double informationGain = std::max((baseEntropy - leftEntropy), (baseEntropy - rightEntropy));
 
 		if (informationGain > maximum_information_gain) {
 			maximum_information_gain = informationGain;
@@ -402,7 +402,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 		parent->left = tree.make_node();
 		auto conditionsForLeft = set_conditions;
 		conditionsForLeft[splitCandidate] = 1;
-		FindHdtRecursively(conditions, conditionsForLeft, rs, tree, parent->left, blockConditionsEntropyFactor);
+		FindHdtRecursively(conditions, conditionsForLeft, rs, tree, parent->left);
 	}
 
 	if (RightIsAction) {
@@ -414,30 +414,28 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 		parent->right = tree.make_node();
 		auto conditionsForRight = set_conditions;
 		conditionsForRight[splitCandidate] = 0;
-		FindHdtRecursively(conditions, conditionsForRight, rs, tree, parent->right, blockConditionsEntropyFactor);
+		FindHdtRecursively(conditions, conditionsForRight, rs, tree, parent->right);
 	}
 }
 
 BinaryDrag<conact> GenerateHdt(const rule_set& rs) {
-	for (int i = 150; i < 1300; i += 5) {
-		BinaryDrag<conact> t;
-		auto parent = t.make_root();
+	BinaryDrag<conact> t;
+	auto parent = t.make_root();
 
-		std::vector<std::string> remaining_conditions = rs.conditions; // copy
-		std::map<std::string, int> set_conditions = std::map<std::string, int>();
+	std::vector<std::string> remaining_conditions = rs.conditions; // copy
+	std::map<std::string, int> set_conditions = std::map<std::string, int>();
 
-		FindHdtRecursively(remaining_conditions, set_conditions, rs, t, parent, i / 100.0f);
-		DragStatistics ds(t);
-		std::cout << "Tree with " << i << "% factor on block conditions. Nodes: " << ds.Nodes() << std::endl;
-		if (i > 1200) {
-			return t;
-		}
-	}
+	FindHdtRecursively(remaining_conditions, set_conditions, rs, t, parent);
+
+	return t;
 }
 
 BinaryDrag<conact> GenerateHdt(const rule_set& rs, const string& filename)
 {
-	auto t = GenerateHdt(rs);
+	TLOG("Generating HDT",
+		auto t = GenerateHdt(rs);
+	);
+
 	WriteConactTree(t, filename);
 	return t;
 }
@@ -445,7 +443,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, const string& filename)
 BinaryDrag<conact> GetHdt(const rule_set& rs, bool force_generation) {
 	string hdt_filename = conf.hdt_path_.string();
 	BinaryDrag<conact> t;
-	if (force_generation || !LoadConactTree(t, hdt_filename)) {
+	if (conf.force_odt_generation_ || force_generation || !LoadConactTree(t, hdt_filename)) {
 		t = GenerateHdt(rs, hdt_filename);
 	}
 	return t;

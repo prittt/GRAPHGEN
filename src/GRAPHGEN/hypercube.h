@@ -191,8 +191,6 @@ is always regenerated. The loaded/generated tree is then returned from the funct
 BinaryDrag<conact> GetOdt(const rule_set& rs, bool force_generation = false);
 BinaryDrag<conact> GetHdt(const rule_set& rs, bool force_generation = false);
 
-#endif // !GRAPHSGEN_CONACT_TREE_H_
-
 /** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
 
 This function generates the optimal decision tree from the given rule set. When the number
@@ -208,5 +206,4 @@ is always regenerated. The loaded/generated tree is then returned from the funct
 */
 BinaryDrag<conact> GetOdtWithFileSuffix(const rule_set& rs, const std::string& file_suffix, bool force_generation = false);
 
-
-#endif // !GRAPHGEN_CONACT_TREE_H_
+#endif // !GRAPHSGEN_CONACT_TREE_H_
