@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -26,9 +26,7 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "yaml-cpp/yaml.h"
-
-#include "graphsgen.h"
+#include "graphgen.h"
 
 #include "grana_ruleset.h"
 
@@ -37,31 +35,30 @@ using namespace std;
 int main()
 {
     string algorithm_name = "BBDT";
-    conf = ConfigData(algorithm_name);
+    conf = ConfigData(algorithm_name, "Grana");
 
     GranaRS g_rs;
     auto rs = g_rs.GetRuleSet();
 
-    // Call GRAPHSGEN:
+    // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
-	TLOG("Building Tree",
-		ltree t = GetHdt(rs, algorithm_name, true);
-	);
+    BinaryDrag<conact> bd = GetOdt(rs);
 
-    // 2) Draw the generated tree to pdf
+    // 2) Draw the generated tree
     string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, t, false, true, false);
+    DrawDagOnFile(tree_filename, bd);
 
-    // 3) Generate the C++ source code for the ODT
-    GenerateDragCode(algorithm_name, t);
-
-    // 4) Generate the C++ source code for pointers, 
-    // conditions to check and actions to perform
+    // 3) Generate the tree C/C++ code taking care of the names used
+    //    in the Grana's rule set GranaRS
+    GenerateDragCode(bd);
     pixel_set block_positions{
-          { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
-          { "S", {-2, +0} },{ "x", {+0, +0} }
+           { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
+           { "S", {-2, +0} },{ "x", {+0, +0} }
     };
-    GeneratePointersConditionsActionsCode(algorithm_name, rs, block_positions);
+    GeneratePointersConditionsActionsCode(rs, 
+                                          GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE, 
+                                          GenerateActionCodeTypes::LABELING,
+                                          block_positions);
 
     return EXIT_SUCCESS;
 }

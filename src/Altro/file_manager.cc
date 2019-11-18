@@ -11,7 +11,7 @@
 // this list of conditions and the following disclaimer in the documentation
 // and / or other materials provided with the distribution.
 //
-// * Neither the name of GRAPHSGEN nor the names of its
+// * Neither the name of GRAPHGEN nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
 //
@@ -38,7 +38,7 @@
 using namespace std;
 
 const char filesystem::path::separator_ =
-#ifdef GRAPHSGEN_WINDOWS
+#ifdef GRAPHGEN_WINDOWS
 '\\';
 #else
 '/';
@@ -71,7 +71,7 @@ bool filesystem::create_directories(const path& p)
 {
     string s(p.string());
     string parameters = "";
-#if defined(GRAPHSGEN_UNIX) || defined(GRAPHSGEN_LINUX) || defined(GRAPHSGEN_APPLE)
+#if defined(GRAPHGEN_UNIX) || defined(GRAPHGEN_LINUX) || defined(GRAPHGEN_APPLE)
     // make it recursive by adding "-p" suffix
     parameters = "-p";
 #endif
@@ -92,9 +92,9 @@ bool filesystem::create_directories(const path& p, error_code& ec)
 
 void filesystem::path::NormalizePath()
 {
-#if defined(GRAPHSGEN_UNIX) || defined(GRAPHSGEN_LINUX) || defined(GRAPHSGEN_APPLE)
+#if defined(GRAPHGEN_UNIX) || defined(GRAPHGEN_LINUX) || defined(GRAPHGEN_APPLE)
     std::replace(path_.begin(), path_.end(), '\\', '/');
-#elif defined(GRAPHSGEN_WINDOWS)
+#elif defined(GRAPHGEN_WINDOWS)
     std::replace(path_.begin(), path_.end(), '/', '\\');
 #endif
 
