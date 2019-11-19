@@ -110,7 +110,7 @@ struct VIndex {
 
 #pragma pack(1)
 struct VNode {
-	std::bitset</*11881*/128> uiAction;
+	action_bitset uiAction;
 	/*unsigned*/ unsigned long long uiProb;
     /*unsigned*/ unsigned long long uiGain;
 	byte uiMaxGainIndex;

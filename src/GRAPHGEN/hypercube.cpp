@@ -258,7 +258,7 @@ enum Classifier {
 
 Classifier currentClassifier = Classifier::Popularity;
 
-std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<std::bitset<128>> combined_actions, const int maxActions, const rule_set& rs) {
+std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<action_bitset> combined_actions, const int maxActions, const rule_set& rs) {
 	std::unordered_map<int, int> single_actions;
 	std::vector<std::pair<int, int>> singleActionCount;
 
@@ -303,7 +303,7 @@ std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<std::bi
 	return single_actions;
 }
 
-void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<std::bitset<128>, int>, 2>>  &action_occurence_map) 
+void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<action_bitset, int>, 2>>  &action_occurence_map) 
 {
 	for (auto& x : action_occurence_map) {
 		for (int bit = 0; bit < 2; bit++) {
@@ -316,7 +316,7 @@ void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<
 
 void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::string, int> set_conditions, const rule_set& rs, BinaryDrag<conact>& tree, BinaryDrag<conact>::node* parent)
 {
-	std::unordered_map<string, std::array<std::vector<std::bitset<128>>, 2>> combined_actions;
+	std::unordered_map<string, std::array<std::vector<action_bitset>, 2>> combined_actions;
 	std::unordered_map<string, std::array<std::unordered_map<int, int>, 2>> single_actions_counted;
 	std::unordered_map<int, int> total_map;
 	std::map<std::string, std::array<int, 2>> most_probable_action;
@@ -346,10 +346,10 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 			auto rightNode = tree.make_node();
 			parent->left = leftNode;
 			parent->right = rightNode;
-			auto leftAction = std::bitset<128>().set(single_actions_counted.at(conditions[0])[0].begin()->first);
+			auto leftAction = action_bitset().set(single_actions_counted.at(conditions[0])[0].begin()->first);
 			leftNode->data.t = conact::type::ACTION;
 			leftNode->data.action = leftAction;
-			auto rightAction = std::bitset<128>().set(single_actions_counted.at(conditions[0])[1].begin()->first);
+			auto rightAction = action_bitset().set(single_actions_counted.at(conditions[0])[1].begin()->first);
 			rightNode->data.t = conact::type::ACTION;
 			rightNode->data.action = rightAction;
 			//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
@@ -361,7 +361,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	std::string splitCandidate = conditions[0];
 	double maximum_information_gain = 0;
 
-	std::vector<std::bitset<128>> total_combined_actions;
+	std::vector<action_bitset> total_combined_actions;
 	total_combined_actions.reserve(combined_actions[conditions[0]][0].size() + combined_actions[conditions[0]][1].size()); 
 	total_combined_actions.insert(total_combined_actions.end(), combined_actions[conditions[0]][0].begin(), combined_actions[conditions[0]][0].end());
 	total_combined_actions.insert(total_combined_actions.end(), combined_actions[conditions[0]][1].begin(), combined_actions[conditions[0]][1].end());
@@ -396,7 +396,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	if (LeftIsAction) {
 		parent->left = tree.make_node();
 		parent->left->data.t = conact::type::ACTION;
-		parent->left->data.action = std::bitset<128>().set(most_probable_action[splitCandidate][0]);
+		parent->left->data.action = action_bitset().set(most_probable_action[splitCandidate][0]);
 	}
 	else {
 		parent->left = tree.make_node();
@@ -408,7 +408,7 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	if (RightIsAction) {
 		parent->right = tree.make_node();
 		parent->right->data.t = conact::type::ACTION;
-		parent->right->data.action = std::bitset<128>().set(most_probable_action[splitCandidate][1]);
+		parent->right->data.action = action_bitset().set(most_probable_action[splitCandidate][1]);
 	}
 	else {
 		parent->right = tree.make_node();

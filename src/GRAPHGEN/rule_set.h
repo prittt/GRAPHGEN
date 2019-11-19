@@ -40,7 +40,7 @@
 
 struct rule {
     unsigned long long frequency = 1;
-    std::bitset</*11881*/128> actions; // bitmapped
+    action_bitset actions; // bitmapped
 };
 
 // Accrocchio per capire come mai pred va meglio di spaghetti su granularity a frequenze tra 9 e 19

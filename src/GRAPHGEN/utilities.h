@@ -34,12 +34,15 @@
 #include <string>
 #include <sstream>
 #include <filesystem>
+#include <bitset>
 
 #include "config_data.h"
 #include "performance_evaluator.h"
 
 extern ConfigData conf;
 
+#define ACTION_BITSET_SIZE 6000
+using action_bitset = std::bitset<ACTION_BITSET_SIZE>;
 using uint = uint32_t;
 
 std::string binary(uint u, uint nbits);

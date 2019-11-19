@@ -111,13 +111,13 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag)
 {
     auto nconds = ag.size();
     auto nrules = 1u << nconds;
-    std::set<std::bitset<128>, less<128>> actions_set; // Set of actions described as list of pixels to be merged
+    std::set<action_bitset, less<ACTION_BITSET_SIZE>> actions_set; // Set of actions described as list of pixels to be merged
     std::vector<std::string> actions = { "nothing" };
 
     auto posx = ag.rnodes_.at("x");
     for (size_t rule = 0; rule < nrules; ++rule) {
         if ((rule >> posx) & 1) {
-            std::bitset<128> cur_action = 0;
+			action_bitset cur_action = 0;
             std::vector<int> cur_conds;
             for (size_t j = 0; j < nconds; ++j) {
                 if (j != posx && ((rule >> j) & 1) == 1) {
@@ -162,13 +162,13 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag, con
 {
     auto nconds = ag.size();
     auto nrules = 1u << nconds;
-    std::set<std::bitset<128>, less<128>> actions_set; // Set of actions described as list of pixels to be merged
+    std::set<action_bitset, less<ACTION_BITSET_SIZE>> actions_set; // Set of actions described as list of pixels to be merged
     std::vector<std::string> actions = { "nothing" };
 
     auto posx = ag.rnodes_.at(ref_pixel_name);
     for (size_t rule = 0; rule < nrules; ++rule) {
         if ((rule >> posx) & 1) {
-            std::bitset<128> cur_action = 0;
+            action_bitset cur_action = 0;
             std::vector<int> cur_conds;
             for (size_t j = 0; j < nconds; ++j) {
                 if (j != posx && ((rule >> j) & 1) == 1) {
@@ -207,7 +207,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag, con
     return actions;
 }
 
-void PrintActionsSet(std::set<std::bitset<128>, less<128>>& to_print, std::ostream& os) {
+void PrintActionsSet(std::set<action_bitset, less<128>>& to_print, std::ostream& os) {
     for (const auto& x : to_print) {
         os << x.to_string().substr(119) << "\n";
     }
@@ -222,7 +222,7 @@ void PrintActionsSet(std::set<std::bitset<128>, less<128>>& to_print, std::ostre
 //
 //    // Vector of set of actions described as pixels to be merged (bitmapped). The vector contains as many sets as the number of
 //    // pixels to be labeled
-//    std::vector<std::set<std::bitset<128>, less<128>>> actions_set(to_be_labeled_pixels.size());
+//    std::vector<std::set<action_bitset, less<128>>> actions_set(to_be_labeled_pixels.size());
 //    std::vector<std::vector<std::string>> actions(to_be_labeled_pixels.size());
 //
 //    //auto posx = ag.rnodes_.at("x");
@@ -235,7 +235,7 @@ void PrintActionsSet(std::set<std::bitset<128>, less<128>>& to_print, std::ostre
 //        auto posx = posp[i];
 //        for (size_t rule = 0; rule < nrules; ++rule) {
 //            if ((rule >> posx) & 1) {
-//                std::bitset<128> cur_action = 0;
+//                action_bitset cur_action = 0;
 //                std::vector<int> cur_conds;
 //                for (size_t j = 0; j < nconds; ++j) {
 //

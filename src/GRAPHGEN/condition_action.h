@@ -33,6 +33,7 @@
 #include <vector>
 #include <bitset>
 
+#include "utilities.h"
 
 using uint = uint32_t;
 
@@ -44,7 +45,7 @@ struct conact {
     // CONDITION
     std::string condition;
     // ACTION
-    std::bitset</*11881*/128> action = 0; // List of actions (bitmapped)
+    action_bitset action = 0; // List of actions (bitmapped)
     uint next = 0;
 
     conact() {}
