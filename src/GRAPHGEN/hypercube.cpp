@@ -313,6 +313,8 @@ void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<
 		}
 	}
 }
+uint64_t total_rule_accesses = 0;
+uint64_t necessary_rule_accesses = 0;
 
 void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::string, int> set_conditions, const rule_set& rs, BinaryDrag<conact>& tree, BinaryDrag<conact>::node* parent)
 {
@@ -325,9 +327,12 @@ void FindHdtRecursively(std::vector<std::string> conditions, std::map<std::strin
 	for (auto c : conditions) {
 		int power = 1 << rs.conditions_pos.at(c);
 		for (size_t i = 0; i < rs.rules.size(); ++i) {
+			total_rule_accesses++;
 			if (ViolatesSetConditions(i, set_conditions, rs)) {
 				continue;
 			}
+			necessary_rule_accesses++;
+
 			int bit_value = ((i / power) % 2);
 			combined_actions[c][bit_value].push_back(rs.rules[i].actions);
 		}
@@ -426,7 +431,8 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs) {
 	std::map<std::string, int> set_conditions = std::map<std::string, int>();
 
 	FindHdtRecursively(remaining_conditions, set_conditions, rs, t, parent);
-
+	std::cout << "Total rule accesses: " << total_rule_accesses << "\n";
+	std::cout << "Necessary rule accesses: " << necessary_rule_accesses << "\n";
 	return t;
 }
 
