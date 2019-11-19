@@ -1,27 +1,18 @@
 /**
 @mainpage Documentation
 
-@image html graphgen.png
+<h3>1. Introduction</h3>
+GRAPHGEN is the all encompassing GAPhs GENerator! It is a general open-source framework for optimizing the performance of many binary image processing algorithms. Starting from just a set of rules, it automatically generates decision trees with minimum path-length considering image pattern frequencies, then applies state prediction and code compression producing Directed Rooted Acyclic Graphs (DRAG) that combine these different optimization techniques. You can find a theoretical description of GRAPHGEN capabilities <a href="2020_CVPR_One_DAG_to_Rule_Them_All.pdf">here</a>. 
 
-GRAPHGEN is the all encompassing graphs generator!
+<h3>2. How to Install and Run GRAPHGEN</h3>
 
-@cond
-@section manual_user User Manual
-@li @subpage page_introduction
-@li @subpage page_topics
-@li @subpage page_libs
-@li @subpage page_class_cat
-@li @subpage overview_changes_since28
-@section manual_reference Reference
-@li @subpage group_class
-@li @subpage group_funcmacro
-@li @subpage page_constants
-@section manual_misc Other Information
-@li @subpage page_samples
-@li @subpage page_utils
-@li @subpage page_translations
-@li @subpage page_multiplatform
-@li @subpage page_copyright
-@endcond
+<h3>3. Code Structure</h3>
+The source code contains the library itself and a dozens of example targets specific for different algorithms, already available in literature or newly generated with GRAPHGEN. A complete list description follows: 
+
+
+<ul>
+    <li></li>
+    <li></li>
+</ul>
 
 */
