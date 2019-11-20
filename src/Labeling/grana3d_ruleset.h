@@ -148,6 +148,7 @@ public:
 
 			// Adjacent Block Connections
 			con.set("K", "L", (r["Kh"]) && (r["Lg"]));
+			con.set("K", "L", (r["Kh"]) && (r["Lg"]));
 			con.set("K", "N", (r["Kh"]) && (r["Nf"]));
 			con.set("K", "O", (r["Kh"]) && (r["Oe"]));
 			con.set("K", "T", (r["Kh"]) && (r["Td"]));
@@ -162,9 +163,9 @@ public:
 			con.set("L", "V", (r["Lh"]) && (r["Vc"]));
 			con.set("L", "W", (r["Lg"]) && (r["Wb"]));
 			con.set("M", "O", (r["Mg"]) && (r["Of"]));
-			con.set("M", "P", (r["Mg"] || r["Mh"]) && (r["Pe"] || r["Pf"]));
+			con.set("M", "P", (r["Mg"]) && (r["Pe"]));
 			con.set("M", "U", (r["Mg"]) && (r["Ud"]));
-			con.set("M", "V", (r["Mg"] || r["Mh"]) && (r["Vc"] || r["Vd"]));
+			con.set("M", "V", (r["Mg"]) && (r["Vc"]));
 			con.set("N", "O", (r["Nf"] || r["Nh"]) && (r["Oe"] || r["Og"]));
 			con.set("N", "Q", (r["Nh"]) && (r["Qf"]));
 			con.set("N", "R", (r["Nh"]) && (r["Re"]));
@@ -180,17 +181,18 @@ public:
 			con.set("O", "V", (r["Of"]) && (r["Vc"]));
 			con.set("O", "W", (r["Oe"] || r["Og"]) && (r["Wb"] || r["Wd"]));
 			con.set("P", "R", (r["Pg"]) && (r["Rf"]));
-			con.set("P", "S", (r["Pg"] || r["Ph"]) && (r["Se"] || r["Sf"]));
+			con.set("P", "S", (r["Pg"]) && (r["Se"]));
 			con.set("P", "U", (r["Pe"]) && (r["Ud"]));
-			con.set("P", "V", (r["Pe"] || r["Pf"]) && (r["Vc"] || r["Vd"]));
-			con.set("Q", "R", (r["Qf"] || r["Qh"]) && (r["Re"] || r["Rg"]));
+			con.set("P", "V", (r["Pe"]) && (r["Vc"]));
+			con.set("Q", "R", (r["Qf"]) && (r["Re"]));
 			con.set("Q", "W", (r["Qf"]) && (r["Wd"]));
-			con.set("R", "S", (r["Rf"] || r["Rh"]) && (r["Se"] || r["Sg"]));
+			con.set("R", "S", (r["Rf"]) && (r["Se"]));
 			con.set("R", "W", (r["Re"]) && (r["Wd"]));
 			con.set("T", "U", (r["Td"] || r["Th"]) && (r["Uc"] || r["Ug"]));
 			con.set("T", "W", (r["Td"] || r["Th"]) && (r["Wb"] || r["Wf"]));
 			con.set("U", "V", (r["Ud"] || r["Uh"]) && (r["Vc"] || r["Vg"]));
 			con.set("U", "W", (r["Uc"] || r["Ug"]) && (r["Wb"] || r["Wf"]));
+
 
 
 
@@ -231,6 +233,7 @@ public:
 			con.set("S", "W", (con("S", "O") && con("O", "W")) || (con("S", "R") && con("R", "W")));
 			con.set("T", "V", (con("T", "L") && con("L", "V")) || (con("T", "O") && con("O", "V")) || (con("T", "U") && con("U", "V")));
 			con.set("V", "W", (con("V", "L") && con("L", "W")) || (con("V", "O") && con("O", "W")) || (con("V", "U") && con("U", "W")));
+
 
 
 			MergeSet ms(con);
