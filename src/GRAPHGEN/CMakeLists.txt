@@ -34,7 +34,6 @@ target_sources(GRAPHGEN PRIVATE
 	tree2dag_identities.h
 	utilities.cpp
 	utilities.h
-	base_forest.h
     base_ruleset.h
 	conact_tree.cpp
 	conact_tree.h

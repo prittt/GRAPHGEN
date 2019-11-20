@@ -33,7 +33,6 @@
 #include <map>
 #include <numeric>
 
-#include "base_forest.h"
 #include "conact_tree.h"
 #include "pixel_set.h"
 #include "utilities.h"
