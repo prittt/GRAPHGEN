@@ -95,6 +95,8 @@ public:
 
     virtual rule_set GenerateRuleSet() = 0;
 
+	virtual action_bitset GetActionFromRuleIndex(const rule_set& rs, uint rule_index) const = 0;
+
 };
 
 #endif //GRAPHGEN_BASE_RULESET_H_

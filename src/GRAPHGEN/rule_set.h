@@ -248,16 +248,16 @@ struct rule_set {
 };
 
 struct rule_wrapper {
-    rule_set& rs_;
+	const rule_set& rs_;
     uint i_;
-    rule_wrapper(rule_set& rs, uint i) : rs_{ rs }, i_{ i } {}
+    rule_wrapper(const rule_set& rs, uint i) : rs_{ rs }, i_{ i } {}
 
     bool operator[](const std::string& s) const {
         return rs_.get_condition(s, i_) != 0;
     }
-    void operator<<(const std::string& s) {
+    /*void operator<<(const std::string& s) {
         rs_.set_action(s, i_);
-    }
+    }*/
     bool has_actions() {
         return rs_.rules[i_].actions != 0;
     }

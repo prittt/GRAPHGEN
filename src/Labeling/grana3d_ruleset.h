@@ -119,140 +119,138 @@ public:
 
 			});
 
-		labeling.generate_rules([](rule_set& rs, uint i) {
-			rule_wrapper r(rs, i);
-
-			bool X = r["Xa"] || r["Xb"] || r["Xc"] || r["Xd"] || r["Xe"] || r["Xf"] || r["Xg"] || r["Xh"];
-			if (!X) {
-				r << "nothing";
-				return;
-			}
-
-			connectivity_mat con({ "K","L","M","N","O","P","Q","R","S","T","U","V","W","x" });
-
-			// X connections
-			con.set("x", "K", r["Xa"] && r["Kh"]);
-			con.set("x", "L", (r["Lg"] || r["Lh"]) && (r["Xa"] || r["Xb"]));
-			con.set("x", "M", r["Xb"] && r["Mg"]);
-			con.set("x", "N", (r["Xa"] || r["Xc"]) && (r["Nf"] || r["Nh"]));
-			con.set("x", "O", ((r["Xa"] || r["Xb"] || r["Xc"] || r["Xd"]) && (r["Oe"] || r["Of"] || r["Og"] || r["Oh"])));
-			con.set("x", "P", (r["Xb"] || r["Xd"]) && (r["Pe"] || r["Pg"]));
-			con.set("x", "Q", r["Qf"] && r["Xc"]);
-			con.set("x", "R", (r["Xc"] || r["Xd"]) && (r["Re"] || r["Rf"]));
-			con.set("x", "S", r["Se"] && r["Xd"]);
-			con.set("x", "T", (r["Xa"] || r["Xe"]) && (r["Td"] || r["Th"]));
-			con.set("x", "U", ((r["Xa"] || r["Xb"] || r["Xe"] || r["Xf"]) && (r["Uc"] || r["Ud"] || r["Ug"] || r["Uh"])));
-			con.set("x", "V", (r["Xb"] || r["Xf"]) && (r["Vc"] || r["Vg"]));
-			con.set("x", "W", ((r["Xa"] || r["Xc"] || r["Xe"] || r["Xg"]) && (r["Wd"] || r["Wb"] || r["Wh"] || r["Wf"])));
-
-
-			// Adjacent Block Connections
-			con.set("K", "L", (r["Kh"]) && (r["Lg"]));
-			con.set("K", "L", (r["Kh"]) && (r["Lg"]));
-			con.set("K", "N", (r["Kh"]) && (r["Nf"]));
-			con.set("K", "O", (r["Kh"]) && (r["Oe"]));
-			con.set("K", "T", (r["Kh"]) && (r["Td"]));
-			con.set("K", "U", (r["Kh"]) && (r["Uc"]));
-			con.set("K", "W", (r["Kh"]) && (r["Wb"]));
-			con.set("L", "M", (r["Lh"]) && (r["Mg"]));
-			con.set("L", "N", (r["Lg"]) && (r["Nf"]));
-			con.set("L", "O", (r["Lg"] || r["Lh"]) && (r["Oe"] || r["Of"]));
-			con.set("L", "P", (r["Lh"]) && (r["Pe"]));
-			con.set("L", "T", (r["Lg"]) && (r["Td"]));
-			con.set("L", "U", (r["Lg"] || r["Lh"]) && (r["Uc"] || r["Ud"]));
-			con.set("L", "V", (r["Lh"]) && (r["Vc"]));
-			con.set("L", "W", (r["Lg"]) && (r["Wb"]));
-			con.set("M", "O", (r["Mg"]) && (r["Of"]));
-			con.set("M", "P", (r["Mg"]) && (r["Pe"]));
-			con.set("M", "U", (r["Mg"]) && (r["Ud"]));
-			con.set("M", "V", (r["Mg"]) && (r["Vc"]));
-			con.set("N", "O", (r["Nf"] || r["Nh"]) && (r["Oe"] || r["Og"]));
-			con.set("N", "Q", (r["Nh"]) && (r["Qf"]));
-			con.set("N", "R", (r["Nh"]) && (r["Re"]));
-			con.set("N", "T", (r["Nf"]) && (r["Td"]));
-			con.set("N", "U", (r["Nf"]) && (r["Uc"]));
-			con.set("N", "W", (r["Nf"] || r["Nh"]) && (r["Wb"] || r["Wd"]));
-			con.set("O", "P", (r["Of"] || r["Oh"]) && (r["Pe"] || r["Pg"]));
-			con.set("O", "Q", (r["Og"]) && (r["Qf"]));
-			con.set("O", "R", (r["Og"] || r["Oh"]) && (r["Re"] || r["Rf"]));
-			con.set("O", "S", (r["Oh"]) && (r["Se"]));
-			con.set("O", "T", (r["Oe"]) && (r["Td"]));
-			con.set("O", "U", (r["Oe"] || r["Of"]) && (r["Uc"] || r["Ud"]));
-			con.set("O", "V", (r["Of"]) && (r["Vc"]));
-			con.set("O", "W", (r["Oe"] || r["Og"]) && (r["Wb"] || r["Wd"]));
-			con.set("P", "R", (r["Pg"]) && (r["Rf"]));
-			con.set("P", "S", (r["Pg"]) && (r["Se"]));
-			con.set("P", "U", (r["Pe"]) && (r["Ud"]));
-			con.set("P", "V", (r["Pe"]) && (r["Vc"]));
-			con.set("Q", "R", (r["Qf"]) && (r["Re"]));
-			con.set("Q", "W", (r["Qf"]) && (r["Wd"]));
-			con.set("R", "S", (r["Rf"]) && (r["Se"]));
-			con.set("R", "W", (r["Re"]) && (r["Wd"]));
-			con.set("T", "U", (r["Td"] || r["Th"]) && (r["Uc"] || r["Ug"]));
-			con.set("T", "W", (r["Td"] || r["Th"]) && (r["Wb"] || r["Wf"]));
-			con.set("U", "V", (r["Ud"] || r["Uh"]) && (r["Vc"] || r["Vg"]));
-			con.set("U", "W", (r["Uc"] || r["Ug"]) && (r["Wb"] || r["Wf"]));
-
-
-
-
-
-
-			// Non-adjacent, transitive Block Connections
-			con.set("K", "M", (con("K", "L") && con("L", "M")) || (con("K", "O") && con("O", "M")) || (con("K", "U") && con("U", "M")));
-			con.set("K", "P", (con("K", "L") && con("L", "P")) || (con("K", "O") && con("O", "P")) || (con("K", "U") && con("U", "P")));
-			con.set("K", "Q", (con("K", "N") && con("N", "Q")) || (con("K", "O") && con("O", "Q")) || (con("K", "W") && con("W", "Q")));
-			con.set("K", "R", (con("K", "N") && con("N", "R")) || (con("K", "O") && con("O", "R")) || (con("K", "W") && con("W", "R")));
-			con.set("K", "S", (con("K", "O") && con("O", "S")));
-			con.set("K", "V", (con("K", "L") && con("L", "V")) || (con("K", "O") && con("O", "V")) || (con("K", "U") && con("U", "V")));
-			con.set("L", "Q", (con("L", "N") && con("N", "Q")) || (con("L", "O") && con("O", "Q")) || (con("L", "W") && con("W", "Q")));
-			con.set("L", "R", (con("L", "N") && con("N", "R")) || (con("L", "O") && con("O", "R")) || (con("L", "P") && con("P", "R")) || (con("L", "W") && con("W", "R")));
-			con.set("L", "S", (con("L", "O") && con("O", "S")) || (con("L", "P") && con("P", "S")));
-			con.set("M", "N", (con("M", "L") && con("L", "N")) || (con("M", "O") && con("O", "N")) || (con("M", "U") && con("U", "N")));
-			con.set("M", "Q", (con("M", "O") && con("O", "Q")));
-			con.set("M", "R", (con("M", "O") && con("O", "R")) || (con("M", "P") && con("P", "R")));
-			con.set("M", "S", (con("M", "O") && con("O", "S")) || (con("M", "P") && con("P", "S")));
-			con.set("M", "T", (con("M", "L") && con("L", "T")) || (con("M", "O") && con("O", "T")) || (con("M", "U") && con("U", "T")));
-			con.set("M", "W", (con("M", "L") && con("L", "W")) || (con("M", "O") && con("O", "W")) || (con("M", "U") && con("U", "W")));
-			con.set("N", "P", (con("N", "L") && con("L", "P")) || (con("N", "O") && con("O", "P")) || (con("N", "R") && con("R", "P")) || (con("N", "U") && con("U", "P")));
-			con.set("N", "S", (con("N", "O") && con("O", "S")) || (con("N", "R") && con("R", "S")));
-			con.set("N", "V", (con("N", "L") && con("L", "V")) || (con("N", "O") && con("O", "V")) || (con("N", "U") && con("U", "V")));
-			con.set("P", "Q", (con("P", "O") && con("O", "Q")) || (con("P", "R") && con("R", "Q")));
-			con.set("P", "T", (con("P", "L") && con("L", "T")) || (con("P", "O") && con("O", "T")) || (con("P", "U") && con("U", "T")));
-			con.set("P", "W", (con("P", "L") && con("L", "W")) || (con("P", "O") && con("O", "W")) || (con("P", "R") && con("R", "W")) || (con("P", "U") && con("U", "W")));
-			con.set("Q", "S", (con("Q", "O") && con("O", "S")) || (con("Q", "R") && con("R", "S")));
-			con.set("Q", "T", (con("Q", "N") && con("N", "T")) || (con("Q", "O") && con("O", "T")) || (con("Q", "W") && con("W", "T")));
-			con.set("Q", "U", (con("Q", "N") && con("N", "U")) || (con("Q", "O") && con("O", "U")) || (con("Q", "W") && con("W", "U")));
-			con.set("Q", "V", (con("Q", "O") && con("O", "V")));
-			con.set("R", "T", (con("R", "N") && con("N", "T")) || (con("R", "O") && con("O", "T")) || (con("R", "W") && con("W", "T")));
-			con.set("R", "U", (con("R", "N") && con("N", "U")) || (con("R", "O") && con("O", "U")) || (con("R", "P") && con("P", "U")) || (con("R", "W") && con("W", "U")));
-			con.set("R", "V", (con("R", "O") && con("O", "V")) || (con("R", "P") && con("P", "V")));
-			con.set("S", "T", (con("S", "O") && con("O", "T")));
-			con.set("S", "U", (con("S", "O") && con("O", "U")) || (con("S", "P") && con("P", "U")));
-			con.set("S", "V", (con("S", "O") && con("O", "V")) || (con("S", "P") && con("P", "V")));
-			con.set("S", "W", (con("S", "O") && con("O", "W")) || (con("S", "R") && con("R", "W")));
-			con.set("T", "V", (con("T", "L") && con("L", "V")) || (con("T", "O") && con("O", "V")) || (con("T", "U") && con("U", "V")));
-			con.set("V", "W", (con("V", "L") && con("L", "W")) || (con("V", "O") && con("O", "W")) || (con("V", "U") && con("U", "W")));
-
-
-
-			MergeSet ms(con);
-			ms.BuildMergeSet();
-
-			for (const auto& s : ms.mergesets_) {
-				std::string action = "x<-";
-				if (s.empty())
-					action += "newlabel";
-				else {
-					action += s[0];
-					for (size_t i = 1; i < s.size(); ++i)
-						action += "+" + s[i];
-				}
-				r << action;
-			}
-		});
+		// Does not work with 36 conditions, memory explodes -> instead dynamically get during runtime
+		//   labeling.generate_rules(GetActionFromRuleIndex);
 
 		return labeling;
+	}
+
+	action_bitset GetActionFromRuleIndex(const rule_set& rs, uint rule_index) const override {
+		rule_wrapper r(rs, rule_index);
+
+		bool X = r["Xa"] || r["Xb"] || r["Xc"] || r["Xd"] || r["Xe"] || r["Xf"] || r["Xg"] || r["Xh"];
+		if (!X) {
+			//r << "nothing";
+			return action_bitset().set(0);
+		}
+
+		connectivity_mat con({ "K","L","M","N","O","P","Q","R","S","T","U","V","W","x" });
+
+		// X connections
+		con.set("x", "K", r["Xa"] && r["Kh"]);
+		con.set("x", "L", (r["Lg"] || r["Lh"]) && (r["Xa"] || r["Xb"]));
+		con.set("x", "M", r["Xb"] && r["Mg"]);
+		con.set("x", "N", (r["Xa"] || r["Xc"]) && (r["Nf"] || r["Nh"]));
+		con.set("x", "O", ((r["Xa"] || r["Xb"] || r["Xc"] || r["Xd"]) && (r["Oe"] || r["Of"] || r["Og"] || r["Oh"])));
+		con.set("x", "P", (r["Xb"] || r["Xd"]) && (r["Pe"] || r["Pg"]));
+		con.set("x", "Q", r["Qf"] && r["Xc"]);
+		con.set("x", "R", (r["Xc"] || r["Xd"]) && (r["Re"] || r["Rf"]));
+		con.set("x", "S", r["Se"] && r["Xd"]);
+		con.set("x", "T", (r["Xa"] || r["Xe"]) && (r["Td"] || r["Th"]));
+		con.set("x", "U", ((r["Xa"] || r["Xb"] || r["Xe"] || r["Xf"]) && (r["Uc"] || r["Ud"] || r["Ug"] || r["Uh"])));
+		con.set("x", "V", (r["Xb"] || r["Xf"]) && (r["Vc"] || r["Vg"]));
+		con.set("x", "W", ((r["Xa"] || r["Xc"] || r["Xe"] || r["Xg"]) && (r["Wd"] || r["Wb"] || r["Wh"] || r["Wf"])));
+
+
+		// Adjacent Block Connections
+		con.set("K", "L", (r["Kh"]) && (r["Lg"]));
+		con.set("K", "L", (r["Kh"]) && (r["Lg"]));
+		con.set("K", "N", (r["Kh"]) && (r["Nf"]));
+		con.set("K", "O", (r["Kh"]) && (r["Oe"]));
+		con.set("K", "T", (r["Kh"]) && (r["Td"]));
+		con.set("K", "U", (r["Kh"]) && (r["Uc"]));
+		con.set("K", "W", (r["Kh"]) && (r["Wb"]));
+		con.set("L", "M", (r["Lh"]) && (r["Mg"]));
+		con.set("L", "N", (r["Lg"]) && (r["Nf"]));
+		con.set("L", "O", (r["Lg"] || r["Lh"]) && (r["Oe"] || r["Of"]));
+		con.set("L", "P", (r["Lh"]) && (r["Pe"]));
+		con.set("L", "T", (r["Lg"]) && (r["Td"]));
+		con.set("L", "U", (r["Lg"] || r["Lh"]) && (r["Uc"] || r["Ud"]));
+		con.set("L", "V", (r["Lh"]) && (r["Vc"]));
+		con.set("L", "W", (r["Lg"]) && (r["Wb"]));
+		con.set("M", "O", (r["Mg"]) && (r["Of"]));
+		con.set("M", "P", (r["Mg"]) && (r["Pe"]));
+		con.set("M", "U", (r["Mg"]) && (r["Ud"]));
+		con.set("M", "V", (r["Mg"]) && (r["Vc"]));
+		con.set("N", "O", (r["Nf"] || r["Nh"]) && (r["Oe"] || r["Og"]));
+		con.set("N", "Q", (r["Nh"]) && (r["Qf"]));
+		con.set("N", "R", (r["Nh"]) && (r["Re"]));
+		con.set("N", "T", (r["Nf"]) && (r["Td"]));
+		con.set("N", "U", (r["Nf"]) && (r["Uc"]));
+		con.set("N", "W", (r["Nf"] || r["Nh"]) && (r["Wb"] || r["Wd"]));
+		con.set("O", "P", (r["Of"] || r["Oh"]) && (r["Pe"] || r["Pg"]));
+		con.set("O", "Q", (r["Og"]) && (r["Qf"]));
+		con.set("O", "R", (r["Og"] || r["Oh"]) && (r["Re"] || r["Rf"]));
+		con.set("O", "S", (r["Oh"]) && (r["Se"]));
+		con.set("O", "T", (r["Oe"]) && (r["Td"]));
+		con.set("O", "U", (r["Oe"] || r["Of"]) && (r["Uc"] || r["Ud"]));
+		con.set("O", "V", (r["Of"]) && (r["Vc"]));
+		con.set("O", "W", (r["Oe"] || r["Og"]) && (r["Wb"] || r["Wd"]));
+		con.set("P", "R", (r["Pg"]) && (r["Rf"]));
+		con.set("P", "S", (r["Pg"]) && (r["Se"]));
+		con.set("P", "U", (r["Pe"]) && (r["Ud"]));
+		con.set("P", "V", (r["Pe"]) && (r["Vc"]));
+		con.set("Q", "R", (r["Qf"]) && (r["Re"]));
+		con.set("Q", "W", (r["Qf"]) && (r["Wd"]));
+		con.set("R", "S", (r["Rf"]) && (r["Se"]));
+		con.set("R", "W", (r["Re"]) && (r["Wd"]));
+		con.set("T", "U", (r["Td"] || r["Th"]) && (r["Uc"] || r["Ug"]));
+		con.set("T", "W", (r["Td"] || r["Th"]) && (r["Wb"] || r["Wf"]));
+		con.set("U", "V", (r["Ud"] || r["Uh"]) && (r["Vc"] || r["Vg"]));
+		con.set("U", "W", (r["Uc"] || r["Ug"]) && (r["Wb"] || r["Wf"]));
+
+		// Non-adjacent, transitive Block Connections
+		con.set("K", "M", (con("K", "L") && con("L", "M")) || (con("K", "O") && con("O", "M")) || (con("K", "U") && con("U", "M")));
+		con.set("K", "P", (con("K", "L") && con("L", "P")) || (con("K", "O") && con("O", "P")) || (con("K", "U") && con("U", "P")));
+		con.set("K", "Q", (con("K", "N") && con("N", "Q")) || (con("K", "O") && con("O", "Q")) || (con("K", "W") && con("W", "Q")));
+		con.set("K", "R", (con("K", "N") && con("N", "R")) || (con("K", "O") && con("O", "R")) || (con("K", "W") && con("W", "R")));
+		con.set("K", "S", (con("K", "O") && con("O", "S")));
+		con.set("K", "V", (con("K", "L") && con("L", "V")) || (con("K", "O") && con("O", "V")) || (con("K", "U") && con("U", "V")));
+		con.set("L", "Q", (con("L", "N") && con("N", "Q")) || (con("L", "O") && con("O", "Q")) || (con("L", "W") && con("W", "Q")));
+		con.set("L", "R", (con("L", "N") && con("N", "R")) || (con("L", "O") && con("O", "R")) || (con("L", "P") && con("P", "R")) || (con("L", "W") && con("W", "R")));
+		con.set("L", "S", (con("L", "O") && con("O", "S")) || (con("L", "P") && con("P", "S")));
+		con.set("M", "N", (con("M", "L") && con("L", "N")) || (con("M", "O") && con("O", "N")) || (con("M", "U") && con("U", "N")));
+		con.set("M", "Q", (con("M", "O") && con("O", "Q")));
+		con.set("M", "R", (con("M", "O") && con("O", "R")) || (con("M", "P") && con("P", "R")));
+		con.set("M", "S", (con("M", "O") && con("O", "S")) || (con("M", "P") && con("P", "S")));
+		con.set("M", "T", (con("M", "L") && con("L", "T")) || (con("M", "O") && con("O", "T")) || (con("M", "U") && con("U", "T")));
+		con.set("M", "W", (con("M", "L") && con("L", "W")) || (con("M", "O") && con("O", "W")) || (con("M", "U") && con("U", "W")));
+		con.set("N", "P", (con("N", "L") && con("L", "P")) || (con("N", "O") && con("O", "P")) || (con("N", "R") && con("R", "P")) || (con("N", "U") && con("U", "P")));
+		con.set("N", "S", (con("N", "O") && con("O", "S")) || (con("N", "R") && con("R", "S")));
+		con.set("N", "V", (con("N", "L") && con("L", "V")) || (con("N", "O") && con("O", "V")) || (con("N", "U") && con("U", "V")));
+		con.set("P", "Q", (con("P", "O") && con("O", "Q")) || (con("P", "R") && con("R", "Q")));
+		con.set("P", "T", (con("P", "L") && con("L", "T")) || (con("P", "O") && con("O", "T")) || (con("P", "U") && con("U", "T")));
+		con.set("P", "W", (con("P", "L") && con("L", "W")) || (con("P", "O") && con("O", "W")) || (con("P", "R") && con("R", "W")) || (con("P", "U") && con("U", "W")));
+		con.set("Q", "S", (con("Q", "O") && con("O", "S")) || (con("Q", "R") && con("R", "S")));
+		con.set("Q", "T", (con("Q", "N") && con("N", "T")) || (con("Q", "O") && con("O", "T")) || (con("Q", "W") && con("W", "T")));
+		con.set("Q", "U", (con("Q", "N") && con("N", "U")) || (con("Q", "O") && con("O", "U")) || (con("Q", "W") && con("W", "U")));
+		con.set("Q", "V", (con("Q", "O") && con("O", "V")));
+		con.set("R", "T", (con("R", "N") && con("N", "T")) || (con("R", "O") && con("O", "T")) || (con("R", "W") && con("W", "T")));
+		con.set("R", "U", (con("R", "N") && con("N", "U")) || (con("R", "O") && con("O", "U")) || (con("R", "P") && con("P", "U")) || (con("R", "W") && con("W", "U")));
+		con.set("R", "V", (con("R", "O") && con("O", "V")) || (con("R", "P") && con("P", "V")));
+		con.set("S", "T", (con("S", "O") && con("O", "T")));
+		con.set("S", "U", (con("S", "O") && con("O", "U")) || (con("S", "P") && con("P", "U")));
+		con.set("S", "V", (con("S", "O") && con("O", "V")) || (con("S", "P") && con("P", "V")));
+		con.set("S", "W", (con("S", "O") && con("O", "W")) || (con("S", "R") && con("R", "W")));
+		con.set("T", "V", (con("T", "L") && con("L", "V")) || (con("T", "O") && con("O", "V")) || (con("T", "U") && con("U", "V")));
+		con.set("V", "W", (con("V", "L") && con("L", "W")) || (con("V", "O") && con("O", "W")) || (con("V", "U") && con("U", "W")));
+
+		MergeSet ms(con);
+		ms.BuildMergeSet();
+
+		action_bitset combined_actions;
+		for (const auto& s : ms.mergesets_) {
+			std::string action = "x<-";
+			if (s.empty())
+				action += "newlabel";
+			else {
+				action += s[0];
+				for (size_t i = 1; i < s.size(); ++i)
+					action += "+" + s[i];
+			}
+			combined_actions.set(rs.actions_pos.at(action) - 1);
+		}
+		return combined_actions;
 	}
 
 };

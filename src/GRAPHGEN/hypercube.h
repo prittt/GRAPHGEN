@@ -36,6 +36,7 @@
 
 #include "conact_tree.h"
 #include "rule_set.h"
+#include "base_ruleset.h"
 
 typedef unsigned char byte;
 
@@ -172,8 +173,8 @@ struct VHyperCube {
 BinaryDrag<conact> GenerateOdt(const rule_set& rs);
 BinaryDrag<conact> GenerateOdt(const rule_set& rs, const std::string& filename);
 
-BinaryDrag<conact> GenerateHdt(const rule_set& rs);
-BinaryDrag<conact> GenerateHdt(const rule_set& rs, const std::string& filename);
+BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs);
+BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs, const std::string& filename);
 
 /** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
 
@@ -189,7 +190,7 @@ is always regenerated. The loaded/generated tree is then returned from the funct
 @return The optimal decision tree associated to the specified rule set.
 */
 BinaryDrag<conact> GetOdt(const rule_set& rs, bool force_generation = false);
-BinaryDrag<conact> GetHdt(const rule_set& rs, bool force_generation = false);
+BinaryDrag<conact> GetHdt(const rule_set& rs, const BaseRuleSet& brs, bool force_generation = false);
 
 /** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
 

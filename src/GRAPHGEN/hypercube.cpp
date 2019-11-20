@@ -35,6 +35,8 @@
 
 using namespace std;
 
+#pragma region ODT
+
 void CreateTree_rec(BinaryDrag<conact>& t, BinaryDrag<conact>::node *n, const rule_set& rs, const VHyperCube &hcube, const VIndex &idx) {
 	VNode node = hcube[idx];
 	if (node.uiAction == 0) {
@@ -202,32 +204,35 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 }
 
 BinaryDrag<conact> GenerateOdt(const rule_set& rs) {
-    TLOG("Allocating hypercube",
-        VHyperCube hcube(rs);
-    );
+	TLOG("Allocating hypercube",
+		VHyperCube hcube(rs);
+	);
 
-    TLOG("Optimizing rules",
-        auto t = hcube.optimize(false);
-    );
+	TLOG("Optimizing rules",
+		auto t = hcube.optimize(false);
+	);
 
-    return t;
+	return t;
 }
 
-BinaryDrag<conact> GenerateOdt(const rule_set& rs, const string& filename) 
+BinaryDrag<conact> GenerateOdt(const rule_set& rs, const string& filename)
 {
-    auto t = GenerateOdt(rs);
+	auto t = GenerateOdt(rs);
 	WriteConactTree(t, filename);
 	return t;
 }
 
 BinaryDrag<conact> GetOdt(const rule_set& rs, bool force_generation) {
-    string odt_filename = conf.odt_path_.string();
-    BinaryDrag<conact> t;
-    if (conf.force_odt_generation_ || force_generation || !LoadConactTree(t, odt_filename)) {
-        t = GenerateOdt(rs, odt_filename);
-    }
-    return t;
+	string odt_filename = conf.odt_path_.string();
+	BinaryDrag<conact> t;
+	if (conf.force_odt_generation_ || force_generation || !LoadConactTree(t, odt_filename)) {
+		t = GenerateOdt(rs, odt_filename);
+	}
+	return t;
 }
+
+#pragma endregion
+
 
 double entropy(std::unordered_map<int, int> map) {
 	double s = 0, h = 0;
@@ -238,18 +243,6 @@ double entropy(std::unordered_map<int, int> map) {
 	return log2(s) - h / s;
 }
 
-bool ViolatesSetConditions(int rule_index, std::map<std::string, int>& set_conditions, const rule_set& rs) {
-	for (auto& f : set_conditions) {
-		std::string tested_condition_char = f.first;
-		int tested_condition_power = 1 << rs.conditions_pos.at(tested_condition_char);
-		int tested_condition_index = ((rule_index / tested_condition_power) % 2) == 1;
-		if (tested_condition_index == f.second) {
-			return true;
-		}
-	}
-	return false;
-}
-
 enum Classifier {
 	Popularity,
 	GreedyAscending,
@@ -258,7 +251,8 @@ enum Classifier {
 
 Classifier currentClassifier = Classifier::Popularity;
 
-std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<action_bitset> combined_actions, const int maxActions, const rule_set& rs) {
+template <int maxActions>
+std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<action_bitset>& combined_actions) {
 	std::unordered_map<int, int> single_actions;
 	std::vector<std::pair<int, int>> singleActionCount;
 
@@ -268,9 +262,9 @@ std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<action_
 
 	if (currentClassifier == Classifier::Popularity) {
 		for (size_t i = 0; i < combined_actions.size(); i++) {
-			for (int bit = 0; bit < maxActions; bit++) {
-				if (combined_actions[i].test(bit)) {
-					singleActionCount[bit].second++;
+			for (int bit_index = 0; bit_index < maxActions; bit_index++) {
+				if (combined_actions[i].test(bit_index)) {
+					singleActionCount[bit_index].second++;
 				}
 			}
 		}
@@ -317,11 +311,12 @@ void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<
 uint64_t total_rule_accesses = 0;
 uint64_t necessary_rule_accesses = 0;
 
-template <int condition_count>
+template <int condition_count, int action_count>
 void FindHdtRecursively(std::vector<std::string> conditions, 
 	std::bitset<condition_count> set_conditions0, 
 	std::bitset<condition_count> set_conditions1, 
 	const rule_set& rs, 
+	const BaseRuleSet& brs,
 	BinaryDrag<conact>& tree, 
 	BinaryDrag<conact>::node* parent)
 {
@@ -344,11 +339,13 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 
 		necessary_rule_accesses++;
 
+		action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// generate during run-time
+		//action_bitset action = rs.rules[rule_code].actions;				// load from rule table
+
 		for (auto c : conditions) {
 			int power = 1 << rs.conditions_pos.at(c);
-
 			int bit_value = ((rule_code / power) % 2);
-			combined_actions[c][bit_value].push_back(rs.rules[rule_code].actions);
+			combined_actions[c][bit_value].push_back(action);
 		}
 	}
 
@@ -356,7 +353,8 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 		int power = 1 << rs.conditions_pos.at(c);
 
 		for (int bit_value = 0; bit_value < 2; ++bit_value) {
-			single_actions_counted[c][bit_value] = FindBestSingleActionCombination(combined_actions[c][bit_value], rs.actions.size(), rs);
+			// conditions.size() == 5 && c == "h"
+			single_actions_counted[c][bit_value] = FindBestSingleActionCombination<action_count>(combined_actions[c][bit_value]);
 			most_probable_action[c][bit_value] = single_actions_counted[c][bit_value].begin()->first;
 			most_probable_action_occurences[c][bit_value] = single_actions_counted[c][bit_value].begin()->second;
 		}
@@ -389,8 +387,7 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 	total_combined_actions.insert(total_combined_actions.end(), combined_actions[conditions[0]][0].begin(), combined_actions[conditions[0]][0].end());
 	total_combined_actions.insert(total_combined_actions.end(), combined_actions[conditions[0]][1].begin(), combined_actions[conditions[0]][1].end());
 	
-	// TODO: put entropy as parameter into next recursive calls since its the same
-	total_map = FindBestSingleActionCombination(total_combined_actions, rs.actions.size(), rs);
+	total_map = FindBestSingleActionCombination<action_count>(total_combined_actions);
 
 	double baseEntropy = entropy(total_map);
 	//std::cout << "Base Entropy: " << baseEntropy << std::endl;
@@ -425,7 +422,7 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 		parent->left = tree.make_node();
 		auto newConditions0 = set_conditions0;
 		newConditions0[rs.conditions_pos.at(splitCandidate)] = 1;
-		FindHdtRecursively<condition_count>(conditions, newConditions0, set_conditions1, rs, tree, parent->left);
+		FindHdtRecursively<condition_count, action_count>(conditions, newConditions0, set_conditions1, rs, brs, tree, parent->left);
 	}
 
 	if (RightIsAction) {
@@ -437,43 +434,46 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 		parent->right = tree.make_node();
 		auto newConditions1 = set_conditions1;
 		newConditions1[rs.conditions_pos.at(splitCandidate)] = 1;
-		FindHdtRecursively<condition_count>(conditions, set_conditions0, newConditions1, rs, tree, parent->right);
+		FindHdtRecursively<condition_count, action_count>(conditions, set_conditions0, newConditions1, rs, brs, tree, parent->right);
 	}
 }
 
-BinaryDrag<conact> GenerateHdt(const rule_set& rs) {
+BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs) {
 	BinaryDrag<conact> t;
 	auto parent = t.make_root();
 
 	std::vector<std::string> remaining_conditions = rs.conditions; // copy
 
-	const int condition_count = 5;
+	const int condition_count = 16;
+	const int action_count = 16;
+
 	std::bitset<condition_count> set_conditions0, set_conditions1;
 
 	assert(set_conditions0.size() == rs.conditions.size());
+	assert(action_count == rs.actions.size());
 
-	FindHdtRecursively<condition_count>(remaining_conditions, set_conditions0, set_conditions1, rs, t, parent);
+	FindHdtRecursively<condition_count, action_count>(remaining_conditions, set_conditions0, set_conditions1, rs, brs, t, parent);
 
 	std::cout << "Total rule accesses: " << total_rule_accesses << "\n";
 	std::cout << "Necessary rule accesses: " << necessary_rule_accesses << "\n";
 	return t;
 }
 
-BinaryDrag<conact> GenerateHdt(const rule_set& rs, const string& filename)
+BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs, const string& filename)
 {
 	TLOG("Generating HDT",
-		auto t = GenerateHdt(rs);
+		auto t = GenerateHdt(rs, brs);
 	);
 
 	WriteConactTree(t, filename);
 	return t;
 }
 
-BinaryDrag<conact> GetHdt(const rule_set& rs, bool force_generation) {
+BinaryDrag<conact> GetHdt(const rule_set& rs, const BaseRuleSet& brs, bool force_generation) {
 	string hdt_filename = conf.hdt_path_.string();
 	BinaryDrag<conact> t;
 	if (conf.force_odt_generation_ || force_generation || !LoadConactTree(t, hdt_filename)) {
-		t = GenerateHdt(rs, hdt_filename);
+		t = GenerateHdt(rs, brs, hdt_filename);
 	}
 	return t;
 }

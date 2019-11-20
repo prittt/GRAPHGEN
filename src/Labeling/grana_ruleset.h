@@ -56,48 +56,54 @@ public:
             "x<-P+Q", "x<-P+R", "x<-P+S", "x<-Q+R", "x<-Q+S", "x<-R+S",
             "x<-P+Q+R", "x<-P+Q+S", "x<-P+R+S", "x<-Q+R+S", });
 
-        labeling.generate_rules([](rule_set& rs, uint i) {
-            rule_wrapper r(rs, i);
-
-            bool X = r["o"] || r["p"] || r["s"] || r["t"];
-            if (!X) {
-                r << "nothing";
-                return;
-            }
-
-            connectivity_mat con({ "P", "Q", "R", "S", "x" });
-
-            con.set("x", "P", r["h"] && r["o"]);
-            con.set("x", "Q", (r["i"] || r["j"]) && (r["o"] || r["p"]));
-            con.set("x", "R", r["k"] && r["p"]);
-            con.set("x", "S", (r["n"] || r["r"]) && (r["o"] || r["s"]));
-
-            con.set("P", "Q", (r["b"] || r["h"]) && (r["c"] || r["i"]));
-            con.set("P", "S", (r["g"] || r["h"]) && (r["m"] || r["n"]));
-            con.set("Q", "R", (r["d"] || r["j"]) && (r["e"] || r["k"]));
-            con.set("Q", "S", (r["i"] && r["n"]) || (con("P", "Q") && con("P", "S")));
-
-            con.set("P", "R", con("P", "Q") && con("Q", "R"));
-            con.set("S", "R", (con("P", "R") && con("P", "S")) || (con("S", "Q") && con("Q", "R")));
-
-            MergeSet ms(con);
-            ms.BuildMergeSet();
-
-            for (const auto& s : ms.mergesets_) {
-                std::string action = "x<-";
-                if (s.empty())
-                    action += "newlabel";
-                else {
-                    action += s[0];
-                    for (size_t i = 1; i < s.size(); ++i)
-                        action += "+" + s[i];
-                }
-                r << action;
-            }
-        });
+        /*labeling.generate_rules([](rule_set& rs, uint i) {
+        });*/
 
         return labeling;
     }
+
+
+	action_bitset GetActionFromRuleIndex(const rule_set& rs, uint rule_index) const override {
+		rule_wrapper r(rs, rule_index);
+
+		bool X = r["o"] || r["p"] || r["s"] || r["t"];
+		if (!X) {
+			//r << "nothing";
+			return action_bitset().set(0);
+		}
+
+		connectivity_mat con({ "P", "Q", "R", "S", "x" });
+
+		con.set("x", "P", r["h"] && r["o"]);
+		con.set("x", "Q", (r["i"] || r["j"]) && (r["o"] || r["p"]));
+		con.set("x", "R", r["k"] && r["p"]);
+		con.set("x", "S", (r["n"] || r["r"]) && (r["o"] || r["s"]));
+
+		con.set("P", "Q", (r["b"] || r["h"]) && (r["c"] || r["i"]));
+		con.set("P", "S", (r["g"] || r["h"]) && (r["m"] || r["n"]));
+		con.set("Q", "R", (r["d"] || r["j"]) && (r["e"] || r["k"]));
+		con.set("Q", "S", (r["i"] && r["n"]) || (con("P", "Q") && con("P", "S")));
+
+		con.set("P", "R", con("P", "Q") && con("Q", "R"));
+		con.set("S", "R", (con("P", "R") && con("P", "S")) || (con("S", "Q") && con("Q", "R")));
+
+		MergeSet ms(con);
+		ms.BuildMergeSet();
+
+		action_bitset combined_actions;
+		for (const auto& s : ms.mergesets_) {
+			std::string action = "x<-";
+			if (s.empty())
+				action += "newlabel";
+			else {
+				action += s[0];
+				for (size_t i = 1; i < s.size(); ++i)
+					action += "+" + s[i];
+			}
+			combined_actions.set(rs.actions_pos.at(action) - 1);
+		}
+		return combined_actions;
+	}
 
 };
 
