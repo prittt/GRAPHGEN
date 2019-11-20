@@ -1,4 +1,3 @@
-
 if(GRAPHGEN_FREQUENCIES_ENABLED)
 	target_sources(GRAPHGEN PRIVATE
 		image_frequencies.cpp
