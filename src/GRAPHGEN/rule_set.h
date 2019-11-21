@@ -51,9 +51,9 @@ struct rule2 {
 
 struct rule_set {
     std::vector<std::string> conditions;
-    std::unordered_map<std::string, uint> conditions_pos;
+    std::unordered_map<std::string, size_t> conditions_pos;
     std::vector<std::string> actions;
-    std::unordered_map<std::string, uint> actions_pos;
+    std::unordered_map<std::string, size_t> actions_pos;
     std::vector<rule> rules;
     pixel_set ps_;
 
@@ -79,7 +79,7 @@ struct rule_set {
         Deserialize(node);
     }
 
-    static std::string binary(uint u, uint nbits, const std::string& separator = "") {
+    static std::string binary(size_t u, size_t nbits, const std::string& separator = "") {
         std::string s;
         while (nbits-- > 0) {
             s += ((u >> nbits) & 1) + 48;

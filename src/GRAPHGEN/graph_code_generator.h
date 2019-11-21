@@ -37,10 +37,10 @@
 
 /** @brief
 */
-#define BEFORE_AFTER_FUNC(func_name) std::string func_name(int index,                                     \
-                                                          const std::string& prefix,                     \
-                                                          const std::vector<std::vector<int>>& mapping,  \
-                                                          int end_group_id)                              \
+#define BEFORE_AFTER_FUNC(func_name) std::string func_name(size_t index,                                    \
+                                                          const std::string& prefix,                        \
+                                                          const std::vector<std::vector<size_t>>& mapping,  \
+                                                          size_t end_group_id)
 
 BEFORE_AFTER_FUNC(DefaultEmptyFunc);
 BEFORE_AFTER_FUNC(BeforeMainShiftOne);
@@ -87,15 +87,15 @@ BEFORE_AFTER_FUNC(AfterEndNoLoop);
                     for example when having a special forest for the first line e for the last one.
 @param[in] mask_shif
 */ // TODO update documentation here!
-int GenerateDragCode(std::ostream& os, 
-                     const BinaryDrag<conact>& bd, 
-                     bool with_gotos = false,
-                     BEFORE_AFTER_FUNC(before) = DefaultEmptyFunc,
-                     BEFORE_AFTER_FUNC(after)  = DefaultEmptyFunc,
-                     const std::string prefix = "",
-                     int start_id = 0,
-                     const std::vector<std::vector<int>> mapping = {}, 
-                     int end_group_id = 0);
+size_t GenerateDragCode(std::ostream& os, 
+                        const BinaryDrag<conact>& bd, 
+                        bool with_gotos = false,
+                        BEFORE_AFTER_FUNC(before) = DefaultEmptyFunc,
+                        BEFORE_AFTER_FUNC(after)  = DefaultEmptyFunc,
+                        const std::string prefix = "",
+                        size_t start_id = 0,
+                        const std::vector<std::vector<size_t>> mapping = {}, 
+                        size_t end_group_id = 0);
 
 /** @brief Generate the C++ code for the given DRAG (Directed Rooted Acyclic Graph). 
 
@@ -111,9 +111,9 @@ bool GenerateDragCode(const BinaryDrag<conact>& bd,
                       BEFORE_AFTER_FUNC(before) = DefaultEmptyFunc,
                       BEFORE_AFTER_FUNC(after)  = DefaultEmptyFunc,
                       const std::string prefix = "",
-                      int start_id = 0,
-                      const std::vector<std::vector<int>> mapping = {}, 
-                      int end_group_id = 0);
+                      size_t start_id = 0,
+                      const std::vector<std::vector<size_t>> mapping = {},
+                      size_t end_group_id = 0);
 
 // TODO fix documentation here
 /** @brief Generate the C++ code for the given Forest.
@@ -122,14 +122,14 @@ This function works only when all nodes of the DRAGs constituting the forest hav
 */
 // This function generates forest code using numerical labels starting from start_id and returns 
 // the last used_id.
-int GenerateLineForestCode(std::ostream& os,
-                           const LineForestHandler& lfh,
-                           std::string prefix,
-                           int start_id,
-                           BEFORE_AFTER_FUNC(before_main) = BeforeMainShiftOne,
-                           BEFORE_AFTER_FUNC(after_main)  = DefaultEmptyFunc,
-                           BEFORE_AFTER_FUNC(before_end)  = BeforeEnd,
-                           BEFORE_AFTER_FUNC(after_end)   = AfterEnd);
+size_t GenerateLineForestCode(std::ostream& os,
+                              const LineForestHandler& lfh,
+                              std::string prefix,
+                              size_t start_id,
+                              BEFORE_AFTER_FUNC(before_main) = BeforeMainShiftOne,
+                              BEFORE_AFTER_FUNC(after_main)  = DefaultEmptyFunc,
+                              BEFORE_AFTER_FUNC(before_end)  = BeforeEnd,
+                              BEFORE_AFTER_FUNC(after_end)   = AfterEnd);
 
 
 #endif // GRAPHGEN_GRAPH_CODE_GENERATOR_H_

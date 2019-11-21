@@ -69,10 +69,11 @@ public:
 
     std::vector<node *> roots_;
 
-    // Adds a root to the vector of roots and returns its index
-    int AddRoot(node* r) {
+    // Adds a root to the vector of roots 
+    // TODO remove me -> and returns its index
+    void AddRoot(node* r) {
         roots_.push_back(r);
-        return roots_.size() - 1;
+        //return roots_.size() - 1;
     }
 
     node* GetRoot() const {

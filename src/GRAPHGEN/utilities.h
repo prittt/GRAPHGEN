@@ -42,7 +42,7 @@ extern ConfigData conf;
 
 using uint = uint32_t;
 
-std::string binary(uint u, uint nbits);
+std::string binary(size_t u, size_t nbits);
 
 /** @brief This macro serves to simplify the definition of flags, it takes the name of an enum class as 
 input and defines the operator| for that class.
@@ -69,15 +69,15 @@ DEFINE_ENUM_CLASS_AND_OPERATOR(class_name)        \
 
 
 struct nodeid {
-    int _id = 0;
-    int next() { return ++_id; }
-    int get() { return _id; }
+    size_t _id = 0;
+    size_t next() { return ++_id; }
+    size_t get() { return _id; }
 
     void Clear() {
         _id = 0;
     }
 
-    void SetId(int new_id) {
+    void SetId(size_t new_id) {
         _id = new_id;
     }
 };

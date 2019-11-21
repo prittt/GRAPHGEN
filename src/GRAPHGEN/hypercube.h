@@ -39,10 +39,10 @@
 typedef unsigned char byte;
 
 
-enum VDim :byte { Zero = 0, One = 1, Indifference = 2 };
+enum VDim { Zero = 0, One = 1, Indifference = 2 };
 
 struct VIndex {
-	int m_iDim;
+	size_t m_iDim;
 	std::vector<VDim> m_arrIndex;
 
 	VIndex(int iDim = 0) : m_iDim(iDim), m_arrIndex(iDim) {
@@ -93,7 +93,7 @@ struct VIndex {
 	}
 
 	bool MoveNext() {
-		for (int i = m_iDim - 1; i >= 0; i--) {
+		for (int i = int(m_iDim) - 1; i >= 0; i--) {
 			if (m_arrIndex[i] == Indifference)
 				continue;
 			else if (m_arrIndex[i] == Zero) {
@@ -107,6 +107,7 @@ struct VIndex {
 	}
 };
 
+#pragma pack(push)
 #pragma pack(1)
 struct VNode {
 	std::bitset</*11881*/128> uiAction;
@@ -118,7 +119,7 @@ struct VNode {
 	VNode() : uiAction(0), uiProb(0), uiGain(0), uiMaxGainIndex(0) {
 	}
 };
-#pragma pack(8)
+#pragma pack(pop)
 
 template <typename T>
 std::istream& rawread(std::istream& is, T& val, size_t n) {

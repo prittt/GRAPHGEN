@@ -30,7 +30,7 @@
 
 ConfigData conf;
 
-std::string binary(uint u, uint nbits) {
+std::string binary(size_t u, size_t nbits) {
     std::string s;
     while (nbits-- > 0)
         s += ((u >> nbits) & 1) + 48;

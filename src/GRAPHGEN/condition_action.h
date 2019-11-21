@@ -45,7 +45,7 @@ struct conact {
     std::string condition;
     // ACTION
     std::bitset</*11881*/128> action = 0; // List of actions (bitmapped)
-    uint next = 0;
+    size_t next = 0;
 
     conact() {}
     conact(std::string c) : t(type::CONDITION), condition(std::move(c)) {}

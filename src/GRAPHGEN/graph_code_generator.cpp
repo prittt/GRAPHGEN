@@ -94,7 +94,7 @@ class GenerateCodeClass {
     // printed_node keeps track of the nodes that have already been written in the C++ source code and allows to avoid 
     // duplicated nodes in the final result. Indeed, the same node can be pointed by multiple nodes in the DAG but it 
     // will have to appear only once in the final code.
-    std::map<BinaryDrag<conact>::node*, int> printed_nodes_;
+    std::map<BinaryDrag<conact>::node*, size_t> printed_nodes_;
 
     // nodes_requring_labels keeps track of the DAG nodes that are pointed by other nodes and thus need to have a label.
     // We need this in order to know if we have to create a label for this node or not. This map is populated by the 
@@ -105,7 +105,7 @@ class GenerateCodeClass {
 
 public:
 
-    GenerateCodeClass(bool with_gotos, std::string prefix, map<BinaryDrag<conact>::node*, int> printed_nodes) :
+    GenerateCodeClass(bool with_gotos, std::string prefix, map<BinaryDrag<conact>::node*, size_t> printed_nodes) :
         with_gotos_(with_gotos),
         prefix_(prefix),
         printed_nodes_(printed_nodes)
@@ -129,15 +129,15 @@ public:
         id_.Clear();
     }
 
-    void SetId(int id) {
+    void SetId(size_t id) {
         id_.SetId(id);
     }
 
-    int NextId() {
+    size_t NextId() {
         return id_.next();
     }
 
-    int GetId() {
+    size_t GetId() {
         return id_.get();
     }
 
@@ -270,9 +270,9 @@ bool GenerateDragCode(const BinaryDrag<conact>& bd,
                       BEFORE_AFTER_FUNC(before),
                       BEFORE_AFTER_FUNC(after),
                       const std::string prefix,
-                      int start_id,
-                      const std::vector<std::vector<int>> mapping, 
-                      int end_group_id)
+                      size_t start_id,
+                      const std::vector<std::vector<size_t>> mapping, 
+                      size_t end_group_id)
 {
     filesystem::path code_path = conf.treecode_path_;
     
@@ -284,15 +284,15 @@ bool GenerateDragCode(const BinaryDrag<conact>& bd,
     return GenerateDragCode(os, bd, with_gotos, before, after, prefix, start_id, mapping, end_group_id);
 }
 
-int GenerateDragCode(std::ostream& os, 
+size_t GenerateDragCode(std::ostream& os, 
                      const BinaryDrag<conact>& bd, 
                      bool with_gotos,
                      BEFORE_AFTER_FUNC(before),
                      BEFORE_AFTER_FUNC(after),
                      const std::string prefix,
-                     int start_id,
-                     const std::vector<std::vector<int>> mapping, 
-                     int end_group_id)
+                     size_t start_id,
+                     const std::vector<std::vector<size_t>> mapping, 
+                     size_t end_group_id)
 {
     // This object wraps all the variables needed by the recursive function GenerateCodeRec and allows to simplify its
     // following call.
@@ -317,17 +317,17 @@ int GenerateDragCode(std::ostream& os,
 
 // This function generates forest code using numerical labels starting from start_id and returns 
 // the last used_id.
-int GenerateLineForestCode(std::ostream& os, 
-                           const LineForestHandler& lfh,
-                           std::string prefix,
-                           int start_id,
-                           BEFORE_AFTER_FUNC(before_main),
-                           BEFORE_AFTER_FUNC(after_main),
-                           BEFORE_AFTER_FUNC(before_end),
-                           BEFORE_AFTER_FUNC(after_end))
+size_t GenerateLineForestCode(std::ostream& os, 
+                              const LineForestHandler& lfh,
+                              std::string prefix,
+                              size_t start_id,
+                              BEFORE_AFTER_FUNC(before_main),
+                              BEFORE_AFTER_FUNC(after_main),
+                              BEFORE_AFTER_FUNC(before_end),
+                              BEFORE_AFTER_FUNC(after_end))
 {
     // Generate the code for the main forest
-    int last_id = GenerateDragCode(os, lfh.f_, true, before_main, after_main, prefix, start_id, lfh.main_end_tree_mapping_);
+    size_t last_id = GenerateDragCode(os, lfh.f_, true, before_main, after_main, prefix, start_id, lfh.main_end_tree_mapping_);
 
     // Generate the code for the end of the line forests
     for (size_t i = 0; i < lfh.end_forests_.size(); ++i) {

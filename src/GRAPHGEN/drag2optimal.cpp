@@ -117,8 +117,7 @@ void Dag2DagUsingEquivalences(BinaryDrag<conact>& t, bool considering_leaves) {
 }
 
 // Given a dag with multiple actions on leaves this function generate all possible dags with only one action per leaf
-// VERSIONE CHE CONTA I NODI E LE FOGLIE PER DECIDERE QUAL E' L'ALBERO MIGLIORE
-void Dag2OptimalDagRec(BinaryDrag<conact>& t, BinaryDrag<conact>::node* n, BinaryDrag<conact> &best_tree, uint &best_nodes, uint &best_leaves, std::map<const BinaryDrag<conact>::node*, bool> &visited_n, uint &counter) {
+void Dag2OptimalDagRec(BinaryDrag<conact>& t, BinaryDrag<conact>::node* n, BinaryDrag<conact> &best_tree, size_t &best_nodes, size_t &best_leaves, std::map<const BinaryDrag<conact>::node*, bool> &visited_n, uint &counter) {
     BinaryDrag<conact> nt;
     if (n->isleaf()) {
         // leaf with multiple action
@@ -180,8 +179,8 @@ void Dag2OptimalDag(BinaryDrag<conact>& t) {
     BinaryDrag<conact> best_tree;
     std::map<const BinaryDrag<conact>::node*, bool> visited_nodes;
     uint counter = 0;
-    uint best_nodes = std::numeric_limits<uint>::max();
-    uint best_leaves = std::numeric_limits<uint>::max();
+    size_t best_nodes = std::numeric_limits<size_t>::max();
+    size_t best_leaves = std::numeric_limits<size_t>::max();
     Dag2OptimalDagRec(t, t.GetRoot(), best_tree, best_nodes, best_leaves, visited_nodes, counter);
     std::cout << "** Vector size:" << counter << " **\n";
     std::cout << "** Counter:" << counter << " **\n";

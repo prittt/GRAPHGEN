@@ -79,7 +79,7 @@ string GetNodeCode(const string& condition, bool with_root_id) {
 
 void GenerateDotCodeForDagRec(std::ostream& os, 
                               BinaryDrag<conact>::node *n, 
-                              std::map<BinaryDrag<conact>::node*, int>& printed_node, 
+                              std::map<BinaryDrag<conact>::node*, size_t>& printed_node,
                               std::vector<std::string>& links, 
                               nodeid &id, 
                               bool with_next,
@@ -137,7 +137,7 @@ void GenerateDotCodeForDag(std::ostream& os, const BinaryDrag<conact>& bd, bool 
           "\tsubgraph tree{\n";
     nodeid id;
     
-    std::map<BinaryDrag<conact>::node*, int> printed_node; // = { { bd.roots_[0] } , 0 };
+    std::map<BinaryDrag<conact>::node*, size_t> printed_node; // = { { bd.roots_[0] } , 0 };
     std::vector<std::string> links;
     
     for (size_t i = 0; i < bd.roots_.size(); ++i) {

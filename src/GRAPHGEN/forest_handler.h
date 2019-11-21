@@ -154,7 +154,7 @@ public:
                       BEFORE_AFTER_FUNC(after_end_no_loop) = AfterEndNoLoop,
                       int flags = 0 /* no flags available right now */)
     {
-        int last_id = 0;
+        size_t last_id = 0;
         for (const auto& i : f_) {
             std::filesystem::path filepath = conf.GetForestCodePath(names[i.first] + "_line");
             std::ofstream os(filepath);

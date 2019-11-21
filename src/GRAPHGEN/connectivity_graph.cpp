@@ -118,7 +118,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag)
     for (size_t rule = 0; rule < nrules; ++rule) {
         if ((rule >> posx) & 1) {
             std::bitset<128> cur_action = 0;
-            std::vector<int> cur_conds;
+            std::vector<size_t> cur_conds;
             for (size_t j = 0; j < nconds; ++j) {
                 if (j != posx && ((rule >> j) & 1) == 1) {
                     bool adj = false;
@@ -169,7 +169,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag, con
     for (size_t rule = 0; rule < nrules; ++rule) {
         if ((rule >> posx) & 1) {
             std::bitset<128> cur_action = 0;
-            std::vector<int> cur_conds;
+            std::vector<size_t> cur_conds;
             for (size_t j = 0; j < nconds; ++j) {
                 if (j != posx && ((rule >> j) & 1) == 1) {
                     bool adj = false;
