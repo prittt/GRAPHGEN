@@ -6,17 +6,17 @@
 
 <div style="width: 70%;">
 <h2 class="num">Introduction</h2>
-GRAPHGEN is the all encompassing GRAPHs GENerator! It is a general open-source framework for optimizing the performance of many binary image processing algorithms. Starting from just a set of rules, it automatically generates decision trees with minimum path-length considering image pattern frequencies, then applies state prediction and code compression producing Directed Rooted Acyclic Graphs (DRAG) that combine these different optimization techniques. You can find a theoretical description of GRAPHGEN capabilities <a href="2020_CVPR_One_DAG_to_Rule_Them_All.pdf">here</a>.
-<br/><br/>
-GRAPHGEN is able to:
+GRAPHGEN is the all encompassing GRAPHs GENerator! It is a general open-source framework for optimizing the performance of many binary image processing algorithms. Starting from just a set of rules, it automatically generates decision trees with minimum path-length considering image pattern frequencies, then applies state prediction and code compression producing Directed Rooted Acyclic Graphs (DRAG) that combine these different optimization techniques. You can find a theoretical description of GRAPHGEN capabilities <a href="2020_CVPR_One_DAG_to_Rule_Them_All.pdf">here</a>. In short, GRAPHGEN is able to:
 - generate the Optimal Decision Tree (ODTree) associated to a given problem <a href="#HYPERCUBE">[1]</a>;
 - compress the ODT into a Directed Rooted Acyclic Graph (DRAG) and generate it, in order to better fit instruction cache <a href="#DRAG">[2]</a>
 - apply pixel (or state) prediction <a href="#EFM">[3]</a>,<a href="#CTB">[4]</a> thus generating a Forest of Decision Trees (FDTrees) from the original ODTree. Prediction allows to recycle information obtained in the previous step in the current one, thus saving memory accesses and reducing the total execution time <a href="#PRED">[5]</a>;
 - remove condition checks by generating special Decision Trees (DTrees) for the start/end of the line and special FDTrees for the first/last line <a href="#Spaghetti">[6]</a>;
 - compress the FDTrees into a multi-rooted acyclic graph in order to better fit instruction cache;
-- introduce frequencies in the generation of ODTrees to better fit and improve the performance of an algorithm over a particular use-case scenario;
+- introduce frequencies in the generation of ODTrees to better fit data and improve the performance of an algorithm over a particular use-case scenario;
 
+As mentioned, the generation process is only related to the definition of the problem, meaning that the same problem can be solved using different definitions such as exploiting different scanning masks <a href="#CTB">[4]</a>, <a href="#SAUF">[7]</a>, <a href="#BBDT">[8]</a>, <a href="#CCIT">[9]</a>. For all the aforementioned optimization strategies GRAPHGEN is able to generate both the visual representation of the Decision Tree/Forest/DRAG and the C/C++ code implementing it.
 
+<b>Supported platforms</b>: Windows (VS2017), Linux (GCC 9.x or later).
 
 <h2 class="num">How to Run GRAPHGEN</h2>
 <h3 class="nocount">2.1 Requirements (Windows)</h3>
@@ -38,11 +38,11 @@ GRAPHGEN is able to:
 - Open CMake and point it to the root directory of this repository. The build folder can be e.g. a subfolder called "bin" or "build".
 - Press "Configure".
 - These are important variables to set:
-    - `GRAPHGEN_FREQUENCIES_ENABLED`: Enables frequency calculation and corresponding build targets (e.g. `Spaghetti_FREQ`). If enabled:
+    - `GRAPHGEN_FREQUENCIES_ENABLED`: enables frequency calculation and corresponding build targets (e.g. `Spaghetti_FREQ`). If enabled:
         - `OpenCV_DIR`: Point to the build folder of an OpenCV 3.x install with identical architecture and compiler.
-        - `GRAPHGEN_FREQUENCIES_DATASET_DOWNLOAD`: Enable if you wish to download the datasets used in frequency calculation (archive size: ca. 2-3 GB). Obligatory for frequency calculation if you have not downloaded them before.
+        - `GRAPHGEN_FREQUENCIES_DATASET_DOWNLOAD`: enable if you wish to download the datasets used in frequency calculation (archive size: ca. 2-3 GB). Madatory for frequency calculation if you have not downloaded them before.
     - On Linux: if you wish to change the architecture to 64-bit (default is 32-bit), change occurences of `-m32` to `-m64` in `CMAKE_CXX_FLAGS` and `CMAKE_C_FLAGS`.
-    - On Linux: You can adjust the build type in `CMAKE_BUILD_TYPE` (`Release` preferred for faster decision tree and forest calculation).
+    - On Linux: you can adjust the build type in `CMAKE_BUILD_TYPE` (`Release` preferred for faster decision tree and forest calculation).
 - Press "Generate" to generate the project files.
 - Build and execute the project:
     - On Windows: open the generated project solution, select the desired start-up target and execute either in Debug or Release.
@@ -52,14 +52,14 @@ GRAPHGEN is able to:
 <h3 class="nocount">2.4 Configuring GRAPHGEN</h3>
 Some application behavior can be configured by changing the `config.yaml` in the build folder.
 
-- `force_odt_generation`: Forces the optimal decision tree to be generated in every execution. This may be necessary when implementing own algorithms and debugging them. *Default: false*
-- `datasets`: Datasets used for frequency calculation. Available datasets from the [YACCLAB dataset](https://github.com/prittt/YACCLAB#the-yacclab-dataset) (downloaded with `GRAPHGEN_FREQUENCIES_DATASET_DOWNLOAD`): `"3dpes"`, `"check"`, `"fingerprints"`, `"hamlet"`, `"medical"`, `"mirflickr"`, `"tobacco800"`, `"xdocs"`, `"classical"`, `"granularity"`
+- `force_odt_generation`: forces the optimal decision tree to be generated in every execution. This may be necessary when implementing own algorithms and debugging them. *Default: false*
+- `datasets`: datasets used for frequency calculation. Available datasets from the [YACCLAB dataset](https://github.com/prittt/YACCLAB#the-yacclab-dataset) (downloaded with `GRAPHGEN_FREQUENCIES_DATASET_DOWNLOAD`): `"3dpes"`, `"check"`, `"fingerprints"`, `"hamlet"`, `"medical"`, `"mirflickr"`, `"tobacco800"`, `"xdocs"`, `"classical"`, `"granularity"`
 - `paths`:
     - `input`: path to the folder containing the datasets used for frequency calculation.
     - `output`: path where all outputs (code, graphs, frequenices) will be stored
 - `dot`:
-    - `out_format`: Output format of the generated graphs. Currently supported: `"pdf"`, `"png"`, and `"svg"`. *Default: svg*
-    - `background`: Color of the background of the generated graphs. can be one of the color supported by dot, such as `"white"`, `"red"`, `"turquoise"`, `"sienna"`, `"transparent"`, etc.
+    - `out_format`: output format of the generated graphs. Currently supported: `"pdf"`, `"png"`, and `"svg"`. *Default: svg*
+    - `background`: background color of the generated graphs. It can be one of the color supported by dot, such as `"white"`, `"red"`, `"turquoise"`, `"sienna"`, `"transparent"`, etc.
 
 
 <h2 class="num">Code Structure</h2>
@@ -68,33 +68,33 @@ The source code contains the library itself and a dozens of example targets spec
 <h3 class="nocount">3.1 Connected Component Labeling (Labeling)</h3>
 - `SAUF` reproduce the Scan Array-based Union Find algorithm generating the optimal decision tree for the Rosenfeld scanning mask <a href="#SAUF">[7]</a>.
 - `PRED` reproduce the algorithm proposed in <a href="#PRED">[5]</a>, generating the optimal decision tree for the Rosenfeld scanning mask and thus applying prediction.
-- `PRED++*` applies the code compression strategy on the forest of PRED algorithms
-- `SAUF3D*` generate the optimal decision tree for the 3D Rosenfeld scanning mask.
+- `PRED++*` applies the code compression strategy on the forest of PRED algorithm.
+- `SAUF3D*` generates the optimal decision tree for the 3D Rosenfeld scanning mask.
 - `SAUF++3D*` generate the optimal decision tree for the 3D Rosenfeld scanning mask and applies compression converting the tree into a Directed Rooted Acyclic Graphs (DRAG).
-- `BBDT` reproduce the Block-Based approach with Decision Trees generating the optimal decision tree for the Grana scanning mask <a href="#BBDT">[8]</a>.
+- `BBDT` reproduces the Block-Based approach with Decision Trees generating the optimal decision tree for the Grana scanning mask <a href="#BBDT">[8]</a>.
 - `BBDT_FREQ` is the optimal decision tree generated from the Grana scanning mask considering patterns frequency <a href="#BBDT_FREQ">[10]</a>.
-- `DRAG` reproduce the connected component labeling on DRAG ([ˈdrʌg]) algorithm that is the optimal decision tree of BBDT converted into a Directed Rooted Acyclic Graphs (DRAG) and compressed <a href="DRAG">[2]</a>.
+- `DRAG` reproduces the connected component labeling on DRAG ([ˈdrʌg]) algorithm that is the optimal decision tree of BBDT converted into a Directed Rooted Acyclic Graphs (DRAG) and compressed <a href="#DRAG">[2]</a>.
 - `DRAG_FREQ*` the same as DRAG but generated considering patterns frequency.
-- `Spaghetti` reproduce the Spaghetti algorithm proposed in <a href="Spaghetti">[6]</a> generating the optimal decision tree associated to the Grana scanning mask and applying prediction and compression.
+- `Spaghetti` reproduces the Spaghetti algorithm proposed in <a href="#Spaghetti">[6]</a> generating the optimal decision tree associated to the Grana scanning mask and applying prediction and compression.
 - `Spaghetti_FREQ` the same as Spaghetti but considers patterns frequencies.
 - `Tagliatelle*` generates the optimal decision tree for the Grana scanning mask and applies prediction
 - `PRED3D*` generates the optimal decision tree for the 3D Rosenfeld scanning mask and applies prediction
 - `PRED++3D*` generates the optimal decision tree for the 3D Rosenfeld scanning mask and applies prediction and compression
 
 <h3 class="nocount">3.2 Thinning</h3>
-- `ZS_TREE` reproduce the algorithm presented in <a href="BBDT_FREQ">[10]</a> generating the optimal decision tree for the Zhang and Suen <a href="ZS">[11]</a> approach.
-- `ZS_Spaghetti*` generates the optimal decision tree for the Zhang and Suen <a href="ZS">[11]</a> approach applying both prediction and compression.
-- `ZS_Spaghetti_FREQ*` the same as `ZS_Spaghetti` but considering patterns frequency
-- `GH_TREE*` generates the optimal decision tree for the Guo and Hall <a href="GH">[12]</a> approach.
-- `GH_Spaghetti*` generates the optimal decision tree for the Guo and Hall <a href="GH">[12]</a> approach, applying also prediction and compression.
+- `ZS_TREE` reproduce the algorithm presented in <a href="#BBDT_FREQ">[10]</a> generating the optimal decision tree for the Zhang and Suen <a href="#ZS">[11]</a> approach.
+- `ZS_Spaghetti*` generates the optimal decision tree for the Zhang and Suen <a href="#ZS">[11]</a> approach applying both prediction and compression.
+- `ZS_Spaghetti_FREQ*` the same as `ZS_Spaghetti` but considering patterns frequency.
+- `GH_TREE*` generates the optimal decision tree for the Guo and Hall <a href="#GH">[12]</a> approach.
+- `GH_Spaghetti*` generates the optimal decision tree for the Guo and Hall <a href="#GH">[12]</a> approach, applying also prediction and compression.
 - `GH_Spaghetti_FREQ*` the same as `GH_Spaghetti` but considering patterns frequency.
-- `CH_TREE*` generates the optimal decision tree for the Chen and Hsu <a href="CH">[13]</a> approach.
-- `CH_Spaghetti*` generates the optimal decision tree for the Chen and Hsu <a href="CH">[13]</a>, applying also prediction and compression.
+- `CH_TREE*` generates the optimal decision tree for the Chen and Hsu <a href="#CH">[13]</a> approach.
+- `CH_Spaghetti*` generates the optimal decision tree for the Chen and Hsu <a href="#CH">[13]</a>, applying also prediction and compression.
 - `CH_Spaghetti_FREQ*` the same as `CH_Spaghetti` but considering patterns frequency.
 
 <h3 class="nocount">3.3 Chain Code</h3>
-- `Cederberg_TREE*` generates the optimal decision tree for the Cederberg <a href="Cederberg">[14]</a> algorithm
-- `Cederberg_Spaghetti*` generates the optimal decision tree for the Cederberg <a href="Cederberg">[14]</a> algorithm, applying also prediction and compression
+- `Cederberg_TREE*` generates the optimal decision tree for the Cederberg <a href="#Cederberg">[14]</a> algorithm
+- `Cederberg_Spaghetti*` generates the optimal decision tree for the Cederberg <a href="#Cederberg">[14]</a> algorithm, applying also prediction and compression.
 - `Cederberg_Spaghetti_FREQ*` the same as `Cederberg_Spaghetti` but considering patterns frequency.
 
 
@@ -213,7 +213,6 @@ The source code contains the library itself and a dozens of example targets spec
     </td>
 </tr>
 </table>
-
 </div>
 </div>
 */
