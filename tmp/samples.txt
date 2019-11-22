@@ -1,7 +1,7 @@
 
 
     vector<string> dataset_paths = { "." };
-    //string base_path = "C://Users//Federico Bolelli//Desktop//YACCLAB//bin//input//";
+    //string base_path = "C://Users//username//Desktop//YACCLAB//bin//input//";
     //vector<string> dataset_paths = { base_path + "3dpes", base_path + "fingerprints", base_path + "hamlet", base_path + "medical", base_path + "mirflickr", base_path + "random//classical", base_path + "tobacco800", base_path + "xdocs"};
 
     // Set to true to use freq file, otherwise all freq will be considered equal to 1
