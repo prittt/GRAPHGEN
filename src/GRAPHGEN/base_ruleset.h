@@ -38,12 +38,22 @@
 
 #include "rule_set.h"
 
+
+/** @brief Is the base class for the RuleSet from which every user-defined RuleSet should inherit
+
+It contains member functions (LoadRuleSet and SaveRuleSet) to load and store a .yaml file which
+define the RuleSet.
+
+*/
 class BaseRuleSet {
     std::filesystem::path p_;
     bool force_generation_;
 	bool disable_generation_;
     rule_set rs_;
 
+    /** @brief Load the RuleSet from a (.yaml) file. The name of the file is defined in 
+    the conf global variable. 
+    */
     bool LoadRuleSet() {
 
         YAML::Node rs_node;
@@ -58,6 +68,9 @@ class BaseRuleSet {
         return true;
     }
 
+    /** @brief Store the RuleSet into a (.yaml) file. The name of the file is defined in 
+    the conf global variable. 
+    */
     void SaveRuleSet() {
         std::ofstream os(p_.string());
         if (os) {
