@@ -35,13 +35,15 @@
 
 #include "yaml-cpp/yaml.h"
 
+/** @brief This class stores the configuration data loaded from file. All data are placed 
+in the config global variable that can be accessed anywhere in the code.
+
+*/
 struct ConfigData { 
 
-    // Algorithm's description
-    std::string description_ = "";
+    std::string description_ = ""; /**< Algorithm's description */
 
-    // Configuration file
-    std::string config_file_ = "config.yaml";
+    std::string config_file_ = "config.yaml"; /**< Name of the configuration file */
 
     // Global names/paths
     std::filesystem::path global_output_path_;

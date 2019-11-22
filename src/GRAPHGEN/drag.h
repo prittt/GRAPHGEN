@@ -101,7 +101,7 @@ public:
     This member function is also required by the copy constructor.
 
     @param[in] n The node address of the BinaryDrag from which start the recursive copy
-    @param[in/out] copies Maps every node address to be copied with its copy address.
+    @param[in-out] copies Maps every node address to be copied with its copy address.
 
     */
     node *MakeCopyRecursive(node *n, std::unordered_map<node*, node*> &copies) {

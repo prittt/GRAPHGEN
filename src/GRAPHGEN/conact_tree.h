@@ -77,11 +77,11 @@ void IntersectTrees(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2);
 
 // Instead of defining a novel format to save DRAGS, we save them as trees, then link
 // identical sub-trees. Since the order of traversal is the same, the result should be the same.
+// This should be removed because Save structure replace 
 bool LoadConactDrag(BinaryDrag<conact>& t, const std::string& filename);
 
 // Instead of defining a novel format to save DRAGS, we save them as trees, then link
 // identical sub-trees. Since the order of traversal is the same, the result should be the same.
-
 bool WriteConactDrag(BinaryDrag<conact>& t, const std::string& filename);
 
 struct Save {
