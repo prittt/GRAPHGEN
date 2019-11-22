@@ -166,12 +166,10 @@ struct VHyperCube {
     BinaryDrag<conact> optimize(bool bVerbose = false);
 };
 
-// TODO should these functions be hide from the outside?
 // Generates an Optimal Decision Tree from the given rule_set,
 // and store it in the filename when specified.
 BinaryDrag<conact> GenerateOdt(const rule_set& rs);
 BinaryDrag<conact> GenerateOdt(const rule_set& rs, const std::string& filename);
-
 
 /** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
 
@@ -181,7 +179,6 @@ is loaded from file, unless the "force_generation" parameter is set to true. In 
 is always regenerated. The loaded/generated tree is then returned from the function.
 
 @param[in] rs Rule set from which generate the decision tree.
-@param[in] algorithm_name Name of the algorithm for which the tree must be generated.
 @param[in] force_generation Whether the tree must be generated or can be loaded from file.
 
 @return The optimal decision tree associated to the specified rule set.

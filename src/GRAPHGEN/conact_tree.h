@@ -36,7 +36,7 @@
 
 #include "drag.h"
 
-/** @bref Loads a tree from file. 
+/** @brief Loads a tree from file. 
 
 The tree must be saved in a file with the following structure:
 

@@ -1,4 +1,4 @@
-// https://vorbrodt.blog/2019/02/09/template-concepts-sort-of/
+// Extrapolated from https://vorbrodt.blog/2019/02/09/template-concepts-sort-of/
 #pragma once
 
 #include <mutex>

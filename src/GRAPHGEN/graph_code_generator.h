@@ -50,38 +50,40 @@ BEFORE_AFTER_FUNC(AfterEndNoLoop);
 
 /** @brief This function generates the code for the given drag reversing the output into the specified stream
 
+Function pointer parameters are not well treated by doxygen. TODO fix it.
+
 @param[in] os Where to write the code (output stream).
 @param[in] bd BinaryDrag<conact> for which generating the code.
 @param[in] with_gotos Whether to add gotos or not during code generation.
 @param[in] before Pointer to the function which defines the string that should be put in the code before a tree.
                   When dealing with forests for example you will need pass to GenerateDragCode a "before" function 
                   like the following one (i identifies the tree): 
-
+                  \code{.cpp}
                   [mapping](int i, const std::string& prefix) -> std::string { 
                        return prefix + "tree_" + string(i) + ": if ((c+=1) >= w - 1) goto " + prefix + "break_0_" + string(mapping[0][i]) + ";\n";
                   }
-                  
+                  \endcode
                   this function is valid for example for thinning algorithms, PRED, SAUF, CTB and all the algorithms that have a
                   unitary horizontal shift.
-                  
                   When dealing with algorithm which have an horizontal shift of 2 and for this reason will need multiple end line 
                   forests a function like the following one is required:
-
+                  \code{.cpp}
                   [mapping](int i, const std::string& prefix) -> std::string {
                        return prefix + "tree_" + string(i) + ": if ((c+=2) >= w - 2) { if (c > w - 2) { goto " + prefix + \
                        "break_0_" + string(mapping_[0][i]) + "; } else { goto " + prefix +                                \
                        "break_1_" + string(mapping_[1][i]) + "; } } \n";
                   }
-
+                  \endcode
                   DefaultBefore function returns an empty string and is the default function passed to the 
                   GenerateDragCode function.
 @param[in] after Pointer to the function which defines the string that should be put into the code after a tree.
                  When dealing with forest for example you will need pass to GenerateDragCode a "before" function 
                  like the following one:
-
+                 \code{.cpp}
                  [mapping](int i, const std::string& prefix) -> std::string {
                     return string(2, '\t') + "continue;\n";
                  }
+                 \endcode
 @param[in] prefix String to add before tree names. This variable will be passed to the before and after functions
 @param[in] start_id Is the id from which start node enumeration when dealing with drags. It is especially useful
                     to avoid multiple defined labels when dealing with multiple forests in the same code, like 

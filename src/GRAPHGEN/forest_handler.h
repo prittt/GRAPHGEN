@@ -144,8 +144,9 @@ public:
     @param[in] flag Not used yet. Default value is zero.
 
     * all the functions must have the following signature:
+    \code{.cpp}
     std::string fun_name(int index, const std::string& prefix, const std::vector<std::vector<int>>& mapping, int end_group_id)
-
+    \endcode
     */
     void GenerateCode(BEFORE_AFTER_FUNC(before_main)       = BeforeMainShiftOne,
                       BEFORE_AFTER_FUNC(after_main)        = DefaultEmptyFunc,

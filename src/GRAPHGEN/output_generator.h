@@ -53,7 +53,7 @@ DEFINE_ENUM_CLASS_FLAGS(DrawDagFlags,
 /** @brief Generate a file displaying the specified DRAG. The output format will be the 
 one set in the general yaml configuration file
 
-@param[in] output_file Name that the output file should have (without extension).
+@param[in] base_filename Name that the output file should have (without extension).
 @param[in] dt DRAG (BinaryDrag<conact>) to be drawn.
 @param[in] flags Function flags, see DrawDagFlags.
 

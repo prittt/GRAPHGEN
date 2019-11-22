@@ -1,4 +1,4 @@
-// https://vorbrodt.blog/2019/02/05/fast-semaphore/
+// Extrapolated from https://vorbrodt.blog/2019/02/05/fast-semaphore/
 #pragma once
 
 #include <mutex>
