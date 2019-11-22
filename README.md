@@ -2,10 +2,6 @@
 
 ---
 
-<!--
-Can be displayed only if the repo is public.
-[![Documentation](https://codedocs.xyz/prittt/graphgen.svg)]()
--->
 
 **GRAPHGEN** is a framework for optimizing algorithms that can be modeled with decision tables such as Connected Component Labeling, Thinning, Chain Code (Contour Tracing), and Morphological operators. Generally, all those algorithms in which the output value for each image pixel is obtained from the value of the pixel itself and of some of its neighbors can be defined in such a way. The framework allows to automatically apply many different optimization strategies to a given problem, taking its definition in terms of conditions to check and actions to be performed as input and directly producing the C/C++ code including those optimizations as output.
 

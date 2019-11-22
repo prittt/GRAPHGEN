@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli
+// Copyright(c) 2018 - 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
