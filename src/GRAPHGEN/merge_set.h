@@ -110,7 +110,7 @@ struct MultiMergeSet {
         }
     }
 
-    // Controllo se il pixel j fa parte del set di pixel da etichettare nella maschera (to_be_labeled_pixels)
+    // Check if the pixel j is part of the set of pixels to be labelled in the mask (to_be_labeled_pixels)
     bool IsInThePixelList(const std::string &j) {
         for (size_t i = 0; i < pixel_list_.size(); ++i) {
             if (j == pixel_list_[i]) {

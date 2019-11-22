@@ -118,7 +118,6 @@ rule_set generate_ctbe()
     //auto actions_i = GenerateAllPossibleLabelingActions(ag_i, "i");
     auto actions = GenerateAllPossibleLabelingActionsGivenTheSetOfPixelToBeLabeled(ag, { "e", "g", "i" }, labeling);
 
-    //// Costruisco il set finale di azioni dove ogni azioni sar� del tipo e<-..,g<-..,i<-..
     //vector<string> actions;
     //for (const auto& ae : actions_e) {
     //    for (const auto& ag : actions_g) {

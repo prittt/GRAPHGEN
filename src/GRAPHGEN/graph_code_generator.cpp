@@ -98,7 +98,7 @@ class GenerateCodeClass {
 
     // nodes_requring_labels keeps track of the DAG nodes that are pointed by other nodes and thus need to have a label.
     // We need this in order to know if we have to create a label for this node or not. This map is populated by the 
-    // ChekNodesTraversalRec procedure. 
+    // CheckNodesTraversalRec procedure. 
     std::map<BinaryDrag<conact>::node*, bool> nodes_requiring_labels_;
 
     nodeid id_;

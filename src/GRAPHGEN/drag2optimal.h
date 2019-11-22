@@ -39,7 +39,7 @@ void Dag2DagUsingIdenties(BinaryDrag<conact>& t);
 void Dag2DagUsingEquivalences(BinaryDrag<conact>& t, bool considering_leaves = true);
 
 // Converts a tree into dag minimizing the number of nodes (Note: this is "necessary" when the leaves of a tree contain multiple actions)
-// UTILIZZA IL NUMERO DI NODI PER SCEGLIERE IL DAG OTTIMO
+// USES NUMBER OF NODES TO PICK THE OPTIMAL DAG
 void Dag2OptimalDag(BinaryDrag<conact>& t);
 
 #endif // !GRAPHGEN_DRAG2OPTIMAL_H_

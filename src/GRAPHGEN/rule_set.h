@@ -41,13 +41,8 @@
 struct rule {
     unsigned long long frequency = 1;
     std::bitset</*11881*/128> actions; // bitmapped
-};
+}
 
-// Accrocchio per capire come mai pred va meglio di spaghetti su granularity a frequenze tra 9 e 19
-struct rule2 {
-    rule r_;
-    size_t condition_outcome_;
-};
 
 struct rule_set {
     std::vector<std::string> conditions;
@@ -56,23 +51,6 @@ struct rule_set {
     std::unordered_map<std::string, size_t> actions_pos;
     std::vector<rule> rules;
     pixel_set ps_;
-
-    //std::vector<rule2> GetMaxFreqRules(int N) {
-    //	std::bitset<128> no_action = 1;
-    //	std::bitset<128> new_label = 2;
-
-    //	std::vector<rule2> new_rules;
-    //	for (size_t i = 0; i < rules.size(); ++i) {
-    //		if (rules[i].actions != no_action && rules[i].actions != new_label) {
-    //			new_rules.push_back({ rules[i], i });
-    //		}
-    //	}
-
-    //	std::sort(new_rules.begin(), new_rules.end(), [](const rule2& a, const rule2& b) -> bool { return a.r_.frequency > b.r_.frequency; });
-    //	new_rules.resize(N);
-    //	return new_rules;
-
-    //}
 
     rule_set() {}
     rule_set(YAML::Node& node) {
@@ -156,8 +134,8 @@ struct rule_set {
         rules[rule].actions.set(actions_pos.at(s) - 1);
     }
     void SetFrequency(uint rule, uint frequency) {
-        // Da migliorare: chi assicura che vi sia corrispondenza nella rappresentazione
-        // delle regole usata all'esterno e quelle implementata dal rule_set?
+        // To improve: who ensures that there is correspondence in the rules representation
+        // used externally and those implemented by the rule_set?
         rules[rule].frequency = frequency;
     }
 

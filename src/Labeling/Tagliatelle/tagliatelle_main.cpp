@@ -60,12 +60,6 @@ int main()
     // 4) Draw the generated forests on file
     fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
 
-    // x) Compress the forests
-    //fh.Compress(DragCompressor::PRINT_STATUS_BAR | DragCompressor::IGNORE_LEAVES);
-
-    // x) Draw the compressed forests on file
-    //fh.DrawOnFile(algorithm_name, DELETE_DOTCODE);
-
     // 5) Generate the C/C++ code taking care of the names used
     //    in the Grana's rule set GranaRS
     fh.GenerateCode(BeforeMainShiftTwo);
