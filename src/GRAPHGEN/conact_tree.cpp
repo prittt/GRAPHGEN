@@ -72,7 +72,7 @@ bool LoadConactTree(BinaryDrag<conact>& t, const string& filename)
         return false;
     }
 
-    t.SetRoot(LoadConactTreeRec(t, is));
+    t.AddRoot(LoadConactTreeRec(t, is));
     return true;
 }
 
