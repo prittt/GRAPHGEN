@@ -55,7 +55,7 @@ struct pixel {
 	auto& operator[](size_t i) { return coords_[i]; }
 	auto& operator[](size_t i) const { return coords_[i]; }
 
-	// Metodi provvisori per adattare il pixel al vecchio codice specifico per il 2D
+	// Temporary methods to adapt the pixel to the old 2D-specific code
 	int GetDx() const { return coords_[0]; }
 	int GetDy() const { return coords_[1]; }
 
@@ -152,7 +152,7 @@ struct pixel_set {
     auto begin() const { return std::begin(pixels_); }
     auto end() const { return std::end(pixels_); }
 
-	// Metodi provvisori per adattare il pixel_set al vecchio codice specifico per il 2D
+	// Temporary methods to adapt the pixel to the old 2D-specific code
 	int GetShiftX() const { return shifts_[0]; }
 
     YAML::Node Serialize() const {

@@ -71,11 +71,6 @@ void Dag2DagUsingIdenties(BinaryDrag<conact>& t) {
 	Dag2DagUsingIdentiesRec(t.GetRoot(), t, visited_n);
 }
 
-// TODO: 
-// Le funzioni che seguono sono praticamente identiche alle versione con identit�, riddurre il codice aggiungendo parametri alle funzioni?
-// FindAndLinkEquivalencesDagRec
-// Dag2DagUsingEquivalencesRec
-// Dag2DagUsingEquivalences
 void FindAndLinkEquivalencesDagRec(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2, std::map<BinaryDrag<conact>::node*, bool> &visited_fl) {
 	if (n2->isleaf() || n1 == n2 || visited_fl[n2])
 		return;
@@ -173,7 +168,7 @@ void Dag2OptimalDagRec(BinaryDrag<conact>& t, BinaryDrag<conact>::node* n, Binar
 
 
 // Converts a tree into dag minimizing the number of nodes (Note: this is "necessary" when the leaves of a tree contain multiple actions)
-// UTILIZZA IL NUMERO DI NODI PER SCEGLIERE IL DAG OTTIMO
+// USES NUMBER OF NODES TO PICK THE OPTIMAL DAG
 void Dag2OptimalDag(BinaryDrag<conact>& t) {
     std::vector<BinaryDrag<conact>> trees;
     BinaryDrag<conact> best_tree;

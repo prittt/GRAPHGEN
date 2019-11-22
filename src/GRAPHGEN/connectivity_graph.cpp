@@ -213,7 +213,7 @@ void PrintActionsSet(std::set<std::bitset<128>, less<128>>& to_print, std::ostre
     }
 }
 
-///VERSIONE CON MOLTE PIU' AZIONI DEL NECESSARIO
+///VERSION WITH MANY MORE ACTIONS THAN NECESSARY
 //// This function generates all possible actions, avoiding useless ones such as merges between adjacent pixels and considering multiple pixels inside the mask
 //std::vector<std::string> GenerateAllPossibleLabelingActionsGivenTheSetOfPixelToBeLabeled(const graph& ag, const std::vector<std::string>& to_be_labeled_pixels)
 //{
@@ -239,7 +239,6 @@ void PrintActionsSet(std::set<std::bitset<128>, less<128>>& to_print, std::ostre
 //                std::vector<int> cur_conds;
 //                for (size_t j = 0; j < nconds; ++j) {
 //
-//                    // Controllo se il pixel j fa parte del set di pixel da etichettare nella maschera (to_be_labeled_pixels)
 //                    bool is_in_the_labe_set = false;
 //                    for (size_t lss = 0 + i; lss < to_be_labeled_pixels.size(); ++lss) {
 //                        if (j == posp[lss]) {
@@ -267,8 +266,6 @@ void PrintActionsSet(std::set<std::bitset<128>, less<128>>& to_print, std::ostre
 //        }
 //    }
 //
-//    // N.B. dal risultato sembra evidente che noi diamo per scontato che tutti i pixel da etichettare siano
-//    // connessi a tutti i pixel nella maschera. Ma in questo caso non è vero. Va gestito?
 //
 //    {
 //        std::ofstream os("actions_set.txt");
@@ -311,7 +308,6 @@ void PrintActionsSet(std::set<std::bitset<128>, less<128>>& to_print, std::ostre
 //        for (size_t g = 0; g < actions[1].size(); ++g) {
 //            for (size_t i = 0; i < actions[2].size(); ++i) {
 //                std::string es = actions[0][e], gs = actions[1][g], is = actions[2][i];
-//                // Prima di aggiungere l'azione al set controllo che non sia una del tipo e<-h,g<-h
 //                /*if (es.substr(3) == gs.substr(3) && es != "nothing") {
 //                    gs = "g<-e";
 //                }
@@ -428,7 +424,6 @@ std::vector<std::string> GenerateAllPossibleLabelingActionsGivenTheSetOfPixelToB
             i_actions.push_back("nothing");
         }
 
-        // Costruisco il set finale di azioni dove ogni azioni sarà del tipo e<-..,g<-..,i<-..
         for (const auto& ae : e_actions) {
             for (const auto& ag : g_actions) {
                 for (const auto& ai : i_actions) {

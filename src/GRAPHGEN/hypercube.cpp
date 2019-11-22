@@ -38,7 +38,7 @@ void CreateTree_rec(BinaryDrag<conact>& t, BinaryDrag<conact>::node *n, const ru
 		n->data.t = conact::type::CONDITION;
 		n->data.condition = rs.conditions[node.uiMaxGainIndex];
 
-		// Estraggo i due (n-1)-cubi
+		// Extract the two (n-1)-cubes
 		string sChild0(idx.GetIndexString());
 		string sChild1(sChild0);
 		sChild0[node.uiMaxGainIndex] = '0';
@@ -60,7 +60,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 	s.resize(m_iDim, '0');
 	VIndex idx(s);
 	if (bVerbose) {
-		// Stampo la tabella
+		// Print the table
 		do {
 			std::cout << idx.GetIndexString() << "\t" << m_arrIndex[idx.GetIndex()].uiProb << "\t";
 			if (m_arrIndex[idx.GetIndex()].uiAction == 0)
@@ -77,7 +77,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 	for (size_t iNumIndifference = 1; iNumIndifference <= m_iDim; iNumIndifference++) {
 		if (!bVerbose)
 			std::cout << iNumIndifference << " " << std::flush;
-		// Inizializzo le indifferenze
+		// Initialize the Indifferences
 		bool bFine;
 		std::vector<size_t> arrPosIndifference(iNumIndifference);
 		int iPos = 0;
@@ -90,15 +90,15 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 		std::vector</*unsigned*/unsigned long long> arrGain(iNumIndifference);
 		std::vector<unsigned> arrNEq(iNumIndifference);
 
-		// Faccio tutte le combinazioni
+		// Do all the combinations
 		do {
-			// Genero la maschera delle indifferenze
+			// Generate the Indifference Mask
 			std::string s;
 			s.resize(m_iDim, '0');
 			for (size_t i = 0; i < iNumIndifference; i++)
 				s[arrPosIndifference[i]] = '-';
 
-			// Stampo tutte le combinazioni
+			// Print all the combinations
 			if (!idx.SetIndex(s))
 				throw;
 			do {
@@ -110,7 +110,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 					VIndex idx0(sChild0), idx1(sChild1);
 					VNode node0(m_arrIndex[idx0.GetIndex()]), node1(m_arrIndex[idx1.GetIndex()]);
 
-					// Faccio l'intersezione delle possibili azioni
+					// Calculate the intersection of all possible actions
 					auto uiIntersezione = node0.uiAction & node1.uiAction;
 
 					m_arrIndex[idx.GetIndex()].uiAction = uiIntersezione;
@@ -168,16 +168,16 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 			if (bVerbose)
 				std::cout << "\n";
 
-			// Passo alla permutazione di indifferenze successiva
+			// Move on to the next permutation of indifference
 			bFine = true;
             for (int i = int(iNumIndifference) -1; i >= 0; i--) {
 				arrPosIndifference[i]++;
-				// Ho una posizione valida?
+				// Does this have a valid position?
 				if (arrPosIndifference[i] < m_iDim) {
-					// Ci stanno le altre indifferenze?
+					// Are there any other indifferences?
 					if (m_iDim - 1 - arrPosIndifference[i] >= iNumIndifference - 1 - i) {
-						// La posizione � valida, ci stanno le altre, allora sistemo 
-						// le indifferenze successive
+						// The position is valid, there are positions, 
+						// therefore, we fix the following indifferences
 						iPos = int(arrPosIndifference[i]) + 1;
 						for (size_t j = i + 1; j < iNumIndifference; j++) {
 							arrPosIndifference[j] = iPos;

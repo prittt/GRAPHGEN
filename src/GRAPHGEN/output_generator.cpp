@@ -70,7 +70,7 @@ string GetNodeCode(const string& condition, bool with_root_id) {
     if (!with_root_id) {
         size_t pos = real_condition.find("- ");
         if (pos != string::npos) {
-            real_condition = real_condition.substr(pos + 2); // This supposes that there is a space between dash and condition name
+            real_condition = real_condition.substr(pos + 2); // This assumes that there is a space between dash and condition name
         }
     }
 
@@ -129,7 +129,7 @@ void GenerateDotCodeForDagRec(std::ostream& os,
     }
 }
 
-// All nodes must have both sons! 
+// All nodes must have both children! 
 void GenerateDotCodeForDag(std::ostream& os, const BinaryDrag<conact>& bd, bool with_next, bool with_root_id) {
     os << "digraph dag{\n"
           "ranksep=" + conf.dot_ranksep_ + "\n" +
