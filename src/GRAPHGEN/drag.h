@@ -38,9 +38,18 @@
 #include <istream>
 #include <vector>
 
+
+/** @brief A BinaryDrag is the GRAPHGEN implementation of a Binary Directed Rooted Acyclic Graph (DRAG in short)
+
+The implementation A BinaryDrag is template on the node data type. A BinaryDrag can be used to model/implement
+a simple binary tree, a multi-rooted binary tree, a directed acyclic graph with just one root, or a multi-rooted
+drag. A BinareDrag is the core data structure of GRAPHGEN. 
+
+*/
 template<typename T>
 class BinaryDrag {
 public:
+    /** @brief Defines a node of the BinaryDrag */
     struct node
     {
         T data;
@@ -57,10 +66,11 @@ public:
         }
     };
 
-    // Vector of unique pointers to tree nodes. This is useful to free memory when the tree is converted to DAG 
+    /** @brief Vector of unique pointers to BinaryDrag nodes. This is useful to automatically free 
+    the memory of the BinaryDrag, without requiring a recursive exploration of its structure*/
     std::vector<std::unique_ptr<node>> nodes_;
 
-    // Creates and returns new node updating the nodes vector
+    /** @brief Creates and returns a new node updating the nodes_ vector */
     template<typename... Args>
     node* make_node(Args&&... args) {
         nodes_.emplace_back(std::make_unique<node>(std::forward<Args>(args)...));
@@ -69,13 +79,12 @@ public:
 
     std::vector<node *> roots_;
 
-    // Adds a root to the vector of roots 
-    // TODO remove me -> and returns its index
+    /** @brief Adds a new root to the vector of roots */
     void AddRoot(node* r) {
         roots_.push_back(r);
-        //return roots_.size() - 1;
     }
 
+    /** @brief Returns the last root of the BinaryDrag */
     node* GetRoot() const {
         return roots_.front();
     }
@@ -84,14 +93,21 @@ public:
         roots_.push_back(root);
     }
 
+    /** Swap member bd1 <-> bd2 */
     friend void swap(BinaryDrag& bd1, BinaryDrag& bd2) {
         using std::swap;
         swap(bd1.roots_, bd2.roots_);
         swap(bd1.nodes_, bd2.nodes_);
     }
 
-    // Recursive function to copy a tree. This is required by the copy constructor
-    // copies maps every node to be copied to its copy
+    /** @brief Recursive function to copy a BinaryDrag.
+    
+    This member function is also required by the copy constructor.
+
+    @param[in] n The node address of the BinaryDrag from which start the recursive copy
+    @param[in/out] copies Maps every node address to be copied with its copy address.
+
+    */
     node *MakeCopyRecursive(node *n, std::unordered_map<node*, node*> &copies) {
         if (n == nullptr)
             return nullptr;
@@ -106,9 +122,10 @@ public:
         return copies[n];
     }
 
+    /** @brief Empty constructor */
     BinaryDrag() {}
 
-    // Copy constructor
+    /** @brief Copy constructor */
     BinaryDrag(const BinaryDrag& bd) {
         std::unordered_map<node*, node*> copies;
         for (const auto& x : bd.roots_) {
@@ -122,7 +139,8 @@ public:
         }*/
     }
 
-    BinaryDrag(const BinaryDrag& bd, std::vector<node*>& tracked_nodes) { // Allows to track where the nodes in a tree have been copied to
+    // Allows to track where the nodes in a tree have been copied to
+    BinaryDrag(const BinaryDrag& bd, std::vector<node*>& tracked_nodes) { 
         std::unordered_map<node*, node*> copies;
         for (const auto& x : bd.roots_) {
             roots_.push_back(MakeCopyRecursive(x, copies));
