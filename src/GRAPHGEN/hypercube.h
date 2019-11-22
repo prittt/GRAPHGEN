@@ -60,7 +60,7 @@ struct VIndex {
 	bool SetIndex(const std::string &s) {
 		if (s.length() != m_iDim)
 			return false;
-		for (int i = 0; i<m_iDim; i++) {
+		for (size_t i = 0; i<m_iDim; i++) {
 			if (s[i] == '0')
 				m_arrIndex[i] = Zero;
 			else if (s[i] == '1')
@@ -77,7 +77,7 @@ struct VIndex {
 		std::string s;
 		s.resize(m_iDim);
 		char aRepresentation[3] = { '0','1','-' };
-		for (int i = 0; i<m_iDim; i++) {
+		for (size_t i = 0; i<m_iDim; i++) {
 			s[i] = aRepresentation[m_arrIndex[i]];
 		}
 		return s;
@@ -85,7 +85,7 @@ struct VIndex {
 
 	unsigned GetIndex() const {
 		unsigned ui(0);
-		for (int i = 0; i<m_iDim; i++) {
+		for (size_t i = 0; i<m_iDim; i++) {
 			ui *= 3;
 			ui += m_arrIndex[i];
 		}
