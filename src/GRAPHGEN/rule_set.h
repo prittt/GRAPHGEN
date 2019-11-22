@@ -41,7 +41,7 @@
 struct rule {
     unsigned long long frequency = 1;
     std::bitset</*11881*/128> actions; // bitmapped
-}
+};
 
 
 struct rule_set {
