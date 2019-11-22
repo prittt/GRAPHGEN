@@ -89,10 +89,6 @@ public:
         return roots_.front();
     }
 
-    void SetRoot(node *root) {
-        roots_.push_back(root);
-    }
-
     /** Swap member bd1 <-> bd2 */
     friend void swap(BinaryDrag& bd1, BinaryDrag& bd2) {
         using std::swap;
@@ -139,7 +135,7 @@ public:
         }*/
     }
 
-    // Allows to track where the nodes in a tree have been copied to
+    /** @brief Special copy constructor that allows to track where the nodes in a tree have been copied to */
     BinaryDrag(const BinaryDrag& bd, std::vector<node*>& tracked_nodes) { 
         std::unordered_map<node*, node*> copies;
         for (const auto& x : bd.roots_) {
@@ -159,12 +155,14 @@ public:
     BinaryDrag(BinaryDrag&& t) {
         swap(*this, t);
     }
-    // Copy assignment
+    
+    /** @brief Copy assignment */
     BinaryDrag& operator=(BinaryDrag t) {
         swap(*this, t);
         return *this;
     }
 
+    /** @brief Creates a new root updating the roots_ vector */
     node* make_root() {
         roots_.push_back(make_node());
         return roots_.back();
