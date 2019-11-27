@@ -233,8 +233,20 @@ BinaryDrag<conact> GetOdt(const rule_set& rs, bool force_generation) {
 
 #pragma endregion
 
+double entropy(std::vector<int>& vector) {
+	double s = 0, h = 0;
+	for (const auto& x : vector) {
+		if (x == 0) {
+			continue;
+		}
+		s += x;
+		h += x * log2(x);
+	}
+	return log2(s) - h / s;
+}
 
-double entropy(std::unordered_map<int, int> map) {
+
+double entropy(std::unordered_map<int, int>& map) {
 	double s = 0, h = 0;
 	for (const auto& x : map) {
 		s += x.second;
@@ -297,6 +309,32 @@ std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<action_
 	return single_actions;
 }
 
+template <int maxActions>
+int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, action_bitset& combined_action, int previous_most_probable_action_occurences = -1) {
+	int most_popular_single_action_occurences = -1;
+	int most_popular_single_action_index = -1;
+
+	for (int bit_index = 0; bit_index < maxActions; bit_index++) {
+		if (combined_action.test(bit_index)) {
+			if (single_actions[bit_index] > most_popular_single_action_occurences) {
+				most_popular_single_action_index = bit_index;
+				most_popular_single_action_occurences = single_actions[bit_index];
+			}
+		}
+	}
+
+	single_actions[most_popular_single_action_index]++;
+	
+	if (previous_most_probable_action_occurences < 0) {
+		return 0;
+	}
+
+	if (single_actions[most_popular_single_action_index] > previous_most_probable_action_occurences) {
+		return most_popular_single_action_index;
+	}
+	return -1;
+}
+
 void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<action_bitset, int>, 2>>  &action_occurence_map) 
 {
 	for (auto& x : action_occurence_map) {
@@ -320,11 +358,18 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 	BinaryDrag<conact>& tree, 
 	BinaryDrag<conact>::node* parent)
 {
-	std::unordered_map<string, std::array<std::vector<action_bitset>, 2>> combined_actions;
-	std::unordered_map<string, std::array<std::unordered_map<int, int>, 2>> single_actions_counted;
-	std::unordered_map<int, int> total_map;
-	std::map<std::string, std::array<int, 2>> most_probable_action;
+	//std::unordered_map<string, std::array<std::vector<action_bitset>, 2>> combined_actions;
+	std::unordered_map<string, std::array<std::vector<int>, 2>> single_actions;
+	std::vector<int> all_single_actions = std::vector<int>(action_count);
+	std::map<std::string, std::array<int, 2>> most_probable_action_index;
 	std::map<std::string, std::array<int, 2>> most_probable_action_occurences;
+
+	for (auto& c : conditions) {
+		single_actions.emplace(c, std::array<std::vector<int>, 2>({ 
+			std::vector<int>(action_count), 
+			std::vector<int>(action_count)
+		}));
+	}
 
 
 	for (uint32_t rule_code = 0; rule_code < (1 << condition_count); rule_code++) { 
@@ -342,23 +387,21 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 		action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// generate during run-time
 		//action_bitset action = rs.rules[rule_code].actions;				// load from rule table
 
-		for (auto c : conditions) {
-			int power = 1 << rs.conditions_pos.at(c);
-			int bit_value = ((rule_code / power) % 2);
-			combined_actions[c][bit_value].push_back(action);
+		FindBestSingleActionCombinationRunning<action_count>(all_single_actions, action);
+
+		for (auto& c : conditions) {
+			int bit_value = (rule_code >> rs.conditions_pos.at(c)) & 1;
+
+			int return_code = FindBestSingleActionCombinationRunning<action_count>(single_actions[c][bit_value], action, most_probable_action_occurences[c][bit_value]);
+
+			if (return_code >= 0) {
+				most_probable_action_index[c][bit_value] = return_code;
+				most_probable_action_occurences[c][bit_value] = single_actions[c][bit_value][return_code];
+			}
 		}
 	}
 
-	for (auto c : conditions) {
-		int power = 1 << rs.conditions_pos.at(c);
-
-		for (int bit_value = 0; bit_value < 2; ++bit_value) {
-			// conditions.size() == 5 && c == "h"
-			single_actions_counted[c][bit_value] = FindBestSingleActionCombination<action_count>(combined_actions[c][bit_value]);
-			most_probable_action[c][bit_value] = single_actions_counted[c][bit_value].begin()->first;
-			most_probable_action_occurences[c][bit_value] = single_actions_counted[c][bit_value].begin()->second;
-		}
-
+	for (auto& c : conditions) {
 		// Case 3: Both childs are leafs, end of recursion
 		if (conditions.size() == 1) {
 			parent->data.t = conact::type::CONDITION;
@@ -366,11 +409,11 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 			auto leftNode = tree.make_node();
 			auto rightNode = tree.make_node();
 			parent->left = leftNode;
-			parent->right = rightNode;
-			auto leftAction = action_bitset().set(single_actions_counted.at(conditions[0])[0].begin()->first);
+			parent->right = rightNode;			
+			auto leftAction = action_bitset().set(most_probable_action_index[conditions[0]][0]);
 			leftNode->data.t = conact::type::ACTION;
 			leftNode->data.action = leftAction;
-			auto rightAction = action_bitset().set(single_actions_counted.at(conditions[0])[1].begin()->first);
+			auto rightAction = action_bitset().set(most_probable_action_index[conditions[0]][1]);
 			rightNode->data.t = conact::type::ACTION;
 			rightNode->data.action = rightAction;
 			//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
@@ -382,27 +425,20 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 	std::string splitCandidate = conditions[0];
 	double maximum_information_gain = 0;
 
-	std::vector<action_bitset> total_combined_actions;
-	total_combined_actions.reserve(combined_actions[conditions[0]][0].size() + combined_actions[conditions[0]][1].size()); 
-	total_combined_actions.insert(total_combined_actions.end(), combined_actions[conditions[0]][0].begin(), combined_actions[conditions[0]][0].end());
-	total_combined_actions.insert(total_combined_actions.end(), combined_actions[conditions[0]][1].begin(), combined_actions[conditions[0]][1].end());
-	
-	total_map = FindBestSingleActionCombination<action_count>(total_combined_actions);
-
-	double baseEntropy = entropy(total_map);
+	double baseEntropy = entropy(all_single_actions);
 	//std::cout << "Base Entropy: " << baseEntropy << std::endl;
 
-	for (auto x : conditions) {
-		double leftEntropy = entropy(single_actions_counted[x][0]);
-		double rightEntropy = entropy(single_actions_counted[x][1]);
+	for (auto& c : conditions) {
+		double leftEntropy = entropy(single_actions[c][0]);
+		double rightEntropy = entropy(single_actions[c][1]);
 
 		double informationGain = std::max((baseEntropy - leftEntropy), (baseEntropy - rightEntropy));
 
 		if (informationGain > maximum_information_gain) {
 			maximum_information_gain = informationGain;
-			splitCandidate = x;
+			splitCandidate = c;
 		}
-		//std::cout << "Condition: " << x << " Max information gain: "<< informationGain << " Entropy Left (0): " << leftEntropy << " Entropy Right (1): " << rightEntropy << std::endl;
+		//std::cout << "Condition: " << c << " Max information gain: "<< informationGain << "\tEntropy Left (0): " << leftEntropy << "\tEntropy Right (1): " << rightEntropy << std::endl;
 	}
 
 	bool LeftIsAction = most_probable_action_occurences[splitCandidate][0] == (1 << (conditions.size() - 1));
@@ -416,7 +452,7 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 	if (LeftIsAction) {
 		parent->left = tree.make_node();
 		parent->left->data.t = conact::type::ACTION;
-		parent->left->data.action = action_bitset().set(most_probable_action[splitCandidate][0]);
+		parent->left->data.action = action_bitset().set(most_probable_action_index[splitCandidate][0]);
 	}
 	else {
 		parent->left = tree.make_node();
@@ -428,7 +464,7 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 	if (RightIsAction) {
 		parent->right = tree.make_node();
 		parent->right->data.t = conact::type::ACTION;
-		parent->right->data.action = action_bitset().set(most_probable_action[splitCandidate][1]);
+		parent->right->data.action = action_bitset().set(most_probable_action_index[splitCandidate][1]);
 	}
 	else {
 		parent->right = tree.make_node();
