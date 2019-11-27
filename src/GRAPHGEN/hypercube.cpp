@@ -28,6 +28,8 @@
 
 #include <math.h>
 #include <random>
+#include <ctime>
+#include <algorithm>
 
 #include "hypercube.h"
 #include "utilities.h"
@@ -348,6 +350,7 @@ void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<
 
 uint64_t total_rule_accesses = 0;
 uint64_t necessary_rule_accesses = 0;
+uint64_t node_number = 0;
 
 template <int condition_count, int action_count>
 void FindHdtRecursively(std::vector<std::string> conditions, 
@@ -358,6 +361,7 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 	BinaryDrag<conact>& tree, 
 	BinaryDrag<conact>::node* parent)
 {
+	node_number++;
 	//std::unordered_map<string, std::array<std::vector<action_bitset>, 2>> combined_actions;
 	std::unordered_map<string, std::array<std::vector<int>, 2>> single_actions;
 	std::vector<int> all_single_actions = std::vector<int>(action_count);
@@ -370,35 +374,44 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 			std::vector<int>(action_count)
 		}));
 	}
+	std::cout << "[Node " << node_number << "] processing begins" << std::endl;
+	//const int64_t iteration_step = (1ULL << std::max(0, static_cast<int>(conditions.size() - 3)));
+	const int iteration_step = 1;
+	//#pragma omp parallel for
+	for (int64_t rule_code = 0; rule_code < (1ULL << condition_count); rule_code += iteration_step) {
+		//total_rule_accesses++;
 
+		/*if (rule_code % (1ULL << 12) == 0) {
+			std::cout << "[Node " << node_number << "] Rule " << rule_code << " of " << (1ULL << condition_count) << " (" << 100 * rule_code / (1ULL << condition_count) << "%)." << std::endl;
+		}*/
 
-	for (uint32_t rule_code = 0; rule_code < (1 << condition_count); rule_code++) { 
-		total_rule_accesses++;
-
-		if ((rule_code & set_conditions1.to_ulong()) != set_conditions1.to_ulong()) {
+		if ((rule_code & set_conditions1.to_ullong()) != set_conditions1.to_ullong()) {
 			continue;
 		}
-		if ((rule_code & set_conditions0.to_ulong()) != 0u) {
+		if ((rule_code & set_conditions0.to_ullong()) != 0u) {
 			continue;
 		}
 
-		necessary_rule_accesses++;
+		//necessary_rule_accesses++;
 
 		action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// generate during run-time
 		//action_bitset action = rs.rules[rule_code].actions;				// load from rule table
 
 		FindBestSingleActionCombinationRunning<action_count>(all_single_actions, action);
 
-		for (auto& c : conditions) {
+		/*for (auto& c : conditions) {
 			int bit_value = (rule_code >> rs.conditions_pos.at(c)) & 1;
 
 			int return_code = FindBestSingleActionCombinationRunning<action_count>(single_actions[c][bit_value], action, most_probable_action_occurences[c][bit_value]);
 
 			if (return_code >= 0) {
-				most_probable_action_index[c][bit_value] = return_code;
-				most_probable_action_occurences[c][bit_value] = single_actions[c][bit_value][return_code];
+				#pragma omp critical 
+				{
+					most_probable_action_index[c][bit_value] = return_code;
+					most_probable_action_occurences[c][bit_value] = single_actions[c][bit_value][return_code];
+				}
 			}
-		}
+		}*/
 	}
 
 	for (auto& c : conditions) {

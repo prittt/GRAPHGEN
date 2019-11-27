@@ -74,6 +74,9 @@ if(GRAPHGEN_FREQUENCIES_ENABLED)
 endif()
 
 find_package(Git QUIET)
+find_package(OpenMP)
+
+
 
 # --------------------
 # 3rdparty 
@@ -90,6 +93,10 @@ add_library(GRAPHGEN STATIC "${CMAKE_INSTALL_PREFIX}/config.yaml")
 target_include_directories(GRAPHGEN PUBLIC src/GRAPHGEN)
 add_subdirectory(src/GRAPHGEN)
 target_link_libraries(GRAPHGEN yaml-cpp)
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(GRAPHGEN OpenMP::OpenMP_CXX)
+endif()
 
 if (WIN32)
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")

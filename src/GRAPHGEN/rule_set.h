@@ -148,7 +148,7 @@ struct rule_set {
         }
     }
 
-    uint get_condition(const std::string& s, uint rule) const {
+    uint get_condition(const std::string& s, ulong rule) const {
         return (rule >> conditions_pos.at(s)) & 1;
     }
 
@@ -249,8 +249,8 @@ struct rule_set {
 
 struct rule_wrapper {
 	const rule_set& rs_;
-    uint i_;
-    rule_wrapper(const rule_set& rs, uint i) : rs_{ rs }, i_{ i } {}
+	ulong i_;
+    rule_wrapper(const rule_set& rs, ulong i) : rs_{ rs }, i_{ i } {}
 
     bool operator[](const std::string& s) const {
         return rs_.get_condition(s, i_) != 0;
@@ -258,9 +258,9 @@ struct rule_wrapper {
     /*void operator<<(const std::string& s) {
         rs_.set_action(s, i_);
     }*/
-    bool has_actions() {
+    /*bool has_actions() {
         return rs_.rules[i_].actions != 0;
-    }
+    }*/
 };
 
 #endif // !GRAPHGEN_RULE_SET_H_

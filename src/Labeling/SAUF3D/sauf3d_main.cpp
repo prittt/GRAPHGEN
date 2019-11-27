@@ -39,12 +39,12 @@ int main()
 
     conf = ConfigData(algorithm_name, mask_name);
 
-    Rosenfeld3dRS r_rs;
+    Rosenfeld3dRS r_rs(true);
     auto rs = r_rs.GetRuleSet();
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Rosenfeld mask
-    BinaryDrag<conact> bd = GetOdt(rs);
+    BinaryDrag<conact> bd = GetHdt(rs, r_rs);
 
     // 2) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";

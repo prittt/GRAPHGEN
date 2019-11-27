@@ -125,7 +125,7 @@ public:
 		return labeling;
 	}
 
-	action_bitset GetActionFromRuleIndex(const rule_set& rs, uint rule_index) const override {
+	action_bitset GetActionFromRuleIndex(const rule_set& rs, uint64_t rule_index) const override {
 		rule_wrapper r(rs, rule_index);
 
 		bool X = r["Xa"] || r["Xb"] || r["Xc"] || r["Xd"] || r["Xe"] || r["Xf"] || r["Xg"] || r["Xh"];

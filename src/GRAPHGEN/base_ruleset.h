@@ -95,7 +95,7 @@ public:
 
     virtual rule_set GenerateRuleSet() = 0;
 
-	virtual action_bitset GetActionFromRuleIndex(const rule_set& rs, uint rule_index) const = 0;
+	virtual action_bitset GetActionFromRuleIndex(const rule_set& rs, uint64_t rule_index) const = 0;
 
 };
 

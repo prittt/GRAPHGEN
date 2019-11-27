@@ -41,7 +41,7 @@
 
 extern ConfigData conf;
 
-#define ACTION_BITSET_SIZE 128
+#define ACTION_BITSET_SIZE 5813
 using action_bitset = std::bitset<ACTION_BITSET_SIZE>;
 using uint = uint32_t;
 using ulong = uint64_t;
