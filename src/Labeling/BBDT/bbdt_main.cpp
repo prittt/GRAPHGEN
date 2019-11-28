@@ -60,5 +60,6 @@ int main()
                                           GenerateActionCodeTypes::LABELING,
                                           block_positions);
 
+	getchar();
     return EXIT_SUCCESS;
 }

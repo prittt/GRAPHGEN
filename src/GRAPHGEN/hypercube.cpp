@@ -376,10 +376,7 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 	}
 	std::cout << "[Node " << node_number << "] processing begins" << std::endl;
 	//const int64_t iteration_step = (1ULL << std::max(0, static_cast<int>(conditions.size() - 3)));
-	const int iteration_step = 256;
-
-	//#pragma omp parallel for
-	//TLOG("outer loop", {
+	const int iteration_step = 1;
 
 	//action_bitset action = action_bitset().set(0); // 0) Use Zero Action (performance baseline)
 
@@ -406,23 +403,19 @@ void FindHdtRecursively(std::vector<std::string> conditions,
 
 		FindBestSingleActionCombinationRunning<action_count>(all_single_actions, action);
 
-		//for (auto& c : conditions) {
-		//	int bit_value = (rule_code >> rs.conditions_pos.at(c)) & 1;
+		for (auto& c : conditions) {
+			int bit_value = (rule_code >> rs.conditions_pos.at(c)) & 1;
 
-		//	int return_code = FindBestSingleActionCombinationRunning<action_count>(single_actions[c][bit_value], action, most_probable_action_occurences[c][bit_value]);
+			int return_code = FindBestSingleActionCombinationRunning<action_count>(single_actions[c][bit_value], action, most_probable_action_occurences[c][bit_value]);
 
-		//	if (return_code >= 0) {
-		//		//#pragma omp critical 
-		//		{
-		//			most_probable_action_index[c][bit_value] = return_code;
-		//			most_probable_action_occurences[c][bit_value] = single_actions[c][bit_value][return_code];
-		//		}
-		//	}
-		//}
+			if (return_code >= 0) {
+				{
+					most_probable_action_index[c][bit_value] = return_code;
+					most_probable_action_occurences[c][bit_value] = single_actions[c][bit_value][return_code];
+				}
+			}
+		}
 	}
-	//});
-
-	return;
 
 	for (auto& c : conditions) {
 		// Case 3: Both childs are leafs, end of recursion

@@ -129,9 +129,9 @@ public:
 		}
 		try {
 			action_bitset action;
-			//binary_rule_file.seekg(binary_rule_file_stream_size * rule_code); // 1) absolute seekg
-			binary_rule_file.seekg(256 * binary_rule_file_stream_size, std::ios_base::cur); // 2) relative seekg
-			//binary_rule_file.ignore(binary_rule_file_stream_size * 256); // 3) ignore "seekg"
+			binary_rule_file.seekg(binary_rule_file_stream_size * rule_code);					// 1) absolute seekg
+			//binary_rule_file.seekg(256 * binary_rule_file_stream_size, std::ios_base::cur);	// 2) relative seekg
+			//binary_rule_file.ignore(binary_rule_file_stream_size * 256);						// 3) ignore "seekg"
 			binary_rule_file.read(reinterpret_cast<char*>(&action), binary_rule_file_stream_size);
 			return action;
 		}
