@@ -32,6 +32,7 @@
 #include <fstream>
 #include <filesystem>
 #include <string>
+#include <cmath>
 #include <utility>
 
 #include "yaml-cpp/yaml.h"
@@ -43,6 +44,8 @@ class BaseRuleSet {
     bool force_generation_;
 	bool disable_generation_;
     rule_set rs_;
+	std::ifstream binary_rule_file;
+	int binary_rule_file_stream_size = ceil(action_bitset().size() / 8);
 
     bool LoadRuleSet() {
 
@@ -89,9 +92,57 @@ public:
 
             rs_ = GenerateRuleSet();
             SaveRuleSet();
+			SaveAllRulesBinary();
         }
         return rs_;
     }
+
+	void SaveAllRulesBinary() {
+		std::ofstream os(conf.binary_rule_file_path_, std::ios::binary);
+		if (!os) {
+			std::cerr << "Could not save binary rule file to " << conf.binary_rule_file_path_ << ".\n";
+		}
+		else {
+			int stream_size = binary_rule_file_stream_size;
+			std::for_each(rs_.rules.begin(), rs_.rules.end(), [&os, stream_size](rule r) { os.write(reinterpret_cast<const char*>(&r.actions), stream_size); });
+			os.close();
+		}
+	}
+
+	void OpenBinaryRuleFile() {
+		if (binary_rule_file.is_open()) {
+			std::cout << "Binary rule file already opened\n";
+			return;
+		}
+		binary_rule_file = std::ifstream(conf.binary_rule_file_path_, std::ios::binary);
+		if (!binary_rule_file.is_open()) {
+			std::cout << "Could not open binary rule file\n";
+			return;
+		}
+		binary_rule_file.exceptions(std::fstream::badbit | std::fstream::failbit | std::fstream::eofbit);
+	}
+
+	action_bitset LoadRuleFromBinaryRuleFile(ulong& rule_code) {
+		if (!binary_rule_file.is_open()) {
+			std::cout << "Binary rule file not yet opened, no rule reading possible\n";
+			return action_bitset();
+		}
+		try {
+			action_bitset action;
+			//binary_rule_file.seekg(binary_rule_file_stream_size * rule_code); // 1) absolute seekg
+			binary_rule_file.seekg(256 * binary_rule_file_stream_size, std::ios_base::cur); // 2) relative seekg
+			//binary_rule_file.ignore(binary_rule_file_stream_size * 256); // 3) ignore "seekg"
+			binary_rule_file.read(reinterpret_cast<char*>(&action), binary_rule_file_stream_size);
+			return action;
+		}
+		catch (const std::ifstream::failure&) {
+			std::cout << "Binary rule " << rule_code << " couldn't be loaded from binary rule file (stream failure).\n";
+		}
+		catch (const std::runtime_error&) {
+			std::cout << "Binary rule " << rule_code << " couldn't be loaded from binary rule file (runtime error).\n";
+		}
+
+	}
 
     virtual rule_set GenerateRuleSet() = 0;
 

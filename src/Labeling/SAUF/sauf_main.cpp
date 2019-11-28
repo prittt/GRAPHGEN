@@ -39,7 +39,7 @@ int main()
 
     conf = ConfigData(algorithm_name, mask_name);
 
-    RosenfeldRS r_rs;
+    RosenfeldRS r_rs(true);
     auto rs = r_rs.GetRuleSet();
 
     // Call GRAPHGEN:

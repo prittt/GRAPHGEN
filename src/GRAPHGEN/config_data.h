@@ -87,6 +87,10 @@ struct ConfigData {
     std::string rstable_suffix_ = "_rstable.yaml";
     std::filesystem::path rstable_path_;
 
+	// Rule Set / Decision Table
+	std::string binary_rule_file_suffix_ = "_rules.bin";
+	std::filesystem::path binary_rule_file_path_;
+
     // Datasets
     std::vector<std::string> datasets_;
     std::vector<std::filesystem::path> datasets_path_;

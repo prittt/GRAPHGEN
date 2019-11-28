@@ -75,6 +75,9 @@ ConfigData::ConfigData(string& algorithm_name, const string& mask_name, bool use
         // Rule Set / Decision Table
         rstable_path_ = algorithm_output_path_ / path(algorithm_name + rstable_suffix_);
 
+		// Binary Rule File 
+		binary_rule_file_path_ = algorithm_output_path_ / path(algorithm_name + binary_rule_file_suffix_);
+
         // Tree / Forest / Dag (.inc)
         treecode_path_ = algorithm_output_path_ / path(algorithm_name + treecode_suffix_);
         forestcode_path_ = algorithm_output_path_ / path(algorithm_name + forestcode_suffix_);
