@@ -148,7 +148,7 @@ struct rule_set {
         }
     }
 
-    uint get_condition(const std::string& s, ulong rule) const {
+    uint get_condition(const std::string& s, ullong rule) const {
         return (rule >> conditions_pos.at(s)) & 1;
     }
 
@@ -249,8 +249,8 @@ struct rule_set {
 
 struct rule_wrapper {
 	const rule_set& rs_;
-	ulong i_;
-    rule_wrapper(const rule_set& rs, ulong i) : rs_{ rs }, i_{ i } {}
+	ullong i_;
+    rule_wrapper(const rule_set& rs, ullong i) : rs_{ rs }, i_{ i } {}
 
     bool operator[](const std::string& s) const {
         return rs_.get_condition(s, i_) != 0;

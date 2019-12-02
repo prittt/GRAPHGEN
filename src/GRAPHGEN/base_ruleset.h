@@ -111,7 +111,7 @@ public:
 			else {
 				// rules are generated during the writing
 				std::cout << std::endl;
-				for (ulong rule_code = 0; rule_code < (1ULL << rs_.conditions.size()); rule_code++) {
+				for (ullong rule_code = 0; rule_code < (1ULL << rs_.conditions.size()); rule_code++) {
 					if ((rule_code % (1ULL << 24)) == 0) {
 						std::cout << "\rWriting rule " << rule_code << " of " << (1ULL << rs_.conditions.size()) << " (" << (100 * (float)rule_code / (1ULL << rs_.conditions.size())) << "%).";
 					}
@@ -136,7 +136,7 @@ public:
 		binary_rule_file.exceptions(std::fstream::badbit | std::fstream::failbit | std::fstream::eofbit);
 	}
 
-	action_bitset LoadRuleFromBinaryRuleFile(ulong& rule_code) {
+	action_bitset LoadRuleFromBinaryRuleFile(ullong& rule_code) {
 		if (!binary_rule_file.is_open()) {
 			std::cout << "Binary rule file not yet opened, no rule reading possible\n";
 			return action_bitset();

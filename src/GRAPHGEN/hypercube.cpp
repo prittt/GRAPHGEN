@@ -341,21 +341,9 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 	return -1;
 }
 
-void PrintOccurenceMap(std::unordered_map<string, std::array<std::unordered_map<action_bitset, int>, 2>>  &action_occurence_map) 
-{
-	for (auto& x : action_occurence_map) {
-		for (int bit = 0; bit < 2; bit++) {
-			for (auto& z : x.second[bit]) {
-				std::cout << "" << x.first << bit << " " << z.first.to_ulong() << " " << z.second << std::endl;
-			}
-		}
-	}
-}
-
 uint64_t total_rule_accesses = 0;
 uint64_t necessary_rule_accesses = 0;
 uint64_t node_number = 0;
-
 
 struct RecursionInstance {
 	// parameters
@@ -393,13 +381,13 @@ struct RecursionInstance {
 
 };
 
-void HdtReadAndApplyRules(BaseRuleSet& brs, const rule_set& rs, std::vector<RecursionInstance>& recursion_instances) {
+void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vector<RecursionInstance>& recursion_instances) {
 	//const int64_t iteration_step = (1ULL << std::max(0, static_cast<int>(conditions.size() - 3)));
 	const int iteration_step = 1;
 
 	//action_bitset action = action_bitset().set(0); // 1) Use Zero Action (performance baseline)
 
-	for (ulong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += iteration_step) {
+	for (ullong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += iteration_step) {
 		/*if (rule_code % (1ULL << 12) == 0) {
 			std::cout << "[Node " << node_number << "] Rule " << rule_code << " of " << (1ULL << condition_count) << " (" << 100 * rule_code / (1ULL << condition_count) << "%)." << std::endl;
 		}*/
@@ -438,6 +426,48 @@ void HdtReadAndApplyRules(BaseRuleSet& brs, const rule_set& rs, std::vector<Recu
 	}
 }
 
+void HdtReadAndApplyRulesSingle(BaseRuleSet& brs, const rule_set& rs, RecursionInstance& r) {
+	//const int64_t iteration_step = (1ULL << std::max(0, static_cast<int>(conditions.size() - 3)));
+	const int iteration_step = 1;
+
+	//action_bitset action = action_bitset().set(0); // 1) Use Zero Action (performance baseline)
+
+	for (ullong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += iteration_step) {
+		/*if (rule_code % (1ULL << 12) == 0) {
+			std::cout << "[Node " << node_number << "] Rule " << rule_code << " of " << (1ULL << condition_count) << " (" << 100 * rule_code / (1ULL << condition_count) << "%)." << std::endl;
+		}*/
+
+		if ((rule_code & r.set_conditions1.to_ullong()) != r.set_conditions1.to_ullong()) {
+			continue;
+		}
+		if ((rule_code & r.set_conditions0.to_ullong()) != 0u) {
+			continue;
+		}
+
+		total_rule_accesses++;
+		necessary_rule_accesses++;
+
+		//action_bitset action = rs.rules[rule_code].actions;				// 2) load from rule table
+		//action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 3) generate during run-time
+		action_bitset action = brs.LoadRuleFromBinaryRuleFile(rule_code);	// 4) read from file
+
+		FindBestSingleActionCombinationRunning<ACTION_COUNT>(r.all_single_actions, action);
+
+		for (auto& c : r.conditions) {
+			int bit_value = (rule_code >> rs.conditions_pos.at(c)) & 1;
+
+			int return_code = FindBestSingleActionCombinationRunning<ACTION_COUNT>(r.single_actions[c][bit_value], action, r.most_probable_action_occurences[c][bit_value]);
+
+			if (return_code >= 0) {
+				{
+					r.most_probable_action_index[c][bit_value] = return_code;
+					r.most_probable_action_occurences[c][bit_value] = r.single_actions[c][bit_value][return_code];
+				}
+			}
+		}
+	}
+
+}
 
 void HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_set& rs, std::vector<RecursionInstance>& upcoming_recursion_instances) {
 	for (auto& c : r.conditions) {
@@ -531,7 +561,23 @@ void FindHdtIteratively(std::vector<std::string> conditions,
 	while (pending_recursion_instances.size() > 0) {
 		std::cout << "Next batch of recursion instances (count: " << pending_recursion_instances.size() << ", depth: " << depth << ")" << std::endl;
 
-		HdtReadAndApplyRules(brs, rs, pending_recursion_instances);
+		const ullong estimated_rule_accesses_one_pass = (1ULL << CONDITION_COUNT);
+		const ullong estimated_rule_accesses_single = pending_recursion_instances.size() * (1ULL << (CONDITION_COUNT - depth));
+		
+		std::cout << "Estimated rule accesses: One Pass (" << estimated_rule_accesses_one_pass << "), Single Passes (" << estimated_rule_accesses_single << ") -- ";
+
+		if (estimated_rule_accesses_one_pass < estimated_rule_accesses_single) {
+			std::cout << "Reading rules in one pass." << std::endl;
+			HdtReadAndApplyRulesOnePass(brs, rs, pending_recursion_instances);
+		}
+		else {
+			std::cout << "Reading rules in single passes." << std::endl;
+			for (auto& r : pending_recursion_instances) {
+				HdtReadAndApplyRulesSingle(brs, rs, r);
+			}
+		}
+		
+		
 		for (auto& r : pending_recursion_instances) {
 			HdtProcessNode(r, tree, rs, upcoming_recursion_instances);
 		}
@@ -547,12 +593,16 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 
 	std::vector<std::string> remaining_conditions = rs.conditions; // copy
 
-
 	std::bitset<CONDITION_COUNT> set_conditions0, set_conditions1;
 
-	assert(set_conditions0.size() == rs.conditions.size());
-	assert(ACTION_COUNT == rs.actions.size()); 
-	assert(ACTION_COUNT <= ACTION_BITSET_SIZE);
+	bool b1 = set_conditions0.size() == rs.conditions.size();
+	bool b2 = ACTION_COUNT == rs.actions.size();
+	bool b3 = ACTION_COUNT <= ACTION_BITSET_SIZE;
+
+	if (!(b1 && b2 && b3)) {
+		std::cerr << "Assert failed: check ACTION_COUNT and CONDITION_COUNT." << std::endl;
+		throw std::runtime_error("Assert failed: check ACTION_COUNT and CONDITION_COUNT.");
+	}
 
 	if (ACTION_COUNT < ACTION_BITSET_SIZE) {
 		std::cout << "\nWarning: Bitset containing actions is bigger than required. (" << ACTION_COUNT << " < " << ACTION_BITSET_SIZE << ")" << std::endl;
