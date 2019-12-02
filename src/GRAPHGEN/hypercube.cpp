@@ -502,7 +502,12 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	std::bitset<condition_count> set_conditions0, set_conditions1;
 
 	assert(set_conditions0.size() == rs.conditions.size());
-	assert(action_count == rs.actions.size());
+	assert(action_count == rs.actions.size()); 
+	assert(action_count <= ACTION_BITSET_SIZE);
+
+	if (action_count < ACTION_BITSET_SIZE) {
+		std::cout << "\nWarning: Bitset containing actions is bigger than required. (" << action_count << " < " << ACTION_BITSET_SIZE << ")" << std::endl;
+	}
 
 	brs.OpenBinaryRuleFile();
 

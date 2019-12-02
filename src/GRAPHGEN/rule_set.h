@@ -255,9 +255,9 @@ struct rule_wrapper {
     bool operator[](const std::string& s) const {
         return rs_.get_condition(s, i_) != 0;
     }
-    void operator<<(const std::string& s) {
+    /*void operator<<(const std::string& s) {
         const_cast<rule_set&>(rs_).set_action(s, i_);
-    }
+    }*/
     /*bool has_actions() {
         return rs_.rules[i_].actions != 0;
     }*/

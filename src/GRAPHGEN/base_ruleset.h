@@ -45,7 +45,7 @@ class BaseRuleSet {
 	bool disable_generation_;
     rule_set rs_;
 	std::ifstream binary_rule_file;
-	int binary_rule_file_stream_size = ceil(action_bitset().size() / 8);
+	int binary_rule_file_stream_size = static_cast<int>(ceil(action_bitset().size() / 8));
 
     bool LoadRuleSet() {
 
@@ -153,7 +153,7 @@ public:
 		catch (const std::runtime_error&) {
 			std::cout << "Binary rule " << rule_code << " couldn't be loaded from binary rule file (runtime error).\n";
 		}
-
+		return action_bitset();
 	}
 
     virtual rule_set GenerateRuleSet() = 0;
