@@ -104,7 +104,19 @@ public:
 		}
 		else {
 			int stream_size = binary_rule_file_stream_size;
-			std::for_each(rs_.rules.begin(), rs_.rules.end(), [&os, stream_size](rule r) { os.write(reinterpret_cast<const char*>(&r.actions), stream_size); });
+			if (rs_.rules.size() > 0) {
+				// rules are in memory
+				std::for_each(rs_.rules.begin(), rs_.rules.end(), [&os, stream_size](rule r) { os.write(reinterpret_cast<const char*>(&r.actions), stream_size); });
+			}
+			else {
+				// rules are generated during the writing
+				for (ulong rule_code = 0; rule_code < (1ULL << rs_.conditions.size()); rule_code++) {
+					if ((rule_code % (1ULL << 24)) == 0) {
+						std::cout << "Writing rule " << rule_code << " of " << (1ULL << rs_.conditions.size()) << " (" << ((float)rule_code / (1ULL << rs_.conditions.size())) << "%)\n.";
+					}
+					os.write(reinterpret_cast<const char*>(&GetActionFromRuleIndex(rs_, rule_code)), stream_size);
+				}
+			}
 			os.close();
 		}
 	}

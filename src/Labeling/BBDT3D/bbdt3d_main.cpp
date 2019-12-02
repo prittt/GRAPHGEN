@@ -42,7 +42,7 @@ int main()
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
-    BinaryDrag<conact> bd = GetHdt(rs, g_rs);
+    BinaryDrag<conact> bd = GetHdt(rs, g_rs, true);
 
     // 2) Draw the generated tree
     string tree_filename = algorithm_name + "_tree";

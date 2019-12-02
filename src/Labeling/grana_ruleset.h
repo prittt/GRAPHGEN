@@ -56,7 +56,7 @@ public:
             "x<-P+Q", "x<-P+R", "x<-P+S", "x<-Q+R", "x<-Q+S", "x<-R+S",
             "x<-P+Q+R", "x<-P+Q+S", "x<-P+R+S", "x<-Q+R+S", });
 
-		labeling.generate_rules([](rule_set& rs, uint i) {
+		/*labeling.generate_rules([](rule_set& rs, uint i) {
 			rule_wrapper r(rs, i);
 
 			bool X = r["o"] || r["p"] || r["s"] || r["t"];
@@ -95,7 +95,7 @@ public:
 				r << action;
 			}
 		});
-
+*/
         return labeling;
     }
 
