@@ -361,7 +361,6 @@ struct RecursionInstance {
 	// state
 	bool processed = false;
 
-
 	RecursionInstance(std::vector<std::string> conditions,
 		std::bitset<CONDITION_COUNT> set_conditions0,
 		std::bitset<CONDITION_COUNT> set_conditions1,
@@ -559,28 +558,16 @@ void FindHdtIteratively(std::vector<std::string> conditions,
 	pending_recursion_instances.push_back(RecursionInstance(conditions, set_conditions0, set_conditions1, parent));
 
 	while (pending_recursion_instances.size() > 0) {
-		std::cout << "Next batch of recursion instances (count: " << pending_recursion_instances.size() << ", depth: " << depth << ")" << std::endl;
+		std::cout << "Next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances.size() << ")" << std::endl;
 
-		const ullong estimated_rule_accesses_one_pass = (1ULL << CONDITION_COUNT);
-		const ullong estimated_rule_accesses_single = pending_recursion_instances.size() * (1ULL << (CONDITION_COUNT - depth));
-		
-		std::cout << "Estimated rule accesses: One Pass (" << estimated_rule_accesses_one_pass << "), Single Passes (" << estimated_rule_accesses_single << ") -- ";
-
-		if (estimated_rule_accesses_one_pass < estimated_rule_accesses_single) {
-			std::cout << "Reading rules in one pass." << std::endl;
-			HdtReadAndApplyRulesOnePass(brs, rs, pending_recursion_instances);
+		for (auto& r : pending_recursion_instances) {
+			HdtReadAndApplyRulesSingle(brs, rs, r);
 		}
-		else {
-			std::cout << "Reading rules in single passes." << std::endl;
-			for (auto& r : pending_recursion_instances) {
-				HdtReadAndApplyRulesSingle(brs, rs, r);
-			}
-		}
-		
 		
 		for (auto& r : pending_recursion_instances) {
 			HdtProcessNode(r, tree, rs, upcoming_recursion_instances);
 		}
+
 		pending_recursion_instances = upcoming_recursion_instances;
 		upcoming_recursion_instances.clear();
 		depth++;
