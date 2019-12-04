@@ -136,6 +136,8 @@ public:
 		binary_rule_file.exceptions(std::fstream::badbit | std::fstream::failbit | std::fstream::eofbit);
 	}
 
+	ullong previous_rule_code = UINT64_MAX;
+
 	action_bitset LoadRuleFromBinaryRuleFile(ullong& rule_code) {
 		if (!binary_rule_file.is_open()) {
 			std::cout << "Binary rule file not yet opened, no rule reading possible\n";
@@ -143,9 +145,15 @@ public:
 		}
 		try {
 			action_bitset action;
-			binary_rule_file.seekg(binary_rule_file_stream_size * rule_code);					// 1) absolute seekg
-			//binary_rule_file.seekg(256 * binary_rule_file_stream_size, std::ios_base::cur);	// 2) relative seekg
-			//binary_rule_file.ignore(binary_rule_file_stream_size * 256);						// 3) ignore "seekg"
+
+			// 2nd condition prevents potential overflow error since first condition would be true for 
+			// rule_code = 0 and previous_rule_code = UINT64_MAX since -UINT64_MAX == 1
+			if ((rule_code - previous_rule_code) != 1 || previous_rule_code == UINT64_MAX) { 
+				binary_rule_file.seekg(binary_rule_file_stream_size * rule_code); // absolute seekg
+			}
+			
+			previous_rule_code = rule_code;
+
 			binary_rule_file.read(reinterpret_cast<char*>(&action), binary_rule_file_stream_size);
 			return action;
 		}
