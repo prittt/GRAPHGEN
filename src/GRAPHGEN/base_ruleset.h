@@ -92,7 +92,9 @@ public:
 
             rs_ = GenerateRuleSet();
             SaveRuleSet();
-			SaveAllRulesBinary();
+			TLOG("Writing rules to disk",
+				SaveAllRulesBinary();
+			);
         }
         return rs_;
     }
@@ -112,9 +114,9 @@ public:
 				// rules are generated during the writing
 				std::cout << std::endl;
 				for (ullong rule_code = 0; rule_code < (1ULL << rs_.conditions.size()); rule_code++) {
-					if ((rule_code % (1ULL << 24)) == 0) {
+					/*if ((rule_code % (1ULL << 24)) == 0) {
 						std::cout << "\rWriting rule " << rule_code << " of " << (1ULL << rs_.conditions.size()) << " (" << (100 * (float)rule_code / (1ULL << rs_.conditions.size())) << "%).";
-					}
+					}*/
 					os.write(reinterpret_cast<const char*>(&GetActionFromRuleIndex(rs_, rule_code)), stream_size);
 				}
 			}
