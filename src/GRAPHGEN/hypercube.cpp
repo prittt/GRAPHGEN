@@ -500,7 +500,8 @@ void HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_s
 		double leftEntropy = entropy(r.single_actions[c][0]);
 		double rightEntropy = entropy(r.single_actions[c][1]);
 
-		double informationGain = std::max((baseEntropy - leftEntropy), (baseEntropy - rightEntropy));
+		//double informationGain = std::max((baseEntropy - leftEntropy), (baseEntropy - rightEntropy)); // old version
+		double informationGain = (baseEntropy - leftEntropy) + (baseEntropy - rightEntropy); // NEW VERSION
 
 		if (informationGain > maximum_information_gain) {
 			maximum_information_gain = informationGain;
@@ -508,6 +509,7 @@ void HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_s
 		}
 		//std::cout << "Condition: " << c << " Max information gain: "<< informationGain << "\tEntropy Left (0): " << leftEntropy << "\tEntropy Right (1): " << rightEntropy << std::endl;
 	}
+	//std::cout << "Split candidate chosen: " << splitCandidate << std::endl;
 
 	bool LeftIsAction = r.most_probable_action_occurences[splitCandidate][0] == (1 << (r.conditions.size() - 1));
 	bool RightIsAction = r.most_probable_action_occurences[splitCandidate][1] == (1 << (r.conditions.size() - 1));

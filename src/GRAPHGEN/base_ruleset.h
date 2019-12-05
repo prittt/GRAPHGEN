@@ -112,7 +112,6 @@ public:
 			}
 			else {
 				// rules are generated during the writing
-				std::cout << std::endl;
 				for (ullong rule_code = 0; rule_code < (1ULL << rs_.conditions.size()); rule_code++) {
 					/*if ((rule_code % (1ULL << 24)) == 0) {
 						std::cout << "\rWriting rule " << rule_code << " of " << (1ULL << rs_.conditions.size()) << " (" << (100 * (float)rule_code / (1ULL << rs_.conditions.size())) << "%).";
@@ -121,7 +120,6 @@ public:
 				}
 			}
 			os.close();
-			std::cout << "\nWriting rules done.\n";
 		}
 	}
 
