@@ -138,7 +138,7 @@ struct VHyperCube {
 
 	VHyperCube(const rule_set& rs) : m_rs(rs), m_iDim(rs.conditions.size()), m_arrIndex(unsigned(pow(3.0, rs.conditions.size()))) {
         // Initialize hypercube nodes using the rules defined in the ruleset
-        auto nrules = rs.rules.size();
+        auto nrules = rs.GetNumberOfRules();
         for (size_t i = 0; i < nrules; ++i) {
             // for each rule generate the hypercube index
 			std::string s = binary(i, m_iDim);
@@ -173,9 +173,6 @@ struct VHyperCube {
 BinaryDrag<conact> GenerateOdt(const rule_set& rs);
 BinaryDrag<conact> GenerateOdt(const rule_set& rs, const std::string& filename);
 
-BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs);
-BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs, const std::string& filename);
-
 /** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
 
 This function generates the optimal decision tree from the given rule set. When the number
@@ -190,7 +187,6 @@ is always regenerated. The loaded/generated tree is then returned from the funct
 @return The optimal decision tree associated to the specified rule set.
 */
 BinaryDrag<conact> GetOdt(const rule_set& rs, bool force_generation = false);
-BinaryDrag<conact> GetHdt(const rule_set& rs, const BaseRuleSet& brs, bool force_generation = false);
 
 /** @brief Returns the optimal (or pseudo optimal) decision tree generated from the given rule set
 

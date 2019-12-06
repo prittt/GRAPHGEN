@@ -49,6 +49,12 @@ struct rule2 {
     size_t condition_outcome_;
 };
 
+enum RulesStatus {
+	NOT_LOADED,
+	IN_MEMORY,
+	DYNAMIC_GENERATION
+};
+
 struct rule_set {
     std::vector<std::string> conditions;
     std::unordered_map<std::string, uint> conditions_pos;
@@ -56,6 +62,8 @@ struct rule_set {
     std::unordered_map<std::string, uint> actions_pos;
     std::vector<rule> rules;
     pixel_set ps_;
+
+	RulesStatus rulesStatus = NOT_LOADED;
 
     //std::vector<rule2> GetMaxFreqRules(int N) {
     //	std::bitset<128> no_action = 1;
@@ -123,17 +131,18 @@ struct rule_set {
             actions_pos[actions[i]] = i + 1; // Action 0 doesn't exist
     }
 
-    uint GetNumberOfRules() const {
-        return 1 << conditions.size();
+    ullong GetNumberOfRules() const {
+        return 1ULL << conditions.size();
     };
 
     template<typename T>
     void generate_rules(T fn) {
-        uint nrules = 1 << conditions.size();
+		ullong nrules = 1ULL << conditions.size();
         rules.resize(nrules);
-        for (uint i = 0; i < nrules; ++i) {
+        for (ullong i = 0; i < nrules; ++i) {
             fn(*this, i);
         }
+		rulesStatus = IN_MEMORY;
     }
 
     void print_rules(std::ostream& os) const {
@@ -233,16 +242,22 @@ struct rule_set {
             AddAction(rs_node["actions"][i].as<std::string>());
         }
 
-        rules.resize(rs_node["rules"].size());
-        for (unsigned i = 0; i < rs_node["rules"].size(); ++i) {
-            for (unsigned j = 0; j < rs_node["rules"][i].size(); ++j) {
-                rules[i].actions.set(rs_node["rules"][i][j].as<int>() - 1);
-                if (auto& frequencies = rs_node["frequencies"]) {
-                    rules[i].frequency = frequencies[i].as<unsigned long long>();
-                }
-            }
-        }
-
+		try {
+			rules.resize(rs_node["rules"].size());
+			for (unsigned i = 0; i < rs_node["rules"].size(); ++i) {
+				for (unsigned j = 0; j < rs_node["rules"][i].size(); ++j) {
+					rules[i].actions.set(rs_node["rules"][i][j].as<int>() - 1);
+					if (auto& frequencies = rs_node["frequencies"]) {
+						rules[i].frequency = frequencies[i].as<unsigned long long>();
+					}
+				}
+			}
+			rulesStatus = IN_MEMORY;
+		}
+		catch (...) {
+			std::cout << "Could not read rules from rule_set file. Enabling dynamic rule retrieval." << std::endl;
+			rulesStatus = DYNAMIC_GENERATION;
+		}
     }
 
 };

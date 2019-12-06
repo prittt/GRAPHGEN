@@ -16,6 +16,7 @@
 #include "forest_handler.h"
 #include "graph_code_generator.h"
 #include "hypercube.h"
+#include "heuristics.h"
 #include "magic_optimizer.h"
 #include "merge_set.h"
 #include "output_generator.h"

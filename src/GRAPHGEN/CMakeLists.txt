@@ -23,6 +23,8 @@ target_sources(GRAPHGEN PRIVATE
 	graphgen.h
 	hypercube.cpp
 	hypercube.h
+	heuristics.cpp
+	heuristics.h
 	merge_set.h
 	output_generator.cpp
 	output_generator.h

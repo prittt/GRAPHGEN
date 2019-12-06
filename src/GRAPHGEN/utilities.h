@@ -115,8 +115,9 @@ void StringSplit(const std::string& str, T& cont, char delim = '+')
 // No braces around instruction, so you can log also variable definitions without scoping them
 #define LOG(message, instructions) std::cout << (message) << "... "; instructions std::cout << "done.\n"
 
-static PerformanceEvaluator tlog_pe;
-#define TLOG(message, instructions) std::cout << (message) << "... "; tlog_pe.start(); instructions std::cout << "done. " << tlog_pe.stop() << " ms.\n";
+//static PerformanceEvaluator tlog_pe;
+#define TLOG(message, instructions) std::cout << (message) << "... "; PerformanceEvaluator my_tlog; my_tlog.start(); instructions std::cout << "done. " << my_tlog.stop() << " ms.\n";
+#define TLOG2(message, instructions) std::cout << (message) << "... "; PerformanceEvaluator my_tlog2; my_tlog.start(); instructions std::cout << "done. " << my_tlog.stop() << " ms.\n";
 
 #endif // !GRAPHGEN_UTILITIES_H_
 

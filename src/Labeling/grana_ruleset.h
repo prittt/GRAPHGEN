@@ -94,8 +94,8 @@ public:
 				}
 				r << action;
 			}
-		});
-*/
+		});*/
+
         return labeling;
     }
 

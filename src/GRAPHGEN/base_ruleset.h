@@ -83,6 +83,7 @@ public:
 	}
 
     rule_set GetRuleSet() {
+
 		if (force_generation_ || !LoadRuleSet()) {
 			if (disable_generation_) {
 				auto msg = "Could not load rule set " + p_.string() + " from file (generation disabled).\n";
@@ -106,7 +107,7 @@ public:
 		}
 		else {
 			int stream_size = binary_rule_file_stream_size;
-			if (rs_.rules.size() > 0) {
+			if (rs_.rulesStatus == IN_MEMORY) {
 				// rules are in memory
 				std::for_each(rs_.rules.begin(), rs_.rules.end(), [&os, stream_size](rule r) { os.write(reinterpret_cast<const char*>(&r.actions), stream_size); });
 			}

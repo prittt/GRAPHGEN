@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019 Maximilian Söchting 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,43 +26,34 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "graphgen.h"
+#ifndef GRAPHGEN_HEURISTICS_H_
+#define GRAPHGEN_HEURISTICS_H_
 
-#include "grana_ruleset.h"
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <numeric>
 
-using namespace std;
+#include "conact_tree.h"
+#include "rule_set.h"
+#include "base_ruleset.h"
 
-int main()
-{
-    string algorithm_name = "BBDT";
-    conf = ConfigData(algorithm_name, "Grana");
+// Generates an Optimal Decision Tree from the given rule_set,
+// and store it in the filename when specified.
+BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs);
+BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs, const std::string& filename);
 
-    GranaRS g_rs;
-    auto rs = g_rs.GetRuleSet();
+/** @brief Returns a decision tree generated with heuristics from the given rule set
 
-    // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Grana mask
-	BinaryDrag<conact> bd = GetHdt(rs, g_rs, true);
+This function generates a decision tree using heuristics from the given rule set. If the tree has 
+already been generated, it is loaded from file, unless the "force_generation" parameter is set to true. 
+In this case the tree is always regenerated. The loaded/generated tree is then returned from the function.
 
-	//BinaryDragStatistics stats(bd);
-	//std::cout << "Generated Tree has " << stats.Leaves() << " leaves and an average path length of " << stats.AveragePathLength() << "." << std::endl;
+@param[in] rs Rule set from which generate the decision tree.
+@param[in] force_generation Whether the tree must be generated or can be loaded from file.
 
-    // 2) Draw the generated tree
-    string tree_filename = algorithm_name + "_tree";
-    DrawDagOnFile(tree_filename, bd);
+@return The optimal decision tree associated to the specified rule set.
+*/
+BinaryDrag<conact> GetHdt(const rule_set& rs, const BaseRuleSet& brs, bool force_generation = false);
 
-    // 3) Generate the tree C/C++ code taking care of the names used
-    //    in the Grana's rule set GranaRS
-    GenerateDragCode(bd);
-    pixel_set block_positions{
-           { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
-           { "S", {-2, +0} },{ "x", {+0, +0} }
-    };
-    GeneratePointersConditionsActionsCode(rs, 
-                                          GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE, 
-                                          GenerateActionCodeTypes::LABELING,
-                                          block_positions);
-
-	getchar();
-    return EXIT_SUCCESS;
-}
+#endif // !GRAPHSGEN_HEURISTICS_H_
