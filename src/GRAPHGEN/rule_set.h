@@ -59,7 +59,7 @@ struct rule_set {
     std::vector<std::string> conditions;
     std::unordered_map<std::string, uint> conditions_pos;
     std::vector<std::string> actions;
-    std::unordered_map<std::string, uint> actions_pos;
+    std::unordered_map<std::string, ushort> actions_pos;
     std::vector<rule> rules;
     pixel_set ps_;
 
@@ -116,7 +116,7 @@ struct rule_set {
 
     void AddAction(const std::string& action) {
         actions.emplace_back(action);
-        actions_pos[action] = actions.size(); // Action 0 doesn't exist
+        actions_pos[action] = static_cast<ushort>(actions.size()); // Action 0 doesn't exist
     }
 
     void ClearActions() {
@@ -138,8 +138,12 @@ struct rule_set {
     template<typename T>
     void generate_rules(T fn) {
 		ullong nrules = 1ULL << conditions.size();
-        rules.resize(nrules);
-        for (ullong i = 0; i < nrules; ++i) {
+		if (nrules > UINT32_MAX) {
+			std::cerr << "Attempting to save more than 2^32 rules into memory, impossible with 32-bit build." << std::endl;
+			throw std::runtime_error("Attempting to save more than 2^32 rules into memory, impossible with 32-bit build.");
+		}
+        rules.resize(static_cast<uint>(nrules));
+        for (uint i = 0; i < nrules; ++i) {
             fn(*this, i);
         }
 		rulesStatus = IN_MEMORY;
@@ -162,7 +166,7 @@ struct rule_set {
     }
 
     void set_action(const std::string& s, uint rule) {
-        rules[rule].actions.set(actions_pos.at(s) - 1);
+        rules[rule].actions.addAction(actions_pos.at(s) - 1);
     }
     void SetFrequency(uint rule, uint frequency) {
         // Da migliorare: chi assicura che vi sia corrispondenza nella rappresentazione
@@ -246,7 +250,7 @@ struct rule_set {
 			rules.resize(rs_node["rules"].size());
 			for (unsigned i = 0; i < rs_node["rules"].size(); ++i) {
 				for (unsigned j = 0; j < rs_node["rules"][i].size(); ++j) {
-					rules[i].actions.set(rs_node["rules"][i][j].as<int>() - 1);
+					rules[i].actions.addAction(rs_node["rules"][i][j].as<int>() - 1);
 					if (auto& frequencies = rs_node["frequencies"]) {
 						rules[i].frequency = frequencies[i].as<unsigned long long>();
 					}
@@ -267,12 +271,17 @@ struct rule_wrapper {
 	ullong i_;
     rule_wrapper(const rule_set& rs, ullong i) : rs_{ rs }, i_{ i } {}
 
+
     bool operator[](const std::string& s) const {
         return rs_.get_condition(s, i_) != 0;
     }
-    /*void operator<<(const std::string& s) {
-        const_cast<rule_set&>(rs_).set_action(s, i_);
-    }*/
+    void operator<<(const std::string& s) {
+		if (i_ > UINT32_MAX) {
+			std::cerr << "Attempting to save a rule with an index higher than 2^32, which is impossible with 32-bit build." << std::endl;
+			throw std::runtime_error("Attempting to save a rule with an index higher than 2^32, which is impossible with 32-bit build.");
+		}
+        const_cast<rule_set&>(rs_).set_action(s, static_cast<uint>(i_));
+    }
     /*bool has_actions() {
         return rs_.rules[i_].actions != 0;
     }*/

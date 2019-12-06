@@ -41,10 +41,148 @@
 
 extern ConfigData conf;
 
-#define ACTION_BITSET_SIZE 128
-using action_bitset = std::bitset<ACTION_BITSET_SIZE>;
+constexpr auto ACTION_SET_SIZE = 128;
+constexpr auto MAX_COMBINED_ACTIONS_COUNT = 13; // 13 is upper limit for block based 3D;
+constexpr auto MAX_ACTION_BITS = 13; // ceil(log2(5813)), with 5813 being the amount of action in block based 3D with 36 conditions
+
+using ushort = uint16_t;
 using uint = uint32_t;
 using ullong = uint64_t;
+
+class action_bitset {
+public:
+	static const size_t max_size_in_bits() {
+		return 16 * MAX_COMBINED_ACTIONS_COUNT;
+	}
+
+private:
+	//std::bitset<MAX_COMBINED_ACTIONS_COUNT * MAX_ACTION_BITS> data;
+	std::array<ushort, MAX_COMBINED_ACTIONS_COUNT> data_;
+
+public:
+	// CONSTRUCTORS
+	action_bitset() {
+		data_ = { 0 };
+	}
+
+	// OPERATORS
+	const ushort operator[] (const ushort a) const {
+		return test(a + 1) ? 1 : 0;
+	}
+
+	bool operator==(const action_bitset& rhs) const {
+		int my_size = size();
+		int their_size = rhs.size();
+		if (my_size != their_size) {
+			return false;
+		}
+
+		int intersection_size = operator&(rhs).size();
+		if (intersection_size != my_size) {
+			return false;
+		}
+
+		return true;
+	}
+
+	bool operator!=(const action_bitset& rhs) const {
+		return !(operator==(rhs));
+	}
+
+	// METHODS
+
+	// semantic in internal data_: 0 equals to no action, 1 equals to the "x<-nothing" action, 2 equals to the first action after that etc.
+	// semantic in parameter: 0 equals to the "x<-nothing" action, 1 to the first action after that etc.
+	action_bitset& set(const ushort& a) {
+		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
+			if (data_[i] == 0) {
+				data_[i] = a + 1;
+				return *this;
+			}
+		}
+		throw std::runtime_error("Cannot add action to a full action_set.");
+	}
+
+	void clear() {
+		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
+			data_[i] = 0;
+		}
+	}
+
+	std::vector<ushort> getSingleActions() const {
+		std::vector<ushort> output;
+		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
+			if (data_[i] == 0) {
+				break;
+			}
+			output.push_back(data_[i] - 1);
+		}
+		return output;
+	}
+
+	const bool test(const ushort& action) const {
+		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
+			if (data_[i] == 0) {
+				return false;
+			}
+			if ((data_[i] - 1) == action) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	size_t size() const {
+		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
+			if (data_[i] == 0) {
+				return i;
+			}
+		}
+		return MAX_COMBINED_ACTIONS_COUNT;
+	}
+	
+	action_bitset operator&(const action_bitset& rhs) const {
+		action_bitset output;
+
+		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
+			if (data_[i] == 0) {
+				break;
+			}
+			for (int j = 0; j < MAX_COMBINED_ACTIONS_COUNT; j++) {
+				if (rhs.data_[j] == 0) {
+					break;
+				}
+				if (data_[i] == rhs.data_[j]) {
+					output.set(data_[i] - 1);
+				}
+			}			
+		}
+
+		return output;
+	}
+
+	action_bitset& operator&=(const action_bitset& rhs) {
+		action_bitset output = operator&(rhs);
+		data_ = output.data_;
+		return *this;
+	}
+
+	const std::string to_string() const {
+		return std::to_string(to_ullong());
+	}
+
+	const ullong to_ullong() const {
+		ullong output = 0;
+		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
+			if (data_[i] == 0) {
+				break;
+			}
+			output |= (1ULL << (data_[i] - 1));
+		}
+		return output;
+	}
+};
+
 
 std::string binary(uint u, uint nbits);
 

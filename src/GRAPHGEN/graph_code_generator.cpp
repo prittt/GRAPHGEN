@@ -178,7 +178,7 @@ public:
         auto& ml = nodes_requiring_labels_;
 
         if (n->isleaf()) {
-            vector<uint> actions = n->data.actions();
+            vector<ushort> actions = n->data.actions();
             os << string(tab, '\t') << "ACTION_" << actions[0] << "\n";
             if (with_gotos_) {
                 os << string(tab, '\t') << "goto " << prefix_ << "tree_" << n->data.next << ";\n";

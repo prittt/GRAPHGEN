@@ -56,7 +56,7 @@ struct CollectDragStatistics {
             for (size_t i = 0; i < leaves_.size(); ++i)
                 if (leaves_[i]->data.next != rhs.leaves_[i]->data.next
                     ||
-                    (leaves_[i]->data.action & rhs.leaves_[i]->data.action) == 0)
+                    (leaves_[i]->data.action & rhs.leaves_[i]->data.action).size() == 0)
                     return false;
             return true;
         }

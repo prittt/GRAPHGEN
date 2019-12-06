@@ -117,7 +117,7 @@ struct VNode {
 	byte uiMaxGainIndex;
     unsigned neq = 1;
 
-	VNode() : uiAction(0), uiProb(0), uiGain(0), uiMaxGainIndex(0) {
+	VNode() : uiAction(action_bitset()), uiProb(0), uiGain(0), uiMaxGainIndex(0) {
 	}
 };
 #pragma pack(8)

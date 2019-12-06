@@ -192,7 +192,7 @@ struct Load {
             do {
                 int action;
                 is_ >> action >> std::ws;
-                n->data.action.set(action - 1);
+                n->data.action.addAction(action - 1);
             } while (is_.peek() == ',' && is_.get());
 
             if (is_.get() != '-') {

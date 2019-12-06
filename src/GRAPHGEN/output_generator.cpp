@@ -89,7 +89,7 @@ void GenerateDotCodeForDagRec(std::ostream& os,
     if (n->isleaf()) {
         // print leaf
         os << " [label = \"";
-        vector<uint> actions = n->data.actions();
+        vector<ushort> actions = n->data.actions();
         os << actions[0];
         for (size_t i = 1; i < actions.size(); ++i) {
             os << "," << actions[i];

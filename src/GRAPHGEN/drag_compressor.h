@@ -213,7 +213,7 @@ public:
                     continue; // We don't want to consider the same leaf multiple times
                 }
                 
-                if ((i->data.action & j->data.action) != 0 && i->data.next == j->data.next) {
+                if ((i->data.action & j->data.action).size() != 0 && i->data.next == j->data.next) {
                     // Merge required!
                     
                     // Add them to the already_updated

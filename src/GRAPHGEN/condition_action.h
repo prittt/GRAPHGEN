@@ -45,24 +45,15 @@ struct conact {
     // CONDITION
     std::string condition;
     // ACTION
-    action_bitset action = 0; // List of actions (bitmapped)
+    action_bitset action; // List of actions (bitmapped)
     uint next = 0;
 
     conact() {}
     conact(std::string c) : t(type::CONDITION), condition(std::move(c)) {}
-    conact(uint a, uint n) : t(type::ACTION), action(a), next(n) {}
+    conact(action_bitset& a, uint n) : t(type::ACTION), action(a), next(n) {}
 
-    std::vector<uint> actions() const {
-        std::vector<uint> a;
-        auto uAction = action;
-        uint nAction = 1;
-        while (uAction != 0) {
-            if (uAction[0])
-                a.push_back(nAction);
-            uAction >>= 1;
-            nAction++;
-        }
-        return a;
+    std::vector<ushort> actions() const {
+		return action.getSingleActions();
     }
 
     // To check if two conact are equal (exactly the same)
@@ -86,7 +77,7 @@ struct conact {
         if (t == type::CONDITION)
             return condition == other.condition;
         else
-            return (action & other.action) != 0 && next == other.next;
+            return (action & other.action).size() > 0 && next == other.next;
     }
     // To check if two conact are not equivalent (the leaves actions has empty intersection)
     bool neq(const conact& other) const {

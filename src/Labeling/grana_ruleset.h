@@ -106,7 +106,7 @@ public:
 		bool X = r["o"] || r["p"] || r["s"] || r["t"];
 		if (!X) {
 			//r << "nothing";
-			return action_bitset().set(0);
+			return action_bitset().addAction(0);
 		}
 
 		connectivity_mat con({ "P", "Q", "R", "S", "x" });
@@ -137,7 +137,7 @@ public:
 				for (size_t i = 1; i < s.size(); ++i)
 					action += "+" + s[i];
 			}
-			combined_actions.set(rs.actions_pos.at(action) - 1);
+			combined_actions.addAction(rs.actions_pos.at(action) - 1);
 		}
 		return combined_actions;
 	}

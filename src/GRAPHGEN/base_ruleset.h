@@ -45,7 +45,7 @@ class BaseRuleSet {
 	bool disable_generation_;
     rule_set rs_;
 	std::ifstream binary_rule_file;
-	int binary_rule_file_stream_size = static_cast<int>(ceil(action_bitset().size() / 8));
+	int binary_rule_file_stream_size = static_cast<int>(ceil(action_bitset::max_size_in_bits() / 8.0));
 
     bool LoadRuleSet() {
 
@@ -83,7 +83,6 @@ public:
 	}
 
     rule_set GetRuleSet() {
-
 		if (force_generation_ || !LoadRuleSet()) {
 			if (disable_generation_) {
 				auto msg = "Could not load rule set " + p_.string() + " from file (generation disabled).\n";

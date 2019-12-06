@@ -99,10 +99,9 @@ bool graph::Write(const std::string& filename)
 }
 
 // Less operator for bitset
-template<size_t N>
 struct less {
-    bool operator()(const std::bitset<N>& lhs, const std::bitset<N>& rhs) const {
-        return lhs.to_string() < rhs.to_string();
+    bool operator()(const action_bitset& lhs, const action_bitset& rhs) const {
+        return lhs.to_ullong() < rhs.to_ullong();
     }
 };
 
@@ -111,15 +110,15 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag)
 {
     auto nconds = ag.size();
     auto nrules = 1u << nconds;
-    std::set<action_bitset, less<ACTION_BITSET_SIZE>> actions_set; // Set of actions described as list of pixels to be merged
+    std::set<action_bitset, less> actions_set; // Set of actions described as list of pixels to be merged
     std::vector<std::string> actions = { "nothing" };
 
     auto posx = ag.rnodes_.at("x");
     for (size_t rule = 0; rule < nrules; ++rule) {
         if ((rule >> posx) & 1) {
-			action_bitset cur_action = 0;
+			action_bitset cur_action;
             std::vector<int> cur_conds;
-            for (size_t j = 0; j < nconds; ++j) {
+            for (ushort j = 0; j < nconds; ++j) {
                 if (j != posx && ((rule >> j) & 1) == 1) {
                     bool adj = false;
                     for (size_t k = 0; k < cur_conds.size(); ++k) {
@@ -130,7 +129,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag)
                     }
                     cur_conds.push_back(j);
                     if (!adj) {
-                        cur_action.set(j);
+                        cur_action.addAction(j);
                     }
                 }
             }
@@ -140,7 +139,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag)
 
     for (const auto& a : actions_set) {
         std::string action = "x<-";
-        for (size_t j = 0; j < nconds; ++j) {
+        for (ushort j = 0; j < nconds; ++j) {
             if (a[j]) {
                 action += ag.nodes_[j] + "+";
             }
@@ -162,15 +161,15 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag, con
 {
     auto nconds = ag.size();
     auto nrules = 1u << nconds;
-    std::set<action_bitset, less<ACTION_BITSET_SIZE>> actions_set; // Set of actions described as list of pixels to be merged
+    std::set<action_bitset, less> actions_set; // Set of actions described as list of pixels to be merged
     std::vector<std::string> actions = { "nothing" };
 
     auto posx = ag.rnodes_.at(ref_pixel_name);
     for (size_t rule = 0; rule < nrules; ++rule) {
         if ((rule >> posx) & 1) {
-            action_bitset cur_action = 0;
+            action_bitset cur_action;
             std::vector<int> cur_conds;
-            for (size_t j = 0; j < nconds; ++j) {
+            for (ushort j = 0; j < nconds; ++j) {
                 if (j != posx && ((rule >> j) & 1) == 1) {
                     bool adj = false;
                     for (size_t k = 0; k < cur_conds.size(); ++k) {
@@ -181,7 +180,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag, con
                     }
                     cur_conds.push_back(j);
                     if (!adj) {
-                        cur_action.set(j);
+                        cur_action.addAction(j);
                     }
                 }
             }
@@ -191,7 +190,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag, con
 
     for (const auto& a : actions_set) {
         std::string action = ref_pixel_name + "<-";
-        for (size_t j = 0; j < nconds; ++j) {
+        for (ushort j = 0; j < nconds; ++j) {
             if (a[j]) {
                 action += ag.nodes_[j] + "+";
             }
@@ -207,7 +206,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag, con
     return actions;
 }
 
-void PrintActionsSet(std::set<action_bitset, less<128>>& to_print, std::ostream& os) {
+void PrintActionsSet(std::set<action_bitset, less>& to_print, std::ostream& os) {
     for (const auto& x : to_print) {
         os << x.to_string().substr(119) << "\n";
     }

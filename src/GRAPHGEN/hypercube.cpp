@@ -35,7 +35,7 @@ using namespace std;
 
 void CreateTree_rec(BinaryDrag<conact>& t, BinaryDrag<conact>::node *n, const rule_set& rs, const VHyperCube &hcube, const VIndex &idx) {
 	VNode node = hcube[idx];
-	if (node.uiAction == 0) {
+	if (node.uiAction.size() == 0) {
 		n->data.t = conact::type::CONDITION;
 		n->data.condition = rs.conditions[node.uiMaxGainIndex];
 
@@ -64,7 +64,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 		// Stampo la tabella
 		do {
 			std::cout << idx.GetIndexString() << "\t" << m_arrIndex[idx.GetIndex()].uiProb << "\t";
-			if (m_arrIndex[idx.GetIndex()].uiAction == 0)
+			if (m_arrIndex[idx.GetIndex()].uiAction.size() == 0)
 				std::cout << "0";
 			else
 				for (unsigned i = 1; i < 32; i++)
@@ -119,7 +119,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 					arrGain[i] = node0.uiGain + node1.uiGain;
 					arrNEq[i] = node0.neq * node1.neq;
 
-					if (uiIntersezione != 0) {
+					if (uiIntersezione.size() != 0) {
 						arrGain[i] += arrProb[i];
 						arrNEq[i] = 0;
 					}
@@ -146,7 +146,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 
 				if (bVerbose) {
 					std::cout << idx.GetIndexString() << "\t" << m_arrIndex[idx.GetIndex()].uiProb << "\t";
-					if (m_arrIndex[idx.GetIndex()].uiAction == 0)
+					if (m_arrIndex[idx.GetIndex()].uiAction.size() == 0)
 						std::cout << "0";
 					else
 						for (unsigned j = 1; j < 32; j++)

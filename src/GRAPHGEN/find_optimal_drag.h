@@ -67,7 +67,7 @@ struct FindOptimalDrag {
         }
         visited_.insert(n);
         if (n->isleaf()) {
-            if (n->data.action.count() > 1) {
+            if (n->data.action.size() > 1) {
                 lma_.push_back(n);
             }
             return;
@@ -113,7 +113,7 @@ struct FindOptimalDrag {
 
         for (size_t i = 0; i < actions.size(); ++i) {
 			action_bitset bs;
-            bs.set(actions[i] - 1);
+            bs.addAction(actions[i] - 1);
             lma_[cur_leaf]->data.action = bs;
             GenerateAllTreesRec(cur_leaf + 1);
         }

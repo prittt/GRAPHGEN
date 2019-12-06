@@ -122,17 +122,17 @@ void Dag2OptimalDagRec(BinaryDrag<conact>& t, BinaryDrag<conact>::node* n, Binar
     BinaryDrag<conact> nt;
     if (n->isleaf()) {
         // leaf with multiple action
-        std::vector<uint> actions_list = n->data.actions();
+        std::vector<ushort> actions_list = n->data.actions();
         if (actions_list.size() > 1) {
             for (size_t i = 0; i < actions_list.size() - 1; ++i) {
                 std::map<const BinaryDrag<conact>::node*, bool> visited_node_cur;
-                n->data.action = 0;
-                n->data.action.set(actions_list[i] - 1);
+                n->data.action.clear();
+                n->data.action.addAction(actions_list[i] - 1);
                 nt = t;
                 Dag2OptimalDagRec(nt, nt.GetRoot(), best_tree, best_nodes, best_leaves, visited_node_cur, counter);
             }
-            n->data.action = 0;
-            n->data.action.set(actions_list[actions_list.size() - 1] - 1);
+            n->data.action.clear();
+            n->data.action.addAction(actions_list[actions_list.size() - 1] - 1);
         }
         return;
     }

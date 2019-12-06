@@ -36,9 +36,9 @@
 
 using namespace std;
 
-#define HDT_INFORMATION_GAIN_METHOD_VERSION 1
-#define CONDITION_COUNT 16
-#define ACTION_COUNT 16
+#define HDT_INFORMATION_GAIN_METHOD_VERSION 2
+constexpr auto CONDITION_COUNT = 16;
+constexpr auto ACTION_COUNT = 16;
 
 double entropy(std::vector<int>& vector) {
 	double s = 0, h = 0;
@@ -116,12 +116,12 @@ double entropy(std::vector<int>& vector) {
 //	return single_actions;
 //}
 
-template <int maxActions>
+template <ushort maxActions>
 int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, action_bitset& combined_action, int previous_most_probable_action_occurences = -1) {
 	int most_popular_single_action_occurences = -1;
 	int most_popular_single_action_index = -1;
 
-	for (int bit_index = 0; bit_index < maxActions; bit_index++) {
+	for (ushort bit_index = 0; bit_index < maxActions; bit_index++) {
 		if (combined_action.test(bit_index)) {
 			if (single_actions[bit_index] > most_popular_single_action_occurences) {
 				most_popular_single_action_index = bit_index;
@@ -413,15 +413,15 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 
 	bool b1 = set_conditions0.size() == rs.conditions.size();
 	bool b2 = ACTION_COUNT == rs.actions.size();
-	bool b3 = ACTION_COUNT <= ACTION_BITSET_SIZE;
+	bool b3 = ACTION_COUNT <= ACTION_SET_SIZE;
 
 	if (!(b1 && b2 && b3)) {
 		std::cerr << "Assert failed: check ACTION_COUNT and CONDITION_COUNT." << std::endl;
 		throw std::runtime_error("Assert failed: check ACTION_COUNT and CONDITION_COUNT.");
 	}
 
-	if (ACTION_COUNT < ACTION_BITSET_SIZE) {
-		std::cout << "\nWarning: Bitset containing actions is bigger than required. (" << ACTION_COUNT << " < " << ACTION_BITSET_SIZE << ")" << std::endl;
+	if (ACTION_COUNT < ACTION_SET_SIZE) {
+		std::cout << "\nWarning: Bitset containing actions is bigger than required. (" << ACTION_COUNT << " < " << ACTION_SET_SIZE << ")" << std::endl;
 	}
 
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
