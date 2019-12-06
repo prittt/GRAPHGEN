@@ -166,7 +166,7 @@ struct rule_set {
     }
 
     void set_action(const std::string& s, uint rule) {
-        rules[rule].actions.addAction(actions_pos.at(s) - 1);
+        rules[rule].actions.set(actions_pos.at(s) - 1);
     }
     void SetFrequency(uint rule, uint frequency) {
         // Da migliorare: chi assicura che vi sia corrispondenza nella rappresentazione
@@ -250,7 +250,7 @@ struct rule_set {
 			rules.resize(rs_node["rules"].size());
 			for (unsigned i = 0; i < rs_node["rules"].size(); ++i) {
 				for (unsigned j = 0; j < rs_node["rules"][i].size(); ++j) {
-					rules[i].actions.addAction(rs_node["rules"][i][j].as<int>() - 1);
+					rules[i].actions.set(rs_node["rules"][i][j].as<int>() - 1);
 					if (auto& frequencies = rs_node["frequencies"]) {
 						rules[i].frequency = frequencies[i].as<unsigned long long>();
 					}

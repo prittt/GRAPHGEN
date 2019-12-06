@@ -72,7 +72,7 @@ public:
 		rule_wrapper r(rs, rule_index);
 
 		if (!r["x"]) {
-			return action_bitset().addAction(0);
+			return action_bitset().set(0);
 		}
 
 		auto lag = ag;
@@ -98,7 +98,7 @@ public:
 				for (size_t i = 1; i < s.size(); ++i)
 					action += "+" + s[i];
 			}
-			combined_actions.addAction(rs.actions_pos.at(action) - 1);
+			combined_actions.set(rs.actions_pos.at(action) - 1);
 		}
 		return combined_actions;
 	}

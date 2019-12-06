@@ -113,7 +113,7 @@ struct FindOptimalDrag {
 
         for (size_t i = 0; i < actions.size(); ++i) {
 			action_bitset bs;
-            bs.addAction(actions[i] - 1);
+            bs.set(actions[i] - 1);
             lma_[cur_leaf]->data.action = bs;
             GenerateAllTreesRec(cur_leaf + 1);
         }
