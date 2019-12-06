@@ -100,11 +100,23 @@ public:
     }
 
 	void SaveAllRulesBinary() {
-		std::ofstream os(conf.binary_rule_file_path_, std::ios::binary);
-		if (!os) {
-			std::cerr << "Could not save binary rule file to " << conf.binary_rule_file_path_ << ".\n";
-		}
-		else {
+		const ullong partitions = 1024;
+		const ullong partition_steps = (1ULL << rs_.conditions.size()) / partitions;
+		const ullong partition_size = binary_rule_file_stream_size * partition_steps / (1024 * 1024);
+
+		std::cout << "[Rule Files] Partitions: " << partitions << " Rulecodes for each partition: " << partition_steps << " Estimated partition size (Megabyte): " << partition_size << std::endl;
+		for (ullong p = 0; p < partitions; p++) {
+			const ullong begin_rule_code = p * partition_steps;
+			const ullong end_rule_code = (p + 1) * partition_steps;
+			std::cout << "[Partition " << p << "] First Rule Code: " << begin_rule_code << " Last (exclusive) Rule Code: " << end_rule_code << std::endl;
+			
+			auto path = conf.binary_rule_file_path_partitioned("BBDT3D", std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
+			std::ofstream os(path, std::ios::binary);
+			if (!os) {
+				std::cerr << "Could not save binary rule file to " << path << ".\n";
+				return;
+			}
+
 			int stream_size = binary_rule_file_stream_size;
 			if (rs_.rulesStatus == IN_MEMORY) {
 				// rules are in memory
@@ -112,19 +124,22 @@ public:
 			}
 			else {
 				// rules are generated during the writing
-				for (ullong rule_code = 0; rule_code < (1ULL << rs_.conditions.size()); rule_code++) {
-					/*if ((rule_code % (1ULL << 24)) == 0) {
-						std::cout << "\rWriting rule " << rule_code << " of " << (1ULL << rs_.conditions.size()) << " (" << (100 * (float)rule_code / (1ULL << rs_.conditions.size())) << "%).";
-					}*/
+				for (ullong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
+					if ((rule_code % (1ULL << 24)) == 0) {
+						std::cout << "Writing rule " << (rule_code - (p * partition_steps)) << " of " << partition_steps << " (" << (100 * (float)(rule_code - (p * partition_steps)) / partition_steps) << "%).\n";
+					}
 					os.write(reinterpret_cast<const char*>(&GetActionFromRuleIndex(rs_, rule_code)), stream_size);
 				}
 			}
 			os.close();
+			
 		}
+
+
 	}
 
 	void OpenBinaryRuleFile() {
-		if (binary_rule_file.is_open()) {
+		/*if (binary_rule_file.is_open()) {
 			std::cout << "Binary rule file already opened\n";
 			return;
 		}
@@ -133,7 +148,7 @@ public:
 			std::cout << "Could not open binary rule file\n";
 			return;
 		}
-		binary_rule_file.exceptions(std::fstream::badbit | std::fstream::failbit | std::fstream::eofbit);
+		binary_rule_file.exceptions(std::fstream::badbit | std::fstream::failbit | std::fstream::eofbit);*/
 	}
 
 	ullong previous_rule_code = UINT64_MAX;

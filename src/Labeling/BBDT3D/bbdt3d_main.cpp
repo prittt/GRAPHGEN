@@ -40,9 +40,13 @@ int main()
     Grana3dRS g_rs(true);
     auto rs = g_rs.GetRuleSet();
 
+	std::cout << "** DONE" << std::endl;
+	exit(EXIT_SUCCESS);
+
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
     BinaryDrag<conact> bd = GetHdt(rs, g_rs, true);
+
 
     // 2) Draw the generated tree
     string tree_filename = algorithm_name + "_tree";
