@@ -105,7 +105,8 @@ public:
 		const ullong partition_size = binary_rule_file_stream_size * partition_steps / (1024 * 1024);
 
 		std::cout << "[Rule Files] Partitions: " << partitions << " Rulecodes for each partition: " << partition_steps << " Estimated partition size (Megabyte): " << partition_size << std::endl;
-		for (ullong p = 0; p < partitions; p++) {
+
+		for (int p = 0; p < partitions; p++) {
 			const ullong begin_rule_code = p * partition_steps;
 			const ullong end_rule_code = (p + 1) * partition_steps;
 			std::cout << "[Partition " << p << "] First Rule Code: " << begin_rule_code << " Last (exclusive) Rule Code: " << end_rule_code << std::endl;

@@ -42,7 +42,7 @@
 extern ConfigData conf;
 
 constexpr auto ACTION_SET_SIZE = 128;
-constexpr auto MAX_COMBINED_ACTIONS_COUNT = 13; // 13 is upper limit for block based 3D;
+constexpr auto MAX_COMBINED_ACTIONS_COUNT = 1; // 56 is upper limit for block based 3D; all equivalent actions between a 7 and 8 block component: 7*8=56
 constexpr auto MAX_ACTION_BITS = 13; // ceil(log2(5813)), with 5813 being the amount of action in block based 3D with 36 conditions
 
 using ushort = uint16_t;
