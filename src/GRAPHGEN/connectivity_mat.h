@@ -63,10 +63,12 @@ struct connectivity_mat {
     }
 
     // sets the connection of two pixels (specified by names)
-    void set(const std::string& row, const std::string& col, bool b) {
+    bool set(const std::string& row, const std::string& col, bool b) {
         size_t r = pos_.at(row);
         size_t c = pos_.at(col);
+		bool changed = (static_cast<bool>(data_[c][r]) != b);
         data_[r][c] = data_[c][r] = b;
+		return changed;
     }
 
     // gives back the name of a row/column
