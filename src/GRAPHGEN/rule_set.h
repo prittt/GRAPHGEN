@@ -271,7 +271,9 @@ struct rule_wrapper {
 	ullong i_;
     rule_wrapper(const rule_set& rs, ullong i) : rs_{ rs }, i_{ i } {}
 
-
+	bool operator[](const int condition) const {
+		return ((i_ >> condition) & 1);
+	}
     bool operator[](const std::string& s) const {
         return rs_.get_condition(s, i_) != 0;
     }

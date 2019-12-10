@@ -62,6 +62,11 @@ struct connectivity_mat {
         return data_[r][c];
     }
 
+	bool operator()(const int& row, const int& col) const {
+		return data_[row][col];
+	}
+
+
     // sets the connection of two pixels (specified by names)
     bool set(const std::string& row, const std::string& col, bool b) {
         size_t r = pos_.at(row);
@@ -70,6 +75,12 @@ struct connectivity_mat {
         data_[r][c] = data_[c][r] = b;
 		return changed;
     }
+
+	bool set(const int& row, const int& col, bool b) {
+		bool changed = (static_cast<bool>(data_[col][row]) != b);
+		data_[row][col] = data_[col][row] = b;
+		return changed;
+	}
 
     // gives back the name of a row/column
     const std::string& GetHeader(size_t i) {

@@ -126,7 +126,7 @@ public:
 			}
 			else {
 				// rules are generated during the writing
-				const ullong batches = 128;
+				const ullong batches = 8;
 				const ullong batches_steps = partition_steps / batches;
 
 				std::vector<action_bitset> actions;
