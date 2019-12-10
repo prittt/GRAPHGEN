@@ -106,6 +106,7 @@ public:
 
 		std::cout << "[Rule Files] Partitions: " << partitions << " Rulecodes for each partition: " << partition_steps << " Estimated partition size (Megabyte): " << partition_size << std::endl;
 
+//#pragma omp parallel for
 		for (int p = 0; p < partitions; p++) {
 			const ullong begin_rule_code = p * partition_steps;
 			const ullong end_rule_code = (p + 1) * partition_steps;
@@ -115,7 +116,7 @@ public:
 			std::ofstream os(path, std::ios::binary);
 			if (!os) {
 				std::cerr << "Could not save binary rule file to " << path << ".\n";
-				return;
+				//return; //forbidden by OpenMP lol
 			}
 
 			int stream_size = binary_rule_file_stream_size;
@@ -125,12 +126,14 @@ public:
 			}
 			else {
 				// rules are generated during the writing
+				TLOG("rules", 
 				for (ullong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
-					if ((rule_code % (1ULL << 24)) == 0) {
+					/*if ((rule_code % (1ULL << 24)) == 0) {
 						std::cout << "Writing rule " << (rule_code - (p * partition_steps)) << " of " << partition_steps << " (" << (100 * (float)(rule_code - (p * partition_steps)) / partition_steps) << "%).\n";
-					}
+					}*/
 					os.write(reinterpret_cast<const char*>(&GetActionFromRuleIndex(rs_, rule_code)), stream_size);
 				}
+				);
 			}
 			os.close();
 			
