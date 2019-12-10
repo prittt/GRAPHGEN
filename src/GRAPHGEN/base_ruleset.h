@@ -87,7 +87,7 @@ public:
 			if (disable_generation_) {
 				auto msg = "Could not load rule set " + p_.string() + " from file (generation disabled).\n";
 				std::cerr << msg;
-				throw std::exception((msg).c_str());
+				throw std::runtime_error((msg).c_str());
 			}
 
             rs_ = GenerateRuleSet();
