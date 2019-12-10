@@ -106,7 +106,7 @@ public:
 
 		std::cout << "[Rule Files] Partitions: " << partitions << " Rulecodes for each partition: " << partition_steps << " Estimated partition size (Megabyte): " << partition_size << std::endl;
 
-//#pragma omp parallel for
+		#pragma omp parallel for
 		for (int p = 0; p < partitions; p++) {
 			const ullong begin_rule_code = p * partition_steps;
 			const ullong end_rule_code = (p + 1) * partition_steps;
@@ -126,20 +126,30 @@ public:
 			}
 			else {
 				// rules are generated during the writing
-				TLOG("rules", 
-				for (ullong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
-					/*if ((rule_code % (1ULL << 24)) == 0) {
-						std::cout << "Writing rule " << (rule_code - (p * partition_steps)) << " of " << partition_steps << " (" << (100 * (float)(rule_code - (p * partition_steps)) / partition_steps) << "%).\n";
-					}*/
-					os.write(reinterpret_cast<const char*>(&GetActionFromRuleIndex(rs_, rule_code)), stream_size);
+				const ullong batches = 128;
+				const ullong batches_steps = partition_steps / batches;
+
+				std::vector<action_bitset> actions;
+				actions.resize(batches_steps);
+
+				//TLOG("rules batched", 
+					
+				for (int b = 0; b < batches; b++) {
+					const ullong batch_begin_rule_code = (begin_rule_code + b * batches_steps);
+					const ullong batch_end_rule_code = (begin_rule_code + (b + 1) * batches_steps);
+
+					//std::cout << "[Partition  " << p << "] Starting rule batch " << (b + 1) << " of " << batches << ", rules from " << batch_begin_rule_code << " to " << batch_end_rule_code << ".\n";
+					for (ullong rule_code = batch_begin_rule_code, i = 0; rule_code < batch_end_rule_code; rule_code++, i++) {
+						actions[i] = GetActionFromRuleIndex(rs_, rule_code);
+					}
+					for (const action_bitset& a : actions) {
+						os.write(reinterpret_cast<const char*>(&a), stream_size);
+					}
 				}
-				);
+				//);
 			}
-			os.close();
-			
+			os.close();			
 		}
-
-
 	}
 
 	void OpenBinaryRuleFile() {

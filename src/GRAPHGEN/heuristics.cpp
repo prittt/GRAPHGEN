@@ -413,16 +413,15 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 
 	bool b1 = set_conditions0.size() == rs.conditions.size();
 	bool b2 = ACTION_COUNT == rs.actions.size();
-	bool b3 = ACTION_COUNT <= ACTION_SET_SIZE;
 
-	if (!(b1 && b2 && b3)) {
+	if (!(b1 && b2)) {
 		std::cerr << "Assert failed: check ACTION_COUNT and CONDITION_COUNT." << std::endl;
 		throw std::runtime_error("Assert failed: check ACTION_COUNT and CONDITION_COUNT.");
 	}
 
-	if (ACTION_COUNT < ACTION_SET_SIZE) {
-		std::cout << "\nWarning: Bitset containing actions is bigger than required. (" << ACTION_COUNT << " < " << ACTION_SET_SIZE << ")" << std::endl;
-	}
+	/*if (ACTION_COUNT < action_bitset::max_size_in_bits()) {
+		std::cout << "\nWarning: Bitset containing actions is bigger than required. (" << ACTION_COUNT << " < " << action_bitset::max_size_in_bits() << ")" << std::endl;
+	}*/
 
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 
