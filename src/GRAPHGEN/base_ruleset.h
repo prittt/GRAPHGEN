@@ -34,6 +34,7 @@
 #include <string>
 #include <cmath>
 #include <utility>
+#include <filesystem>
 
 #include "yaml-cpp/yaml.h"
 
@@ -102,22 +103,45 @@ public:
 	void SaveAllRulesBinary() {
 		const ullong partitions = 1024;
 		const ullong partition_steps = (1ULL << rs_.conditions.size()) / partitions;
-		const ullong partition_size = binary_rule_file_stream_size * partition_steps / (1024 * 1024);
+		const ullong partition_size_bytes = binary_rule_file_stream_size * partition_steps;
+		const ullong partition_size_megabytes = binary_rule_file_stream_size * partition_steps / (1024 * 1024);
 
-		std::cout << "[Rule Files] Partitions: " << partitions << " Rulecodes for each partition: " << partition_steps << " Estimated partition size (Megabyte): " << partition_size << std::endl;
+		std::cout << "[Rule Files] Partitions: " << partitions << " Rulecodes for each partition: " << partition_steps << " Estimated partition size (Megabyte): " << partition_size_megabytes << std::endl;
 
 		#pragma omp parallel for
 		for (int p = 0; p < partitions; p++) {
 			const ullong begin_rule_code = p * partition_steps;
 			const ullong end_rule_code = (p + 1) * partition_steps;
-			std::cout << "[Partition " << p << "] First Rule Code: " << begin_rule_code << " Last (exclusive) Rule Code: " << end_rule_code << std::endl;
-			
+
 			auto path = conf.binary_rule_file_path_partitioned("BBDT3D", std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
+			
+			// check status of existing files
+			if (std::filesystem::exists(path)) {
+				if (std::filesystem::file_size(path) == partition_size_bytes) {
+					std::cerr << "[Partition " << p << "] Partition exists and is complete: skipping.\n";
+					continue;
+				}
+
+				// check if file is locked
+				try {
+					auto p2 = path + ".test";
+					std::filesystem::rename(path, p2);
+					std::filesystem::remove(p2);
+					std::cerr << "[Partition " << p << "] Partition exists, is not complete and not locked: overwriting.\n";
+				}
+				catch (std::filesystem::filesystem_error e) {
+					std::cerr << "[Partition " << p << "] Partition exists, is not complete but locked: skipping.\n";
+					continue;
+				}
+			}
+
 			std::ofstream os(path, std::ios::binary);
 			if (!os) {
-				std::cerr << "Could not save binary rule file to " << path << ".\n";
-				//return; //forbidden by OpenMP lol
+				std::cerr << "[Partition " << p << "] Partition could not be saved to " << path << ": skipping.\n";
+				continue;
 			}
+			
+			std::cout << "[Partition " << p << "] Begin processing. First Rule Code: " << begin_rule_code << " Last (exclusive) Rule Code: " << end_rule_code << std::endl;
 
 			int stream_size = binary_rule_file_stream_size;
 			if (rs_.rulesStatus == IN_MEMORY) {
@@ -126,11 +150,15 @@ public:
 			}
 			else {
 				// rules are generated during the writing
-				const ullong batches = 8;
+				const uint batches = 16;
 				const ullong batches_steps = partition_steps / batches;
 
 				std::vector<action_bitset> actions;
-				actions.resize(batches_steps);
+				if (batches_steps > actions.max_size()) {
+					std::cerr << "ERROR: Batches are too big to be stored in a vector. (batch size: " << batches_steps << " vector.max_size: " << actions.max_size() << ")" << std::endl;
+					exit(EXIT_FAILURE);
+				}
+				actions.resize(static_cast<size_t>(batches_steps));
 
 				//TLOG("rules batched", 
 					
@@ -138,8 +166,9 @@ public:
 					const ullong batch_begin_rule_code = (begin_rule_code + b * batches_steps);
 					const ullong batch_end_rule_code = (begin_rule_code + (b + 1) * batches_steps);
 
-					//std::cout << "[Partition  " << p << "] Starting rule batch " << (b + 1) << " of " << batches << ", rules from " << batch_begin_rule_code << " to " << batch_end_rule_code << ".\n";
-					for (ullong rule_code = batch_begin_rule_code, i = 0; rule_code < batch_end_rule_code; rule_code++, i++) {
+					std::cout << "[Partition " << p << "] Processing rule batch " << (b + 1) << " of " << batches << ", rules from " << batch_begin_rule_code << " to " << batch_end_rule_code << ".\n";
+					size_t i = 0;
+					for (ullong rule_code = batch_begin_rule_code; rule_code < batch_end_rule_code; rule_code++, i++) {
 						actions[i] = GetActionFromRuleIndex(rs_, rule_code);
 					}
 					for (const action_bitset& a : actions) {
