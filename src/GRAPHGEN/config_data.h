@@ -90,10 +90,10 @@ struct ConfigData {
 	// Rule Set / Decision Table
 	std::string binary_rule_file_suffix_ = "_rules.bin";
 
-	std::string binary_rule_file_path_partitioned(std::string algorithm_name, std::string partitionId) {
+	std::string binary_rule_file_path_partitioned(std::string partitionId) {
 		//auto basepath = "E:/rules";
-		auto basepath = global_output_path_ / algorithm_name / "rules";
-		auto p = basepath / std::filesystem::path(algorithm_name + "_" + partitionId + binary_rule_file_suffix_);
+		auto basepath = global_output_path_ / algorithm_name_ / "rules";
+		auto p = basepath / std::filesystem::path(algorithm_name_ + "_" + partitionId + binary_rule_file_suffix_);
 		return p.string();
 	}
 

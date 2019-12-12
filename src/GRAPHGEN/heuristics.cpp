@@ -193,7 +193,7 @@ struct RecursionInstance {
 
 		//action_bitset action = rs.rules[rule_code].actions;				// 2) load from rule table
 		//action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 3) generate during run-time
-		action_bitset action = brs.LoadRuleFromBinaryRuleFile(rule_code);	// 4) read from file
+		action_bitset action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 4) read from file
 
 		total_rule_accesses++;
 
@@ -248,7 +248,7 @@ void HdtReadAndApplyRulesSingle(BaseRuleSet& brs, const rule_set& rs, RecursionI
 
 		//action_bitset action = rs.rules[rule_code].actions;				// 2) load from rule table
 		//action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 3) generate during run-time
-		action_bitset action = brs.LoadRuleFromBinaryRuleFile(rule_code);	// 4) read from file
+		action_bitset action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 4) read from file
 
 		FindBestSingleActionCombinationRunning<ACTION_COUNT>(r.all_single_actions, action);
 
@@ -425,7 +425,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 
-	brs.OpenBinaryRuleFile();
+	brs.VerifyBinaryRuleFiles();
 
 	FindHdtIteratively(remaining_conditions, set_conditions0, set_conditions1, rs, brs, t, parent);
 

@@ -99,6 +99,7 @@ public:
 				return *this;
 			}
 		}
+		std::cerr << "Cannot add action to a full action_set." << std::endl;
 		throw std::runtime_error("Cannot add action to a full action_set.");
 	}
 

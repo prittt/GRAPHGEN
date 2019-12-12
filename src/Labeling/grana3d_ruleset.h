@@ -378,9 +378,6 @@ public:
 	action_bitset GetActionFromRuleIndex(const rule_set& rs, uint64_t rule_index) const override {
 		rule_wrapper r(rs, rule_index);
 
-//#include "getactions_table.inc"
-
-
 		bool X = r[Xa] || r[Xb] || r[Xc] || r[Xd] || r[Xe] || r[Xf] || r[Xg] || r[Xh];
 		if (!X) {
 			//r << "nothing";
