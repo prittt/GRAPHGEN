@@ -47,7 +47,7 @@ class BaseRuleSet {
     rule_set rs_;
 
 	int binary_rule_file_stream_size = static_cast<int>(ceil(action_bitset::max_size_in_bits() / 8.0));
-	std::ifstream binary_rule_file;
+	std::vector<action_bitset> currently_loaded_rules;
 	int currently_open_partition = -1;
 
 	const int partitions = 1024;
@@ -184,10 +184,17 @@ public:
 		}
 	}
 
-	void VerifyBinaryRuleFiles() {
+	void OpenAndVerifyBinaryRuleFiles() {
 		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / partitions;
 		const ullong partition_size_bytes = binary_rule_file_stream_size * rules_per_partition;
 		const ullong partition_size_megabytes = binary_rule_file_stream_size * rules_per_partition / (1024 * 1024);
+		
+		if (rules_per_partition > currently_loaded_rules.max_size()) {
+			std::cerr << "Cannot store 1 partition in memory, aborting." << std::endl;
+			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
+		}
+
+		currently_loaded_rules.resize(static_cast<size_t>(rules_per_partition));
 
 		std::cout << "** Verifying rule files. (Partitions: " << partitions << " Rulecodes for each partition: " << rules_per_partition << ")" << std::endl;
 
@@ -209,7 +216,7 @@ public:
 				exit(EXIT_FAILURE);
 			}
 
-			binary_rule_file = std::ifstream(path, std::ios::binary);
+			std::ifstream binary_rule_file = std::ifstream(path, std::ios::binary);
 			if (!binary_rule_file.is_open()) {
 				std::cout << "Could not open partition " << p << " at " << path << " \n";
 				exit(EXIT_FAILURE);
@@ -246,14 +253,7 @@ public:
 
 			int p = static_cast<int>(rule_code / rules_per_partition);
 
-			if (p == currently_open_partition) {
-				// rule is in the currently open partition, just seekg if necessary
-				// 2nd condition prevents potential overflow error since first condition would be true for 
-				// rule_code = 0 and previous_rule_code = UINT64_MAX since -UINT64_MAX == 1
-				if ((rule_code - previous_rule_code) != 1 || previous_rule_code == UINT64_MAX) {
-					binary_rule_file.seekg(binary_rule_file_stream_size * (rule_code % rules_per_partition)); // absolute seekg
-				}
-			} else {
+			if (p != currently_open_partition) {
 				// rule is in a different partition, open it
 				const ullong begin_rule_code = p * rules_per_partition;
 				const ullong end_rule_code = (p + 1) * rules_per_partition;
@@ -272,15 +272,17 @@ public:
 					exit(EXIT_FAILURE);
 				}
 
-				binary_rule_file = std::ifstream(path, std::ios::binary);
-				binary_rule_file.seekg(binary_rule_file_stream_size * (rule_code % rules_per_partition)); // absolute seekg
+				std::ifstream is = std::ifstream(path, std::ios::binary);
+				int stream_size = binary_rule_file_stream_size;
+				std::for_each(currently_loaded_rules.begin(), currently_loaded_rules.end(), 
+					[&is, stream_size](action_bitset& a) { 
+					is.read(reinterpret_cast<char*>(&a), stream_size); 
+				});
+
 				currently_open_partition = p;
 			}
-			
-			previous_rule_code = rule_code;
 
-			binary_rule_file.read(reinterpret_cast<char*>(&action), binary_rule_file_stream_size);
-			return action;
+			return currently_loaded_rules[static_cast<size_t>(rule_code % rules_per_partition)];
 		}
 		catch (const std::ifstream::failure&) {
 			std::cout << "Binary rule " << rule_code << " couldn't be loaded from binary rule file (stream failure).\n";

@@ -282,24 +282,22 @@ void HdtReadAndApplyRulesSingle(BaseRuleSet& brs, const rule_set& rs, RecursionI
 int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_set& rs, std::vector<RecursionInstance>& upcoming_recursion_instances) {
 	int amount_of_action_children = 0;
 	
-	for (auto& c : r.conditions) {
-		// Case 3: Both childs are leafs, end of recursion
-		if (r.conditions.size() == 1) {
-			r.parent->data.t = conact::type::CONDITION;
-			r.parent->data.condition = r.conditions[0];
-			auto leftNode = tree.make_node();
-			auto rightNode = tree.make_node();
-			r.parent->left = leftNode;
-			r.parent->right = rightNode;
-			auto leftAction = action_bitset().set(r.most_probable_action_index[r.conditions[0]][0]);
-			leftNode->data.t = conact::type::ACTION;
-			leftNode->data.action = leftAction;
-			auto rightAction = action_bitset().set(r.most_probable_action_index[r.conditions[0]][1]);
-			rightNode->data.t = conact::type::ACTION;
-			rightNode->data.action = rightAction;
-			//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
-			return 2;
-		}
+	// Case 3: Both childs are leafs, end of recursion
+	if (r.conditions.size() == 1) {
+		r.parent->data.t = conact::type::CONDITION;
+		r.parent->data.condition = r.conditions[0];
+		auto leftNode = tree.make_node();
+		auto rightNode = tree.make_node();
+		r.parent->left = leftNode;
+		r.parent->right = rightNode;
+		auto leftAction = action_bitset().set(r.most_probable_action_index[r.conditions[0]][0]);
+		leftNode->data.t = conact::type::ACTION;
+		leftNode->data.action = leftAction;
+		auto rightAction = action_bitset().set(r.most_probable_action_index[r.conditions[0]][1]);
+		rightNode->data.t = conact::type::ACTION;
+		rightNode->data.action = rightAction;
+		//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
+		return 2;
 	}
 
 	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
@@ -433,7 +431,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 
-	brs.VerifyBinaryRuleFiles();
+	brs.OpenAndVerifyBinaryRuleFiles();
 
 	FindHdtIteratively(remaining_conditions, set_conditions0, set_conditions1, rs, brs, t, parent);
 
