@@ -180,50 +180,60 @@ struct RecursionInstance {
 
 };
 
-/*void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vector<RecursionInstance>& recursion_instances) {
-	//const int64_t iteration_step = (1ULL << std::max(0, static_cast<int>(conditions.size() - 3)));
-	const int iteration_step = 1;
+void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vector<RecursionInstance>& r_insts) {
+	std::vector<bool> rule_matches;
+	rule_matches.resize(r_insts.size());
+	bool rule_match_with_any;
 
-	//action_bitset action = action_bitset().set(0); // 1) Use Zero Action (performance baseline)
-
-	for (ullong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += iteration_step) {
+	for (ullong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += 1) {
 		//if (rule_code % (1ULL << 12) == 0) {
 		//	std::cout << "Rule " << rule_code << " of " << (1ULL << condition_count) << " (" << 100 * rule_code / (1ULL << condition_count) << "%)." << std::endl;
 		//}
+		rule_match_with_any = false;
+		for (size_t i = 0; i < r_insts.size(); i++) {
+			if ((rule_code & r_insts[i].set_conditions1.to_ullong()) != r_insts[i].set_conditions1.to_ullong()) {
+				rule_matches[i] = false;
+			} else if ((rule_code & r_insts[i].set_conditions0.to_ullong()) != 0u) {
+				rule_matches[i] = false;
+			} else {
+				rule_matches[i] = true;
+				rule_match_with_any = true;
+			}
+		}
+
+		if (!rule_match_with_any) {
+			continue;
+		}
 
 		//action_bitset action = rs.rules[rule_code].actions;				// 2) load from rule table
 		//action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 3) generate during run-time
 		action_bitset action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 4) read from file
 
 		total_rule_accesses++;
+		necessary_rule_accesses++;
 
-		for (auto& r : recursion_instances) {
-			if ((rule_code & r.set_conditions1.to_ullong()) != r.set_conditions1.to_ullong()) {
+		for (size_t i = 0; i < r_insts.size(); i++) {
+			if (!rule_matches[i]) {
 				continue;
 			}
-			if ((rule_code & r.set_conditions0.to_ullong()) != 0u) {
-				continue;
-			}
 
-			necessary_rule_accesses++;
+			FindBestSingleActionCombinationRunning<ACTION_COUNT>(r_insts[i].all_single_actions, action);
 
-			FindBestSingleActionCombinationRunning<ACTION_COUNT>(r.all_single_actions, action);
-
-			for (auto& c : r.conditions) {
+			for (auto& c : r_insts[i].conditions) {
 				int bit_value = (rule_code >> rs.conditions_pos.at(c)) & 1;
 
-				int return_code = FindBestSingleActionCombinationRunning<ACTION_COUNT>(r.single_actions[c][bit_value], action, r.most_probable_action_occurences[c][bit_value]);
+				int return_code = FindBestSingleActionCombinationRunning<ACTION_COUNT>(r_insts[i].single_actions[c][bit_value], action, r_insts[i].most_probable_action_occurences[c][bit_value]);
 
 				if (return_code >= 0) {
 					{
-						r.most_probable_action_index[c][bit_value] = return_code;
-						r.most_probable_action_occurences[c][bit_value] = r.single_actions[c][bit_value][return_code];
+						r_insts[i].most_probable_action_index[c][bit_value] = return_code;
+						r_insts[i].most_probable_action_occurences[c][bit_value] = r_insts[i].single_actions[c][bit_value][return_code];
 					}
 				}
 			}
 		}		
 	}
-}*/
+}
 
 void HdtReadAndApplyRulesSingle(BaseRuleSet& brs, const rule_set& rs, RecursionInstance& r) {
 	//const int64_t iteration_step = (1ULL << std::max(0, static_cast<int>(conditions.size() - 3)));
@@ -380,10 +390,8 @@ void FindHdtIteratively(std::vector<std::string> conditions,
 	while (pending_recursion_instances.size() > 0) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances.size() << ")" << std::endl;
 
-		TLOG("Reading rules and classifying", 
-			for (auto& r : pending_recursion_instances) {
-				HdtReadAndApplyRulesSingle(brs, rs, r);
-			}
+		TLOG("Reading rules and classifying",
+			HdtReadAndApplyRulesOnePass(brs, rs, pending_recursion_instances);
 		);
 
 		TLOG2("Processing instances", 
