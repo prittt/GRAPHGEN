@@ -121,12 +121,11 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 	int most_popular_single_action_occurences = -1;
 	int most_popular_single_action_index = -1;
 
-	for (ushort bit_index = 0; bit_index < maxActions; bit_index++) {
-		if (combined_action.test(bit_index)) {
-			if (single_actions[bit_index] > most_popular_single_action_occurences) {
-				most_popular_single_action_index = bit_index;
-				most_popular_single_action_occurences = single_actions[bit_index];
-			}
+	for (ushort i = 0; i < combined_action.size(); i++) {
+		auto s = combined_action.getActionByDataIndex(i);
+		if (single_actions[s] > most_popular_single_action_occurences) {
+			most_popular_single_action_index = s;
+			most_popular_single_action_occurences = single_actions[s];
 		}
 	}
 

@@ -51,7 +51,7 @@ using ullong = uint64_t;
 class action_bitset {
 public:
 	static const size_t max_size_in_bits() {
-		return 16 * MAX_COMBINED_ACTIONS_COUNT;
+		return 16 * MAX_COMBINED_ACTIONS_COUNT; // because ushort is 16 bit type
 	}
 
 private:
@@ -67,6 +67,10 @@ public:
 	// OPERATORS
 	const ushort operator[] (const ushort a) const {
 		return test(a + 1) ? 1 : 0;
+	}
+
+	const ushort getActionByDataIndex(const ushort& index) const {
+		return data_[index] - 1;
 	}
 
 	bool operator==(const action_bitset& rhs) const {
