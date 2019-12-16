@@ -36,8 +36,9 @@
 #include <utility>
 #include <filesystem>
 
-#include "yaml-cpp/yaml.h"
+#include "compression.h"
 
+#include "yaml-cpp/yaml.h"
 #include "rule_set.h"
 
 class BaseRuleSet {

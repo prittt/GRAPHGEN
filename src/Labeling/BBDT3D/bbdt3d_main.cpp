@@ -37,11 +37,8 @@ int main()
     string algorithm_name = "BBDT3D";
     conf = ConfigData(algorithm_name, "Grana3D");
 
-    Grana3dRS g_rs(true);
+    Grana3dRS g_rs;
     auto rs = g_rs.GetRuleSet();
-
-	std::cout << "** DONE" << std::endl;
-	exit(EXIT_SUCCESS);
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask

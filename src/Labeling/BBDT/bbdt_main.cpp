@@ -27,13 +27,23 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "graphgen.h"
-
+#include "compression.h"
 #include "grana_ruleset.h"
 
 using namespace std;
 
 int main()
 {
+	//ZstdCompression compr;
+	//compr.allocateResources(128 * 1024 * 1024);
+	//compr.compressFile("D:/code/graphsgen/bin/outputs/BBDT3D/rules/BBDT3D_0-67108864_rules.bin", "D:/code/graphsgen/bin/outputs/BBDT3D/rules/BBDT3D_0-67108864_rules.zst");
+	//compr.freeResources();
+	ZstdDecompression decompr;
+	decompr.allocateResources(128 * 1024 * 1024);
+	decompr.decompressFile("D:/code/graphsgen/bin/outputs/BBDT3D/rules/BBDT3D_0-67108864_rules.zst", "D:/code/graphsgen/bin/outputs/BBDT3D/rules/BBDT3D_0-67108864_rules_new.bin");
+	decompr.freeResources();
+	exit(EXIT_SUCCESS);
+
     string algorithm_name = "BBDT";
     conf = ConfigData(algorithm_name, "Grana");
 

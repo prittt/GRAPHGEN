@@ -92,7 +92,11 @@ set(CMAKE_FOLDER "")
 add_library(GRAPHGEN STATIC "${CMAKE_INSTALL_PREFIX}/config.yaml")
 target_include_directories(GRAPHGEN PUBLIC src/GRAPHGEN)
 add_subdirectory(src/GRAPHGEN)
-target_link_libraries(GRAPHGEN yaml-cpp)
+target_link_libraries(GRAPHGEN yaml-cpp libzstd_shared)
+
+# Include files from libzstd (bug in library cmake file, this is just a very raw and bad workaround)
+set(LIBZSTD_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/zstd/lib)
+target_include_directories(GRAPHGEN PUBLIC ${LIBZSTD_INCLUDE_DIR})
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(GRAPHGEN OpenMP::OpenMP_CXX)

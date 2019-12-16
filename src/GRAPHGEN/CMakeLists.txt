@@ -31,6 +31,8 @@ target_sources(GRAPHGEN PRIVATE
 	performance_evaluator.h
 	pixel_set.h
 	rule_set.h
+	compression.h
+	compression.cpp
 	tree.h
 	tree2dag_identities.cpp
 	tree2dag_identities.h
