@@ -430,7 +430,8 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 
-	brs.OpenAndVerifyBinaryRuleFiles();
+	brs.OpenRuleFiles();
+	brs.VerifyRuleFiles();
 
 	FindHdtIteratively(remaining_conditions, set_conditions0, set_conditions1, rs, brs, t, parent);
 

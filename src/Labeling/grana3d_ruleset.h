@@ -274,7 +274,6 @@ action_bitset GetActions(rule_wrapper& r,
 				action += "+" + s[i];
 		}
 		combined_actions.set(rs.actions_pos.at(action) - 1);
-		break; // ONLY FIRST ACTION WILL BE CONSIDERED
 	}
 	return combined_actions;
 }

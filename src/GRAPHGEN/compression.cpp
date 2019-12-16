@@ -15,6 +15,7 @@
 #include <string.h>    
 #include <string>    
 #include <zstd.h>      
+#include <vector>
 
 #include "compression.h"
 
@@ -100,9 +101,7 @@ FILE* openFile(const char *filename, const char *instruction)
 {
 	FILE* const inFile = fopen(filename, instruction);
 	if (inFile) return inFile;
-	/* error */
-	perror(filename);
-	exit(ERROR_fopen);
+	return nullptr;
 }
 
 /*! closeFile() :
@@ -272,60 +271,21 @@ void ZstdCompression::compressFile(std::string input_file_name, std::string outp
 
 #pragma endregion
 
+
 #pragma region Decompression
 
-void ZstdDecompression::allocateResources(/*size_t maxFileSize*/)
+void ZstdDecompression::allocateResources()
 {
-	//resources_.fBufferSize = maxFileSize;
-	//resources_.cBufferSize = ZSTD_decompressBound;
-	
-	//resources_.fBuffer = malloc_(resources_.fBufferSize);
-	//resources_.cBuffer = malloc_(resources_.cBufferSize);
 	dctx = ZSTD_createDCtx();
 	CHECK(dctx != NULL, "ZSTD_createCCtx() failed!");
 }
 
 void ZstdDecompression::freeResources()
 {
-	/*free(resources_.fBuffer);
-	free(resources_.cBuffer);*/
 	ZSTD_freeDCtx(dctx);   /* never fails */
 }
 
-//void ZstdDecompression::decompressFileSimple(std::string input_file_name, std::string output_file_name)
-//{
-//	size_t cSize;
-//	const char* fname = input_file_name.c_str();
-//	const char* oname = output_file_name.c_str();
-//	void* const cBuff = mallocAndLoadFile(fname, &cSize);
-//	/* Read the content size from the frame header. For simplicity we require
-//	 * that it is always present. By default, zstd will write the content size
-//	 * in the header when it is known. If you can't guarantee that the frame
-//	 * content size is always written into the header, either use streaming
-//	 * decompression, or ZSTD_decompressBound().
-//	 */
-//	unsigned long long const rSize = ZSTD_getFrameContentSize(cBuff, cSize);
-//	CHECK(rSize != ZSTD_CONTENTSIZE_ERROR, "%s: not compressed by zstd!", fname);
-//	CHECK(rSize != ZSTD_CONTENTSIZE_UNKNOWN, "%s: original size unknown!", fname);
-//
-//	void* const rBuff = malloc_((size_t)rSize);
-//
-//	size_t const dSize = ZSTD_decompressDCtx(dctx, rBuff, rSize, cBuff, cSize);
-//	CHECK_ZSTD(dSize);
-//	/* When zstd knows the content size, it will error if it doesn't match. */
-//	CHECK(dSize == rSize, "Impossible because zstd will check this condition!");
-//
-//	saveFile(oname, rBuff, rSize);
-//
-//	/* success */
-//	printf("%25s : %6u -> %7u \n", fname, (unsigned)cSize, (unsigned)rSize);
-//
-//	free(rBuff);
-//	free(cBuff);
-//}
-
-// Decompression using streaming internally, not requiring to know the block size
-void ZstdDecompression::decompressFile(std::string input_file_name, std::string output_file_name)
+void ZstdDecompression::decompressFileToFile(std::string input_file_name, std::string output_file_name)
 {
 	FILE* const fin = openFile(input_file_name.c_str(), "rb");
 	size_t const buffInSize = ZSTD_DStreamInSize();
@@ -388,22 +348,109 @@ void ZstdDecompression::decompressFile(std::string input_file_name, std::string 
 	free(buffOut);
 }
 
+void ZstdDecompression::decompressFileToMemory(std::string input_file_name, std::vector<action_bitset>& data) {
+	FILE* const fin = openFile(input_file_name.c_str(), "rb");
+	size_t const buffInSize = ZSTD_DStreamInSize();
+	void*  const buffIn = malloc_(buffInSize);
+	size_t const buffOutSize = ZSTD_DStreamOutSize();  /* Guarantee to successfully flush at least one complete compressed block in all circumstances. */
+	void*  const buffOut = malloc_(buffOutSize);
+
+	/* This loop assumes that the input file is one or more concatenated zstd
+	 * streams. This example won't work if there is trailing non-zstd data at
+	 * the end, but streaming decompression in general handles this case.
+	 * ZSTD_decompressStream() returns 0 exactly when the frame is completed,
+	 * and doesn't consume input after the frame.
+	 */
+	size_t const toRead = buffInSize;
+	action_bitset* dst = &data[0];
+	size_t read;
+	size_t lastRet = 0;
+	int isEmpty = 1;
+	while ((read = readFromFile(buffIn, toRead, fin))) {
+		isEmpty = 0;
+		ZSTD_inBuffer input = { buffIn, read, 0 };
+		/* Given a valid frame, zstd won't consume the last byte of the frame
+		 * until it has flushed all of the decompressed data of the frame.
+		 * Therefore, instead of checking if the return code is 0, we can
+		 * decompress just check if input.pos < input.size.
+		 */
+		while (input.pos < input.size) {
+			ZSTD_outBuffer output = { buffOut, buffOutSize, 0 };
+			/* The return code is zero if the frame is complete, but there may
+			 * be multiple frames concatenated together. Zstd will automatically
+			 * reset the context when a frame is complete. Still, calling
+			 * ZSTD_DCtx_reset() can be useful to reset the context to a clean
+			 * state, for instance if the last decompression call returned an
+			 * error.
+			 */
+			size_t const ret = ZSTD_decompressStream(dctx, &output, &input);
+			CHECK_ZSTD(ret);
+
+			memcpy(dst, (action_bitset*)output.dst, output.pos);
+			dst += output.pos;
+			lastRet = ret;
+		}
+	}
+
+	if (isEmpty) {
+		fprintf(stderr, "input is empty\n");
+		exit(1);
+	}
+
+	if (lastRet != 0) {
+		/* The last return value from ZSTD_decompressStream did not end on a
+		 * frame, but we reached the end of the file! We assume this is an
+		 * error, and the input was truncated.
+		 */
+		fprintf(stderr, "EOF before end of stream: %zu\n", lastRet);
+		exit(1);
+	}
+
+	closeFile(fin);
+	free(buffIn);
+	free(buffOut);
+}
+
+void ZstdDecompression::decompressFileToFileAlt(std::string input_file_name, std::string output_file_name)
+{
+	size_t cSize;
+	const char* fname = input_file_name.c_str();
+	const char* oname = output_file_name.c_str();
+	void* const cBuff = mallocAndLoadFile(fname, &cSize);
+	/* Read the content size from the frame header. For simplicity we require
+	 * that it is always present. By default, zstd will write the content size
+	 * in the header when it is known. If you can't guarantee that the frame
+	 * content size is always written into the header, either use streaming
+	 * decompression, or ZSTD_decompressBound().
+	 */
+	unsigned long long const rSize = ZSTD_getFrameContentSize(cBuff, cSize);
+	CHECK(rSize != ZSTD_CONTENTSIZE_ERROR, "%s: not compressed by zstd!", fname);
+	CHECK(rSize != ZSTD_CONTENTSIZE_UNKNOWN, "%s: original size unknown!", fname);
+
+	CHECK(rSize <= sizeof(size_t), "Read Frame size too large for size_t!");
+
+	void* const rBuff = malloc_(static_cast<size_t>(rSize));
+
+	size_t const dSize = ZSTD_decompressDCtx(dctx, rBuff, static_cast<size_t>(rSize), cBuff, cSize);
+	CHECK_ZSTD(dSize);
+	/* When zstd knows the content size, it will error if it doesn't match. */
+	CHECK(dSize == rSize, "Impossible because zstd will check this condition!");
+
+	saveFile(oname, rBuff, rSize);
+
+	/* success */
+	printf("%25s : %6u -> %7u \n", fname, (unsigned)cSize, (unsigned)rSize);
+
+	free(rBuff);
+	free(cBuff);
+}
+
 #pragma endregion
 
 
 #pragma region Streaming Compression
 
-void ZstdStreamingCompression::beginStreaming(std::string output_file_name) {
-	fout = openFile(output_file_name.c_str(), "wb");
-	/* Create the input and output buffers.
-	 * They may be any size, but we recommend using these functions to size them.
-	 * Performance will only suffer significantly for very tiny buffers.
-	 */
-	/*buffInSize = ZSTD_CStreamInSize();
-	buffIn = malloc_(buffInSize);*/
-	buffOutSize = ZSTD_CStreamOutSize();
-	buffOut = malloc_(buffOutSize);
-
+void ZstdStreamingCompression::allocateResources() {
 	/* Create the context. */
 	cctx = ZSTD_createCCtx();
 	CHECK(cctx != NULL, "ZSTD_createCCtx() failed!");
@@ -413,6 +460,20 @@ void ZstdStreamingCompression::beginStreaming(std::string output_file_name) {
 	 */
 	CHECK_ZSTD(ZSTD_CCtx_setParameter(cctx, ZSTD_c_compressionLevel, compression_level));
 	CHECK_ZSTD(ZSTD_CCtx_setParameter(cctx, ZSTD_c_checksumFlag, 1));
+}
+
+bool ZstdStreamingCompression::beginStreaming(std::string output_file_name) {
+	fout = openFile(output_file_name.c_str(), "wb");
+	if (fout == nullptr) {
+		return false;
+	}
+	/* Create the input and output buffers.
+	 * They may be any size, but we recommend using these functions to size them.
+	 * Performance will only suffer significantly for very tiny buffers.
+	 */
+	buffOutSize = ZSTD_CStreamOutSize();
+	buffOut = malloc_(buffOutSize);
+	return true;
 }
 
 void ZstdStreamingCompression::compressDataChunk(const void* data, size_t read_size, bool last_chunk) {
@@ -448,10 +509,13 @@ void ZstdStreamingCompression::compressDataChunk(const void* data, size_t read_s
 }
 
 void ZstdStreamingCompression::endStreaming() {
-	ZSTD_freeCCtx(cctx);
 	closeFile(fout);
-	//free(buffIn);
 	free(buffOut);
+}
+
+void ZstdStreamingCompression::freeResources()
+{
+	ZSTD_freeCCtx(cctx);
 }
 
 #pragma endregion

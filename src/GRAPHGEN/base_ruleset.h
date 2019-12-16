@@ -40,6 +40,7 @@
 
 #include "yaml-cpp/yaml.h"
 #include "rule_set.h"
+#include <zstd.h>
 
 class BaseRuleSet {
     std::filesystem::path p_;
@@ -49,6 +50,7 @@ class BaseRuleSet {
 
 	int binary_rule_file_stream_size = static_cast<int>(ceil(action_bitset::max_size_in_bits() / 8.0));
 	std::vector<action_bitset> currently_loaded_rules;
+	ZstdDecompression decompression;
 	int currently_open_partition = -1;
 
 	const int partitions = 1024;
@@ -111,81 +113,106 @@ public:
 		const ullong partition_size_megabytes = binary_rule_file_stream_size * rules_per_partition / (1024 * 1024);
 
 		std::cout << "[Rule Files] Partitions: " << partitions << " Rulecodes for each partition: " << rules_per_partition << " Estimated partition size (Megabyte): " << partition_size_megabytes << std::endl;
-
-		#pragma omp parallel for
-		for (int p = 0; p < partitions; p++) {
-			const ullong begin_rule_code = p * rules_per_partition;
-			const ullong end_rule_code = (p + 1) * rules_per_partition;
-
-			auto path = conf.binary_rule_file_path_partitioned(std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
+		
+		#pragma omp parallel
+		{
+			ZstdStreamingCompression streamingCompression;
+			streamingCompression.allocateResources();
 			
-			// check status of existing files
-			if (std::filesystem::exists(path)) {
-				if (std::filesystem::file_size(path) == partition_size_bytes) {
-					std::cerr << "[Partition " << p << "] Partition exists and is complete: skipping.\n";
+			#pragma omp for
+			for (int p = 0; p < partitions; p++) {
+				const ullong begin_rule_code = p * rules_per_partition;
+				const ullong end_rule_code = (p + 1) * rules_per_partition;
+
+				auto path = conf.binary_rule_file_path_partitioned(std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
+
+				// check status of existing files
+				if (std::filesystem::exists(path)) {
+					std::cout << "[Partition " << p << "] Partition exists: skipping.\n";
+					continue;
+
+					/*if (std::filesystem::file_size(path) == partition_size_bytes) {
+						std::cout << "[Partition " << p << "] Partition exists and is complete: skipping.\n";
+						continue;
+					}
+
+					// check if file is locked
+					try {
+						auto p2 = path + ".test";
+						std::filesystem::rename(path, p2);
+						std::filesystem::remove(p2);
+						std::cout << "[Partition " << p << "] Partition exists, is not complete and not locked: overwriting.\n";
+					}
+					catch (std::filesystem::filesystem_error e) {
+						std::cout << "[Partition " << p << "] Partition exists, is not complete but locked: skipping.\n";
+						continue;
+					}*/
+				}
+
+				//std::ofstream os(path, std::ios::binary);
+				if (!streamingCompression.beginStreaming(path)) {
+					std::cerr << "[Partition " << p << "] Partition could not be saved to " << path << ": skipping.\n";
 					continue;
 				}
 
-				// check if file is locked
-				try {
-					auto p2 = path + ".test";
-					std::filesystem::rename(path, p2);
-					std::filesystem::remove(p2);
-					std::cerr << "[Partition " << p << "] Partition exists, is not complete and not locked: overwriting.\n";
-				}
-				catch (std::filesystem::filesystem_error e) {
-					std::cerr << "[Partition " << p << "] Partition exists, is not complete but locked: skipping.\n";
-					continue;
-				}
-			}
+				std::cout << "[Partition " << p << "] Begin processing. First Rule Code: " << begin_rule_code << " Last (exclusive) Rule Code: " << end_rule_code << std::endl;
 
-			std::ofstream os(path, std::ios::binary);
-			if (!os) {
-				std::cerr << "[Partition " << p << "] Partition could not be saved to " << path << ": skipping.\n";
-				continue;
+				int stream_size = binary_rule_file_stream_size;
+				if (rs_.rulesStatus == IN_MEMORY) {
+					// rules are in memory
+					throw std::runtime_error("writing rules from memory not yet implemented");
+					//std::for_each(rs_.rules.begin(), rs_.rules.end(), [&os, stream_size](rule r) { os.write(reinterpret_cast<const char*>(&r.actions), stream_size); });
+				}
+				else {
+					// rules are generated during the writing
+					const uint batches = 16;
+					const ullong batches_steps = rules_per_partition / batches;
+
+					std::vector<action_bitset> actions;
+					if (batches_steps > actions.max_size()) {
+						std::cerr << "ERROR: Batches are too big to be stored in a vector. (batch size: " << batches_steps << " vector.max_size: " << actions.max_size() << ")" << std::endl;
+						exit(EXIT_FAILURE);
+					}
+					actions.resize(static_cast<size_t>(batches_steps));
+
+					//TLOG("rules batched", 
+
+					for (int b = 0; b < batches; b++) {
+						const ullong batch_begin_rule_code = (begin_rule_code + b * batches_steps);
+						const ullong batch_end_rule_code = (begin_rule_code + (b + 1) * batches_steps);
+
+						std::cout << "[Partition " << p << "] Processing rule batch " << (b + 1) << " of " << batches << ", rules from " << batch_begin_rule_code << " to " << batch_end_rule_code << ".\n";
+						size_t i = 0;
+						for (ullong rule_code = batch_begin_rule_code; rule_code < batch_end_rule_code; rule_code++, i++) {
+							actions[i] = GetActionFromRuleIndex(rs_, rule_code);
+						}
+						streamingCompression.compressDataChunk(&actions[0], static_cast<size_t>(batches_steps) * stream_size, b == batches - 1);
+						/*for (const action_bitset& a : actions) {
+							os.write(reinterpret_cast<const char*>(&a), stream_size);
+						}*/
+					}
+					//);
+				}
+				streamingCompression.endStreaming();
+				//os.close();
 			}
 			
-			std::cout << "[Partition " << p << "] Begin processing. First Rule Code: " << begin_rule_code << " Last (exclusive) Rule Code: " << end_rule_code << std::endl;
-
-			int stream_size = binary_rule_file_stream_size;
-			if (rs_.rulesStatus == IN_MEMORY) {
-				// rules are in memory
-				std::for_each(rs_.rules.begin(), rs_.rules.end(), [&os, stream_size](rule r) { os.write(reinterpret_cast<const char*>(&r.actions), stream_size); });
-			}
-			else {
-				// rules are generated during the writing
-				const uint batches = 16;
-				const ullong batches_steps = rules_per_partition / batches;
-
-				std::vector<action_bitset> actions;
-				if (batches_steps > actions.max_size()) {
-					std::cerr << "ERROR: Batches are too big to be stored in a vector. (batch size: " << batches_steps << " vector.max_size: " << actions.max_size() << ")" << std::endl;
-					exit(EXIT_FAILURE);
-				}
-				actions.resize(static_cast<size_t>(batches_steps));
-
-				//TLOG("rules batched", 
-					
-				for (int b = 0; b < batches; b++) {
-					const ullong batch_begin_rule_code = (begin_rule_code + b * batches_steps);
-					const ullong batch_end_rule_code = (begin_rule_code + (b + 1) * batches_steps);
-
-					std::cout << "[Partition " << p << "] Processing rule batch " << (b + 1) << " of " << batches << ", rules from " << batch_begin_rule_code << " to " << batch_end_rule_code << ".\n";
-					size_t i = 0;
-					for (ullong rule_code = batch_begin_rule_code; rule_code < batch_end_rule_code; rule_code++, i++) {
-						actions[i] = GetActionFromRuleIndex(rs_, rule_code);
-					}
-					for (const action_bitset& a : actions) {
-						os.write(reinterpret_cast<const char*>(&a), stream_size);
-					}
-				}
-				//);
-			}
-			os.close();			
-		}
+			streamingCompression.freeResources();
+		}		
 	}
 
-	void OpenAndVerifyBinaryRuleFiles() {
+	void OpenRuleFiles() {
+		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / partitions;
+		if (rules_per_partition > currently_loaded_rules.max_size()) {
+			std::cerr << "Cannot store 1 partition in memory, aborting." << std::endl;
+			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
+		}
+		decompression.allocateResources();
+		currently_loaded_rules.resize(static_cast<size_t>(rules_per_partition));
+		std::cout << "Rule files opened." << std::endl;
+	}
+
+	void VerifyRuleFiles() {
 		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / partitions;
 		const ullong partition_size_bytes = binary_rule_file_stream_size * rules_per_partition;
 		const ullong partition_size_megabytes = binary_rule_file_stream_size * rules_per_partition / (1024 * 1024);
@@ -195,9 +222,10 @@ public:
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 
-		currently_loaded_rules.resize(static_cast<size_t>(rules_per_partition));
-
 		std::cout << "** Verifying rule files. (Partitions: " << partitions << " Rulecodes for each partition: " << rules_per_partition << ")" << std::endl;
+		
+		ZstdDecompression decompression_;
+		decompression_.allocateResources();
 
 		for (int p = 0; p < partitions; p++) {
 			const ullong begin_rule_code = p * rules_per_partition;
@@ -207,29 +235,30 @@ public:
 
 			// check status of existing files
 			if (std::filesystem::exists(path)) {
-				if (std::filesystem::file_size(path) != partition_size_bytes) {
+				/*if (std::filesystem::file_size(path) != partition_size_bytes) {
 					std::cerr << "Partition " << p << " exists but is not complete: aborting.\n";
 					exit(EXIT_FAILURE);
-				}
+				}*/
 			}
 			else {
 				std::cerr << "Partition " << p << " does not exist: aborting.\n";
 				exit(EXIT_FAILURE);
 			}
 
-			std::ifstream binary_rule_file = std::ifstream(path, std::ios::binary);
-			if (!binary_rule_file.is_open()) {
+			std::vector<action_bitset> actions;
+			actions.resize(static_cast<size_t>(rules_per_partition));
+
+			decompression_.decompressFileToMemory(path, actions);
+			//std::ifstream binary_rule_file = std::ifstream(path, std::ios::binary);
+			/*if (!binary_rule_file.is_open()) {
 				std::cout << "Could not open partition " << p << " at " << path << " \n";
 				exit(EXIT_FAILURE);
-			}
+			}*/
 			const action_bitset first_action_correct = GetActionFromRuleIndex(rs_, begin_rule_code);
 			const action_bitset last_action_correct = GetActionFromRuleIndex(rs_, end_rule_code - 1);
 
-			action_bitset first_action_read, last_action_read;
-			binary_rule_file.read(reinterpret_cast<char*>(&first_action_read), binary_rule_file_stream_size);
-
-			binary_rule_file.seekg(binary_rule_file_stream_size * ((end_rule_code - 1) % rules_per_partition)); 
-			binary_rule_file.read(reinterpret_cast<char*>(&last_action_read), binary_rule_file_stream_size);
+			const action_bitset first_action_read = actions[0];
+			const action_bitset last_action_read = actions[actions.size() - 1];
 
 			if (first_action_correct != first_action_read || last_action_correct != last_action_read) {
 				std::cout << "************************************************************" << std::endl;
@@ -240,7 +269,10 @@ public:
 				exit(EXIT_FAILURE);
 			}
 		}
-		std::cout << "** All rule files verified." << std::endl;
+		
+		decompression_.freeResources();
+
+		std::cout << "** All rule files verified." << std::endl;		
 	}
 
 	ullong previous_rule_code = UINT64_MAX;
@@ -262,23 +294,19 @@ public:
 				auto path = conf.binary_rule_file_path_partitioned(std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
 
 				// check status of existing files
-				if (std::filesystem::exists(path)) {
-					if (std::filesystem::file_size(path) != partition_size_bytes) {
-						std::cerr << "Partition " << p << " exists but is not complete: aborting.\n";
-						exit(EXIT_FAILURE);
-					}
-				}
-				else {
+				if (!std::filesystem::exists(path)) {
 					std::cerr << "Partition " << p << " does not exist: aborting.\n";
 					exit(EXIT_FAILURE);
 				}
 
-				std::ifstream is = std::ifstream(path, std::ios::binary);
-				int stream_size = binary_rule_file_stream_size;
-				std::for_each(currently_loaded_rules.begin(), currently_loaded_rules.end(), 
+				//std::ifstream is = std::ifstream(path, std::ios::binary);
+				//int stream_size = binary_rule_file_stream_size;
+				/*std::for_each(currently_loaded_rules.begin(), currently_loaded_rules.end(), 
 					[&is, stream_size](action_bitset& a) { 
 					is.read(reinterpret_cast<char*>(&a), stream_size); 
-				});
+				});*/
+
+				decompression.decompressFileToMemory(path, currently_loaded_rules);
 
 				currently_open_partition = p;
 			}

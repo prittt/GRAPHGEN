@@ -138,7 +138,6 @@ public:
 					action += "+" + s[i];
 			}
 			combined_actions.set(rs.actions_pos.at(action) - 1);
-			break; // ONLY SAVE FIRST ACTION
 		}
 		return combined_actions;
 	}

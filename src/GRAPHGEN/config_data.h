@@ -88,7 +88,7 @@ struct ConfigData {
     std::filesystem::path rstable_path_;
 
 	// Rule Set / Decision Table
-	std::string binary_rule_file_suffix_ = "_rules.bin";
+	std::string binary_rule_file_suffix_ = "_rules.bin.zst";
 
 	std::string binary_rule_file_path_partitioned(std::string partitionId) {
 		//auto basepath = "E:/rules";
@@ -96,8 +96,6 @@ struct ConfigData {
 		auto p = basepath / std::filesystem::path(algorithm_name_ + "_" + partitionId + binary_rule_file_suffix_);
 		return p.string();
 	}
-
-	//std::string binary_rule_file_base_path_;
 
     // Datasets
     std::vector<std::string> datasets_;
