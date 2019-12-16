@@ -38,10 +38,26 @@ int main()
 	//compr.allocateResources(128 * 1024 * 1024);
 	//compr.compressFile("D:/code/graphsgen/bin/outputs/BBDT3D/rules/BBDT3D_0-67108864_rules.bin", "D:/code/graphsgen/bin/outputs/BBDT3D/rules/BBDT3D_0-67108864_rules.zst");
 	//compr.freeResources();
+
+	//ZstdDecompression decompr;
+	//decompr.allocateResources(128 * 1024 * 1024);
+	//decompr.decompressFile("D:/code/graphsgen/bin/outputs/BBDT3D/rules/BBDT3D_0-67108864_rules.zst", "D:/code/graphsgen/bin/outputs/BBDT3D/rules/BBDT3D_0-67108864_rules_new.bin");
+	//decompr.freeResources();
+
+	ZstdStreamingCompression streamcompr;
+	streamcompr.beginStreaming("D:/code/graphsgen/bin/outputs/BBDT3D/rules/0test.zst");
+	for (int i = 0; i < 100000000; i++) {
+		streamcompr.compressDataChunk(reinterpret_cast<const void*>(&i), sizeof(i), i == 99999999);
+	}
+	streamcompr.endStreaming();
+
 	ZstdDecompression decompr;
-	decompr.allocateResources(128 * 1024 * 1024);
-	decompr.decompressFile("D:/code/graphsgen/bin/outputs/BBDT3D/rules/BBDT3D_0-67108864_rules.zst", "D:/code/graphsgen/bin/outputs/BBDT3D/rules/BBDT3D_0-67108864_rules_new.bin");
+	decompr.allocateResources();
+	TLOG("Decompress", 
+	decompr.decompressFile("D:/code/graphsgen/bin/outputs/BBDT3D/rules/0test.zst", "D:/code/graphsgen/bin/outputs/BBDT3D/rules/0test.bin");	
+	);
 	decompr.freeResources();
+
 	exit(EXIT_SUCCESS);
 
     string algorithm_name = "BBDT";
