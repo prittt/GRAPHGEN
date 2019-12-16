@@ -42,7 +42,7 @@
 #include "rule_set.h"
 #include <zstd.h>
 
-constexpr int partitions = 2048;
+constexpr int PARTITIONS = 4096;
 
 class BaseRuleSet {
     std::filesystem::path p_;
@@ -108,11 +108,11 @@ public:
     }
 
 	void SaveAllRulesBinary() {
-		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / partitions;
+		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / PARTITIONS;
 		const ullong partition_size_bytes = binary_rule_file_stream_size * rules_per_partition;
 		const ullong partition_size_megabytes = binary_rule_file_stream_size * rules_per_partition / (1024 * 1024);
 
-		std::cout << "[Rule Files] Partitions: " << partitions << " Rulecodes for each partition: " << rules_per_partition << " Estimated partition size (Megabyte): " << partition_size_megabytes << std::endl;
+		std::cout << "[Rule Files] Partitions: " << PARTITIONS << " Rulecodes for each partition: " << rules_per_partition << " Estimated partition size (Megabyte): " << partition_size_megabytes << std::endl;
 		
 		#pragma omp parallel
 		{
@@ -120,38 +120,27 @@ public:
 			streamingCompression.allocateResources();
 			
 			#pragma omp for
-			for (int p = 0; p < partitions; p++) {
+			for (int p = 0; p < PARTITIONS; p++) {
 				const ullong begin_rule_code = p * rules_per_partition;
 				const ullong end_rule_code = (p + 1) * rules_per_partition;
 
-				auto path = conf.binary_rule_file_path_partitioned(std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
+				auto final_path = conf.binary_rule_file_path_partitioned(std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
+				auto tmp_path = final_path + ".tmp";
 
 				// check status of existing files
-				if (std::filesystem::exists(path)) {
-					std::cout << "[Partition " << p << "] Partition exists: skipping.\n";
+				if (std::filesystem::exists(final_path)) {
+					std::cout << "[Partition " << p << "] Final partition exists: skipping.\n";
 					continue;
-
-					/*if (std::filesystem::file_size(path) == partition_size_bytes) {
-						std::cout << "[Partition " << p << "] Partition exists and is complete: skipping.\n";
-						continue;
-					}
-
-					// check if file is locked
-					try {
-						auto p2 = path + ".test";
-						std::filesystem::rename(path, p2);
-						std::filesystem::remove(p2);
-						std::cout << "[Partition " << p << "] Partition exists, is not complete and not locked: overwriting.\n";
-					}
-					catch (std::filesystem::filesystem_error e) {
-						std::cout << "[Partition " << p << "] Partition exists, is not complete but locked: skipping.\n";
-						continue;
-					}*/
+				}
+				if (std::filesystem::exists(tmp_path)) {
+					std::cout << "[Partition " << p << "] Partition .tmp-file exists: skipping.\n";
+					continue;
 				}
 
+
 				//std::ofstream os(path, std::ios::binary);
-				if (!streamingCompression.beginStreaming(path)) {
-					std::cerr << "[Partition " << p << "] Partition could not be saved to " << path << ": skipping.\n";
+				if (!streamingCompression.beginStreaming(tmp_path)) {
+					std::cerr << "[Partition " << p << "] Partition could not be saved to " << tmp_path << ": skipping.\n";
 					continue;
 				}
 
@@ -194,6 +183,7 @@ public:
 					//);
 				}
 				streamingCompression.endStreaming();
+				std::filesystem::rename(tmp_path, final_path);
 				//os.close();
 			}
 			
@@ -202,7 +192,7 @@ public:
 	}
 
 	void OpenRuleFiles() {
-		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / partitions;
+		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / PARTITIONS;
 		if (rules_per_partition > currently_loaded_rules.max_size()) {
 			std::cerr << "Cannot store 1 partition in memory, aborting. (" << rules_per_partition << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
@@ -213,7 +203,7 @@ public:
 	}
 
 	void VerifyRuleFiles() {
-		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / partitions;
+		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / PARTITIONS;
 		const ullong partition_size_bytes = binary_rule_file_stream_size * rules_per_partition;
 		const ullong partition_size_megabytes = binary_rule_file_stream_size * rules_per_partition / (1024 * 1024);
 		
@@ -222,12 +212,12 @@ public:
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 
-		std::cout << "** Verifying rule files. (Partitions: " << partitions << " Rulecodes for each partition: " << rules_per_partition << ")" << std::endl;
+		std::cout << "** Verifying rule files. (Partitions: " << PARTITIONS << " Rulecodes for each partition: " << rules_per_partition << ")" << std::endl;
 		
 		ZstdDecompression decompression_;
 		decompression_.allocateResources();
 
-		for (int p = 0; p < partitions; p++) {
+		for (int p = 0; p < PARTITIONS; p++) {
 			const ullong begin_rule_code = p * rules_per_partition;
 			const ullong end_rule_code = (p + 1) * rules_per_partition;
 
@@ -278,7 +268,7 @@ public:
 	ullong previous_rule_code = UINT64_MAX;
 
 	action_bitset LoadRuleFromBinaryRuleFiles(ullong& rule_code) {
-		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / partitions;
+		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / PARTITIONS;
 		const ullong partition_size_bytes = binary_rule_file_stream_size * rules_per_partition;
 
 		try {
