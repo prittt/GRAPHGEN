@@ -37,8 +37,8 @@
 using namespace std;
 
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
-constexpr auto CONDITION_COUNT = 16;
-constexpr auto ACTION_COUNT = 16;
+constexpr auto CONDITION_COUNT = 36;
+constexpr auto ACTION_COUNT = 5813;
 
 double entropy(std::vector<int>& vector) {
 	double s = 0, h = 0;

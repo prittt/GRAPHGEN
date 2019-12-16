@@ -14,7 +14,8 @@
 #include <stdlib.h>    
 #include <string.h>    
 #include <string>    
-#include <zstd.h>      
+#include <zstd.h>
+#include <sys/stat.h> 
 #include <vector>
 
 #include "compression.h"

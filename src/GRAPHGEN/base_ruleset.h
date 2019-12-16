@@ -42,6 +42,8 @@
 #include "rule_set.h"
 #include <zstd.h>
 
+constexpr int partitions = 2048;
+
 class BaseRuleSet {
     std::filesystem::path p_;
     bool force_generation_;
@@ -52,8 +54,6 @@ class BaseRuleSet {
 	std::vector<action_bitset> currently_loaded_rules;
 	ZstdDecompression decompression;
 	int currently_open_partition = -1;
-
-	const int partitions = 1024;
 
     bool LoadRuleSet() {
 
@@ -204,7 +204,7 @@ public:
 	void OpenRuleFiles() {
 		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / partitions;
 		if (rules_per_partition > currently_loaded_rules.max_size()) {
-			std::cerr << "Cannot store 1 partition in memory, aborting." << std::endl;
+			std::cerr << "Cannot store 1 partition in memory, aborting. (" << rules_per_partition << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 		decompression.allocateResources();
@@ -218,7 +218,7 @@ public:
 		const ullong partition_size_megabytes = binary_rule_file_stream_size * rules_per_partition / (1024 * 1024);
 		
 		if (rules_per_partition > currently_loaded_rules.max_size()) {
-			std::cerr << "Cannot store 1 partition in memory, aborting." << std::endl;
+			std::cerr << "Cannot store 1 partition in memory, aborting. (" << rules_per_partition << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 
