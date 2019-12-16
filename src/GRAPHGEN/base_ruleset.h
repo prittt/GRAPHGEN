@@ -43,6 +43,8 @@
 #include <zstd.h>
 
 constexpr int PARTITIONS = 4096;
+constexpr int BATCHES = 16;
+
 
 class BaseRuleSet {
     std::filesystem::path p_;
@@ -99,10 +101,12 @@ public:
 			}
 
             rs_ = GenerateRuleSet();
-            SaveRuleSet();
 			TLOG("Writing rules to disk",
 				SaveAllRulesBinary();
 			);
+			std::cout << "** DONE" << std::endl;
+			exit(EXIT_SUCCESS);
+            SaveRuleSet();
         }
         return rs_;
     }
@@ -133,8 +137,16 @@ public:
 					continue;
 				}
 				if (std::filesystem::exists(tmp_path)) {
-					std::cout << "[Partition " << p << "] Partition .tmp-file exists: skipping.\n";
-					continue;
+					try {
+						auto p2 = tmp_path + ".test";
+						std::filesystem::rename(tmp_path, p2);
+						std::filesystem::remove(p2);
+						std::cout << "[Partition " << p << "] Partition .tmp-file exists and is not locked: overwriting.\n";
+					}
+					catch (std::filesystem::filesystem_error e) {
+						std::cerr << "[Partition " << p << "] Partition .tmp-file exists, but is locked: skipping.\n";                    
+						continue;
+					}
 				}
 
 
@@ -154,8 +166,7 @@ public:
 				}
 				else {
 					// rules are generated during the writing
-					const uint batches = 16;
-					const ullong batches_steps = rules_per_partition / batches;
+					const ullong batches_steps = rules_per_partition / BATCHES;
 
 					std::vector<action_bitset> actions;
 					if (batches_steps > actions.max_size()) {
@@ -166,16 +177,16 @@ public:
 
 					//TLOG("rules batched", 
 
-					for (int b = 0; b < batches; b++) {
+					for (int b = 0; b < BATCHES; b++) {
 						const ullong batch_begin_rule_code = (begin_rule_code + b * batches_steps);
 						const ullong batch_end_rule_code = (begin_rule_code + (b + 1) * batches_steps);
 
-						std::cout << "[Partition " << p << "] Processing rule batch " << (b + 1) << " of " << batches << ", rules from " << batch_begin_rule_code << " to " << batch_end_rule_code << ".\n";
+						std::cout << "[Partition " << p << "] Processing rule batch " << (b + 1) << " of " << BATCHES << ", rules from " << batch_begin_rule_code << " to " << batch_end_rule_code << ".\n";
 						size_t i = 0;
 						for (ullong rule_code = batch_begin_rule_code; rule_code < batch_end_rule_code; rule_code++, i++) {
 							actions[i] = GetActionFromRuleIndex(rs_, rule_code);
 						}
-						streamingCompression.compressDataChunk(&actions[0], static_cast<size_t>(batches_steps) * stream_size, b == batches - 1);
+						streamingCompression.compressDataChunk(&actions[0], static_cast<size_t>(batches_steps) * stream_size, b == BATCHES - 1);
 						/*for (const action_bitset& a : actions) {
 							os.write(reinterpret_cast<const char*>(&a), stream_size);
 						}*/
