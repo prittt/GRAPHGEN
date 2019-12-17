@@ -213,69 +213,52 @@ struct RecursionInstance {
 };
 
 void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vector<RecursionInstance>& r_insts) {
-	std::vector<int> rule_matches(r_insts.size(), -1);
-	bool rule_match_with_any;
+	bool first_match;
+	action_bitset action;
 
 	for (ullong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += 1) {
 		//if (rule_code % (1ULL << 12) == 0) {
 		//	std::cout << "Rule " << rule_code << " of " << (1ULL << condition_count) << " (" << 100 * rule_code / (1ULL << condition_count) << "%)." << std::endl;
 		//}
-		rule_match_with_any = false;
+		first_match = true;
 		for (size_t i = 0; i < r_insts.size(); i++) {
-			if ((rule_code & r_insts[i].set_conditions0) != 0ULL) {
-				rule_matches[i] = 0;
-			}
-			else if ((rule_code & r_insts[i].set_conditions1) != r_insts[i].set_conditions1) {
-				rule_matches[i] = 0;
-			}
-			else {
-				rule_matches[i] = 1;
-				rule_match_with_any = true;
-			}
-		}
-
-		if (!rule_match_with_any) {
-			continue;
-		}
-
+			if (((rule_code & r_insts[i].set_conditions0) == 0ULL) && ((rule_code & r_insts[i].set_conditions1) == r_insts[i].set_conditions1)) {
+				if (first_match) {
 #if (HDT_ACTION_SOURCE == 0)
-		action_bitset action = rs.rules[rule_code].actions;				// 0) load from rule table
+					action = rs.rules[rule_code].actions;				// 0) load from rule table
 #elif (HDT_ACTION_SOURCE == 1)
-		action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 1) generate during run-time
+					action = brs.GetActionFromRuleIndex(rs, rule_code);	// 1) generate during run-time
 #elif (HDT_ACTION_SOURCE == 2)
-		action_bitset action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 2) read from file
+					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 2) read from file
 #endif
-		total_rule_accesses++;
-		necessary_rule_accesses++;
-
-		for (size_t i = 0; i < r_insts.size(); i++) {
-			if (rule_matches[i] < 1) {
-				continue;
-			}
-
+					total_rule_accesses++;
+					necessary_rule_accesses++;
+					first_match = false;
+				}
 #if HDT_COMBINED_CLASSIFIER == true
-			FindBestSingleActionCombinationRunningCombined(
-				r_insts[i].all_single_actions, 
-				r_insts[i].single_actions,
-				action,
-				rule_code);
+				FindBestSingleActionCombinationRunningCombined(
+					r_insts[i].all_single_actions,
+					r_insts[i].single_actions,
+					action,
+					rule_code);
 #else
-			FindBestSingleActionCombinationRunning(r_insts[i].all_single_actions, action);
+				FindBestSingleActionCombinationRunning(r_insts[i].all_single_actions, action);
 
-			for (auto& c : r_insts[i].conditions) {
-				int bit_value = (rule_code >> c) & 1;
+				for (auto& c : r_insts[i].conditions) {
+					int bit_value = (rule_code >> c) & 1;
 
-				int return_code = FindBestSingleActionCombinationRunning(r_insts[i].single_actions[c][bit_value], action, r_insts[i].most_probable_action_occurences_[c][bit_value]);
+					int return_code = FindBestSingleActionCombinationRunning(r_insts[i].single_actions[c][bit_value], action, r_insts[i].most_probable_action_occurences_[c][bit_value]);
 
-				if (return_code >= 0) {
-					{
-						r_insts[i].most_probable_action_index_[c][bit_value] = return_code;
-						r_insts[i].most_probable_action_occurences_[c][bit_value] = r_insts[i].single_actions[c][bit_value][return_code];
+					if (return_code >= 0) {
+						{
+							r_insts[i].most_probable_action_index_[c][bit_value] = return_code;
+							r_insts[i].most_probable_action_occurences_[c][bit_value] = r_insts[i].single_actions[c][bit_value][return_code];
+						}
 					}
 				}
-			}
 #endif
-		}		
+			}
+		}
 	}
 }
 

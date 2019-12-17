@@ -53,7 +53,7 @@ class BaseRuleSet {
     rule_set rs_;
 
 	int binary_rule_file_stream_size = static_cast<int>(ceil(action_bitset::max_size_in_bits() / 8.0));
-	std::vector<action_bitset> currently_loaded_rules;
+	std::vector<action_bitset> currently_loaded_rules = std::vector<action_bitset>();
 	ZstdDecompression decompression;
 	int currently_open_partition = -1;
 
@@ -213,7 +213,6 @@ public:
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 		//decompression.allocateResources();
-		currently_loaded_rules.resize(static_cast<size_t>(rules_per_partition));
 		std::cout << "Rule files opened." << std::endl;
 	}
 
@@ -306,11 +305,12 @@ public:
 
 				std::ifstream is = std::ifstream(path, std::ios::binary);
 				int stream_size = binary_rule_file_stream_size;
+				currently_loaded_rules.clear();
+				currently_loaded_rules.reserve(rules_per_partition);
 				for (int i = 0; i < rules_per_partition; i++) {
 					uchar size;
 					is.read(reinterpret_cast<char*>(&size), 1);
-
-					currently_loaded_rules[i] = action_bitset(size);
+					currently_loaded_rules.push_back(action_bitset(size));
 					ushort val;
 					for (uchar x = 0; x < size; x++) {
 						is.read(reinterpret_cast<char*>(&val), 2);
