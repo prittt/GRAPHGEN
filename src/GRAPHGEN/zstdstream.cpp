@@ -212,7 +212,7 @@ namespace zstd {
 		exceptions(std::ios_base::badbit);
 	}
 
-	/*ofstream::~ofstream() {
+	ofstream::~ofstream() {
 		exceptions(std::ios_base::goodbit);
 		if (rdbuf()) {
 			delete rdbuf();
@@ -221,7 +221,7 @@ namespace zstd {
 
 	ofstream::operator bool() const {
 		return bool(fs_);
-	}*/
+	}
 
 	void ofstream::close() {
 		flush();
@@ -234,16 +234,16 @@ namespace zstd {
 		exceptions(std::ios_base::badbit);
 	}
 
-	//ifstream::~ifstream() {
-	//	exceptions(std::ios_base::goodbit);
-	//	if (rdbuf()) {
-	//		delete rdbuf();
-	//	}
-	//}
+	ifstream::~ifstream() {
+		exceptions(std::ios_base::goodbit);
+		if (rdbuf()) {
+			delete rdbuf();
+		}
+	}
 
-	//ifstream::operator bool() const {
-	//	return bool(fs_);
-	//}
+	ifstream::operator bool() const {
+		return bool(fs_);
+	}
 
 	void ifstream::close() {
 		fs_.close();

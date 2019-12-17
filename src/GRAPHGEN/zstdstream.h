@@ -167,9 +167,9 @@ namespace zstd {
 		explicit ofstream(
 			const std::string& path,
 			std::ios_base::openmode mode = std::ios_base::out);
-		//virtual ~ofstream();
+		virtual ~ofstream();
 
-		//virtual operator bool() const;
+		virtual operator bool() const;
 		void close();
 	};
 
@@ -182,8 +182,8 @@ namespace zstd {
 			const std::string& path,
 			std::ios_base::openmode mode = std::ios_base::in);
 
-		//virtual ~ifstream();
-		//operator bool() const;
+		virtual ~ifstream();
+		operator bool() const;
 		void close();
 	};
 
