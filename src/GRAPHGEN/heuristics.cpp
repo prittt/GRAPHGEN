@@ -42,8 +42,8 @@ constexpr std::array<const char*, 3> HDT_ACTION_SOURCE_STRINGS = { "Memory (pre-
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_ACTION_SOURCE 2
 
-constexpr auto CONDITION_COUNT = 16; // 8, 14, 16, 36
-constexpr auto ACTION_COUNT = 16; // 5, 77, 16, 5813
+constexpr auto CONDITION_COUNT = 36; // 8, 14, 16, 36
+constexpr auto ACTION_COUNT = 5813; // 5, 77, 16, 5813
 
 double entropy(std::vector<int>& vector) {
 	double s = 0, h = 0;

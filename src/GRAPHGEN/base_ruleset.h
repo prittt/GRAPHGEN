@@ -43,8 +43,8 @@
 #include "rule_set.h"
 #include <zstd.h>
 
-constexpr int PARTITIONS = 1;
-constexpr int BATCHES = 1;
+constexpr int PARTITIONS = 1024;
+constexpr int BATCHES = 32;
 
 
 class BaseRuleSet {
@@ -298,7 +298,7 @@ public:
 				zstd::ifstream is(path, std::ios::binary);
 				int stream_size = binary_rule_file_stream_size;
 				currently_loaded_rules.clear();
-				currently_loaded_rules.reserve(rules_per_partition);
+				currently_loaded_rules.reserve(static_cast<uint>(rules_per_partition));
 				for (int i = 0; i < rules_per_partition; i++) {
 					uchar size;
 					is.read(reinterpret_cast<char*>(&size), 1);
