@@ -36,9 +36,14 @@
 
 using namespace std;
 
+constexpr std::array<const char*, 3> HDT_ACTION_SOURCE_STRINGS = { "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
+
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
-constexpr auto CONDITION_COUNT = 16;
-constexpr auto ACTION_COUNT = 16;
+#define HDT_COMBINED_CLASSIFIER true
+#define HDT_ACTION_SOURCE 2
+
+constexpr auto CONDITION_COUNT = 14;
+constexpr auto ACTION_COUNT = 77; // 5813, 77, 16, 8
 
 double entropy(std::vector<int>& vector) {
 	double s = 0, h = 0;
@@ -116,7 +121,6 @@ double entropy(std::vector<int>& vector) {
 //	return single_actions;
 //}
 
-template <ushort maxActions>
 int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, action_bitset& combined_action, int previous_most_probable_action_occurences = -1) {
 	int most_popular_single_action_occurences = -1;
 	int most_popular_single_action_index = -1;
@@ -141,6 +145,30 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 	return -1;
 }
 
+void FindBestSingleActionCombinationRunningCombined(
+	std::vector<int>& all_single_actions,
+	std::vector<std::array<std::vector<int>, 2>>& single_actions,
+	action_bitset& combined_action,
+	const ullong& rule_code) {
+
+	int most_popular_single_action_occurences = -1;
+	int most_popular_single_action_index = -1;
+
+	for (ushort i = 0; i < combined_action.size(); i++) {
+		auto s = combined_action.getActionByDataIndex(i);
+		if (all_single_actions[s] > most_popular_single_action_occurences) {
+			most_popular_single_action_index = s;
+			most_popular_single_action_occurences = all_single_actions[s];
+		}
+	}
+	all_single_actions[most_popular_single_action_index]++;
+
+	for (size_t i = 0; i < single_actions.size(); i++) {
+		int bit_value = (rule_code >> i) & 1;
+		single_actions[i][bit_value][most_popular_single_action_index]++;
+	}
+}
+
 uint64_t total_rule_accesses = 0;
 uint64_t necessary_rule_accesses = 0;
 
@@ -154,9 +182,10 @@ struct RecursionInstance {
 	// local vars
 	std::vector<std::array<std::vector<int>, 2>> single_actions;
 	std::vector<int> all_single_actions = std::vector<int>(ACTION_COUNT);
+#if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
 	std::vector<std::array<int, 2>> most_probable_action_occurences_;
-
+#endif
 	// state
 	bool processed = false;
 
@@ -174,15 +203,17 @@ struct RecursionInstance {
 				std::vector<int>(ACTION_COUNT),
 				std::vector<int>(ACTION_COUNT)
 				}));
+#if HDT_COMBINED_CLASSIFIER == false
 			most_probable_action_index_.push_back(std::array<int, 2>());
 			most_probable_action_occurences_.push_back(std::array<int, 2>());
+#endif
 		}
 	}
 
 };
 
 void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vector<RecursionInstance>& r_insts) {
-	std::vector<bool> rule_matches;
+	std::vector<char> rule_matches;
 	rule_matches.resize(r_insts.size());
 	bool rule_match_with_any;
 
@@ -193,11 +224,11 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vect
 		rule_match_with_any = false;
 		for (size_t i = 0; i < r_insts.size(); i++) {
 			if ((rule_code & r_insts[i].set_conditions1.to_ullong()) != r_insts[i].set_conditions1.to_ullong()) {
-				rule_matches[i] = false;
+				rule_matches[i] = -1;
 			} else if ((rule_code & r_insts[i].set_conditions0.to_ullong()) != 0u) {
-				rule_matches[i] = false;
+				rule_matches[i] = -1;
 			} else {
-				rule_matches[i] = true;
+				rule_matches[i] = 1;
 				rule_match_with_any = true;
 			}
 		}
@@ -206,24 +237,34 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vect
 			continue;
 		}
 
-		//action_bitset action = rs.rules[rule_code].actions;				// 2) load from rule table
-		//action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 3) generate during run-time
+#if (HDT_ACTION_SOURCE == 0)
+		action_bitset action = rs.rules[rule_code].actions;				// 2) load from rule table
+#elif (HDT_ACTION_SOURCE == 1)
+		action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 3) generate during run-time
+#elif (HDT_ACTION_SOURCE == 2)
 		action_bitset action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 4) read from file
-
+#endif
 		total_rule_accesses++;
 		necessary_rule_accesses++;
 
 		for (size_t i = 0; i < r_insts.size(); i++) {
-			if (!rule_matches[i]) {
+			if (rule_matches[i] == -1) {
 				continue;
 			}
 
-			FindBestSingleActionCombinationRunning<ACTION_COUNT>(r_insts[i].all_single_actions, action);
+#if HDT_COMBINED_CLASSIFIER == true
+			FindBestSingleActionCombinationRunningCombined(
+				r_insts[i].all_single_actions, 
+				r_insts[i].single_actions,
+				action,
+				rule_code);
+#else
+			FindBestSingleActionCombinationRunning(r_insts[i].all_single_actions, action);
 
 			for (auto& c : r_insts[i].conditions) {
 				int bit_value = (rule_code >> c) & 1;
 
-				int return_code = FindBestSingleActionCombinationRunning<ACTION_COUNT>(r_insts[i].single_actions[c][bit_value], action, r_insts[i].most_probable_action_occurences_[c][bit_value]);
+				int return_code = FindBestSingleActionCombinationRunning(r_insts[i].single_actions[c][bit_value], action, r_insts[i].most_probable_action_occurences_[c][bit_value]);
 
 				if (return_code >= 0) {
 					{
@@ -232,53 +273,63 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vect
 					}
 				}
 			}
+#endif
 		}		
 	}
 }
 
-void HdtReadAndApplyRulesSingle(BaseRuleSet& brs, const rule_set& rs, RecursionInstance& r) {
-	//const int64_t iteration_step = (1ULL << std::max(0, static_cast<int>(conditions.size() - 3)));
-	const int iteration_step = 1;
+//void HdtReadAndApplyRulesSingle(BaseRuleSet& brs, const rule_set& rs, RecursionInstance& r) {
+//	//const int64_t iteration_step = (1ULL << std::max(0, static_cast<int>(conditions.size() - 3)));
+//	const int iteration_step = 1;
+//
+//	//action_bitset action = action_bitset().set(0); // 1) Use Zero Action (performance baseline)
+//
+//	for (ullong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += iteration_step) {
+//		/*if (rule_code % (1ULL << 24) == 0 && rule_code > 0) {
+//			std::cout << "Rule " << rule_code << " of " << (1ULL << rs.conditions.size()) << " (" << 100 * rule_code / (1ULL << rs.conditions.size()) << "%)." << std::endl;
+//		}*/
+//
+//		if ((rule_code & r.set_conditions1.to_ullong()) != r.set_conditions1.to_ullong()) {
+//			continue;
+//		}
+//		if ((rule_code & r.set_conditions0.to_ullong()) != 0u) {
+//			continue;
+//		}
+//
+//		total_rule_accesses++;
+//		necessary_rule_accesses++;
+//
+//		//action_bitset action = rs.rules[rule_code].actions;				// 2) load from rule table
+//		//action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 3) generate during run-time
+//		action_bitset action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 4) read from file
+//
+//		FindBestSingleActionCombinationRunning(r.all_single_actions, action);
+//
+//		for (auto& c : r.conditions) {
+//			int bit_value = (rule_code >> c) & 1;
+//
+//			int return_code = FindBestSingleActionCombinationRunning(r.single_actions[c][bit_value], action, r.most_probable_action_occurences_[c][bit_value]);
+//
+//			if (return_code >= 0) {
+//				{
+//					r.most_probable_action_index_[c][bit_value] = return_code;
+//					r.most_probable_action_occurences_[c][bit_value] = r.single_actions[c][bit_value][return_code];
+//				}
+//			}
+//		}
+//	}
+//
+//}
 
-	//action_bitset action = action_bitset().set(0); // 1) Use Zero Action (performance baseline)
-
-	for (ullong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += iteration_step) {
-		/*if (rule_code % (1ULL << 24) == 0 && rule_code > 0) {
-			std::cout << "Rule " << rule_code << " of " << (1ULL << rs.conditions.size()) << " (" << 100 * rule_code / (1ULL << rs.conditions.size()) << "%)." << std::endl;
-		}*/
-
-		if ((rule_code & r.set_conditions1.to_ullong()) != r.set_conditions1.to_ullong()) {
-			continue;
-		}
-		if ((rule_code & r.set_conditions0.to_ullong()) != 0u) {
-			continue;
-		}
-
-		total_rule_accesses++;
-		necessary_rule_accesses++;
-
-		//action_bitset action = rs.rules[rule_code].actions;				// 2) load from rule table
-		//action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 3) generate during run-time
-		action_bitset action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 4) read from file
-
-		FindBestSingleActionCombinationRunning<ACTION_COUNT>(r.all_single_actions, action);
-
-		for (auto& c : r.conditions) {
-			int bit_value = (rule_code >> c) & 1;
-
-			int return_code = FindBestSingleActionCombinationRunning<ACTION_COUNT>(r.single_actions[c][bit_value], action, r.most_probable_action_occurences_[c][bit_value]);
-
-			if (return_code >= 0) {
-				{
-					r.most_probable_action_index_[c][bit_value] = return_code;
-					r.most_probable_action_occurences_[c][bit_value] = r.single_actions[c][bit_value][return_code];
-				}
-			}
+uint getFirstCountedAction(std::vector<int> b) {
+	for (size_t i = 0; i < b.size(); i++) {
+		if (b[i] > 0) {
+			return i;
 		}
 	}
-
+	std::cerr << "getFirstCountedAction called with empty vector" << std::endl;
+	throw std::runtime_error("getFirstCountedAction called with empty vector");
 }
-
 
 int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_set& rs, std::vector<RecursionInstance>& upcoming_recursion_instances) {
 	int amount_of_action_children = 0;
@@ -291,15 +342,16 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 		auto rightNode = tree.make_node();
 		r.parent->left = leftNode;
 		r.parent->right = rightNode;
-		auto leftAction = action_bitset().set(r.most_probable_action_index_[r.conditions[0]][0]);
+		auto leftAction = action_bitset().set(getFirstCountedAction(r.single_actions[r.conditions[0]][0]));
 		leftNode->data.t = conact::type::ACTION;
 		leftNode->data.action = leftAction;
-		auto rightAction = action_bitset().set(r.most_probable_action_index_[r.conditions[0]][1]);
+		auto rightAction = action_bitset().set(getFirstCountedAction(r.single_actions[r.conditions[0]][1]));
 		rightNode->data.t = conact::type::ACTION;
 		rightNode->data.action = rightAction;
 		//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
 		return 2;
 	}
+
 
 	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
 	int splitCandidate = r.conditions[0];
@@ -307,6 +359,9 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 
 	double baseEntropy = entropy(r.all_single_actions);
 	//std::cout << "Base Entropy: " << baseEntropy << std::endl;
+
+	bool leftIsAction = false;
+	bool rightIsAction = false;
 
 	for (auto& c : r.conditions) {
 		double leftEntropy = entropy(r.single_actions[c][0]);
@@ -328,23 +383,23 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 		if (informationGain > maximum_information_gain) {
 			maximum_information_gain = informationGain;
 			splitCandidate = c;
+			leftIsAction = (leftEntropy == 0);
+			rightIsAction = (rightEntropy == 0);
 		}
 		//std::cout << "Condition: " << c << " Max information gain: " << informationGain << " Ratio: " << difference << " LIG*RIG: " << LigTimesRig << "\tEntropy Left (0): " << leftEntropy << "\tEntropy Right (1): " << rightEntropy << std::endl;
 	}
 	//std::cout << "Split candidate chosen: " << splitCandidate << std::endl;
 
-	bool LeftIsAction = r.most_probable_action_occurences_[splitCandidate][0] == (1 << (r.conditions.size() - 1));
-	bool RightIsAction = r.most_probable_action_occurences_[splitCandidate][1] == (1 << (r.conditions.size() - 1));
 
 	r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), splitCandidate), r.conditions.end());
 
 	r.parent->data.t = conact::type::CONDITION;
 	r.parent->data.condition = rs.conditions[splitCandidate];
 
-	if (LeftIsAction) {
+	if (leftIsAction) {
 		r.parent->left = tree.make_node();
 		r.parent->left->data.t = conact::type::ACTION;
-		r.parent->left->data.action = action_bitset().set(r.most_probable_action_index_[splitCandidate][0]);
+		r.parent->left->data.action = action_bitset().set(getFirstCountedAction(r.single_actions[splitCandidate][0]));
 		amount_of_action_children++;
 	}
 	else {
@@ -354,10 +409,10 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 		upcoming_recursion_instances.push_back(RecursionInstance(r.conditions, newConditions0, r.set_conditions1, r.parent->left));
 	}
 
-	if (RightIsAction) {
+	if (rightIsAction) {
 		r.parent->right = tree.make_node();
 		r.parent->right->data.t = conact::type::ACTION;
-		r.parent->right->data.action = action_bitset().set(r.most_probable_action_index_[splitCandidate][1]);
+		r.parent->right->data.action = action_bitset().set(getFirstCountedAction(r.single_actions[splitCandidate][1]));
 		amount_of_action_children++;
 	}
 	else {
@@ -427,9 +482,13 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 		throw std::runtime_error("Assert failed: check ACTION_COUNT and CONDITION_COUNT.");
 	}
 
-	/*if (ACTION_COUNT < action_bitset::max_size_in_bits()) {
-		std::cout << "\nWarning: Bitset containing actions is bigger than required. (" << ACTION_COUNT << " < " << action_bitset::max_size_in_bits() << ")" << std::endl;
-	}*/
+	bool b3 = (HDT_INFORMATION_GAIN_METHOD_VERSION >= 1 && HDT_INFORMATION_GAIN_METHOD_VERSION <= 3);
+	bool b4 = (HDT_ACTION_SOURCE >= 0 && HDT_ACTION_SOURCE <= 2);
+	
+	if (!(b3 && b4)) {
+		std::cerr << "Assert failed: check HDT_ACTION_SOURCE and HDT_INFORMATION_GAIN_METHOD_VERSION." << std::endl;
+		throw std::runtime_error("Assert failed: check HDT_ACTION_SOURCE and HDT_INFORMATION_GAIN_METHOD_VERSION.");
+	}
 
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 
@@ -440,9 +499,15 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 
 	FindHdtIteratively(rs, brs, tree, r);
 
-	std::cout << "Total rule accesses: " << total_rule_accesses << "\n";
-	std::cout << "Necessary rule accesses: " << necessary_rule_accesses << "\n";
+	std::cout << "Total rule accesses: " << total_rule_accesses << " - Necessary rule accesses : " << necessary_rule_accesses << "\n";
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
+	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;
+	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
+#ifndef NDEBUG
+	std::cout << "Build: [Debug]" << std::endl;
+#else
+	std::cout << "Build: [Release]" << std::endl;
+#endif
 
 	return tree;
 }

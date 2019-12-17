@@ -188,7 +188,7 @@ public:
 						}
 						//streamingCompression.compressDataChunk(&actions[0], static_cast<size_t>(batches_steps) * stream_size, b == BATCHES - 1);
 						for (const action_bitset& a : actions) {
-							os << static_cast<uchar>(a.size());
+							os << reinterpret_cast<const char*>(a.size());
 							for (const ushort& b : a.getSingleActions()) {
 								os.write(reinterpret_cast<const char*>(&b), 2);
 							}
@@ -308,7 +308,7 @@ public:
 				int stream_size = binary_rule_file_stream_size;
 				for (int i = 0; i < rules_per_partition; i++) {
 					uchar size;
-					is >> size;
+					is.read(reinterpret_cast<char*>(&size), 1);
 
 					currently_loaded_rules[i] = action_bitset(size);
 					ushort val;
