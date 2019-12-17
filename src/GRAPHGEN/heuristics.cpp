@@ -37,8 +37,8 @@
 using namespace std;
 
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
-constexpr auto CONDITION_COUNT = 36;
-constexpr auto ACTION_COUNT = 5813;
+constexpr auto CONDITION_COUNT = 16;
+constexpr auto ACTION_COUNT = 16;
 
 double entropy(std::vector<int>& vector) {
 	double s = 0, h = 0;
@@ -146,21 +146,21 @@ uint64_t necessary_rule_accesses = 0;
 
 struct RecursionInstance {
 	// parameters
-	std::vector<std::string> conditions;
+	std::vector<int> conditions;
 	std::bitset<CONDITION_COUNT> set_conditions0;
 	std::bitset<CONDITION_COUNT> set_conditions1;
 	BinaryDrag<conact>::node* parent;
 
 	// local vars
-	std::unordered_map<string, std::array<std::vector<int>, 2>> single_actions;
+	std::vector<std::array<std::vector<int>, 2>> single_actions;
 	std::vector<int> all_single_actions = std::vector<int>(ACTION_COUNT);
-	std::map<std::string, std::array<int, 2>> most_probable_action_index;
-	std::map<std::string, std::array<int, 2>> most_probable_action_occurences;
+	std::vector<std::array<int, 2>> most_probable_action_index_;
+	std::vector<std::array<int, 2>> most_probable_action_occurences_;
 
 	// state
 	bool processed = false;
 
-	RecursionInstance(std::vector<std::string> conditions,
+	RecursionInstance(std::vector<int> conditions,
 		std::bitset<CONDITION_COUNT> set_conditions0,
 		std::bitset<CONDITION_COUNT> set_conditions1,
 		BinaryDrag<conact>::node* parent) : 
@@ -169,11 +169,13 @@ struct RecursionInstance {
 			set_conditions1(set_conditions1),
 			parent(parent)
 	{
-		for (auto& c : conditions) {
-			single_actions.emplace(c, std::array<std::vector<int>, 2>({
+		for (int i = 0; i < CONDITION_COUNT; i++) {
+			single_actions.push_back(std::array<std::vector<int>, 2>({
 				std::vector<int>(ACTION_COUNT),
 				std::vector<int>(ACTION_COUNT)
 				}));
+			most_probable_action_index_.push_back(std::array<int, 2>());
+			most_probable_action_occurences_.push_back(std::array<int, 2>());
 		}
 	}
 
@@ -219,14 +221,14 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vect
 			FindBestSingleActionCombinationRunning<ACTION_COUNT>(r_insts[i].all_single_actions, action);
 
 			for (auto& c : r_insts[i].conditions) {
-				int bit_value = (rule_code >> rs.conditions_pos.at(c)) & 1;
+				int bit_value = (rule_code >> c) & 1;
 
-				int return_code = FindBestSingleActionCombinationRunning<ACTION_COUNT>(r_insts[i].single_actions[c][bit_value], action, r_insts[i].most_probable_action_occurences[c][bit_value]);
+				int return_code = FindBestSingleActionCombinationRunning<ACTION_COUNT>(r_insts[i].single_actions[c][bit_value], action, r_insts[i].most_probable_action_occurences_[c][bit_value]);
 
 				if (return_code >= 0) {
 					{
-						r_insts[i].most_probable_action_index[c][bit_value] = return_code;
-						r_insts[i].most_probable_action_occurences[c][bit_value] = r_insts[i].single_actions[c][bit_value][return_code];
+						r_insts[i].most_probable_action_index_[c][bit_value] = return_code;
+						r_insts[i].most_probable_action_occurences_[c][bit_value] = r_insts[i].single_actions[c][bit_value][return_code];
 					}
 				}
 			}
@@ -262,14 +264,14 @@ void HdtReadAndApplyRulesSingle(BaseRuleSet& brs, const rule_set& rs, RecursionI
 		FindBestSingleActionCombinationRunning<ACTION_COUNT>(r.all_single_actions, action);
 
 		for (auto& c : r.conditions) {
-			int bit_value = (rule_code >> rs.conditions_pos.at(c)) & 1;
+			int bit_value = (rule_code >> c) & 1;
 
-			int return_code = FindBestSingleActionCombinationRunning<ACTION_COUNT>(r.single_actions[c][bit_value], action, r.most_probable_action_occurences[c][bit_value]);
+			int return_code = FindBestSingleActionCombinationRunning<ACTION_COUNT>(r.single_actions[c][bit_value], action, r.most_probable_action_occurences_[c][bit_value]);
 
 			if (return_code >= 0) {
 				{
-					r.most_probable_action_index[c][bit_value] = return_code;
-					r.most_probable_action_occurences[c][bit_value] = r.single_actions[c][bit_value][return_code];
+					r.most_probable_action_index_[c][bit_value] = return_code;
+					r.most_probable_action_occurences_[c][bit_value] = r.single_actions[c][bit_value][return_code];
 				}
 			}
 		}
@@ -284,15 +286,15 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	// Case 3: Both childs are leafs, end of recursion
 	if (r.conditions.size() == 1) {
 		r.parent->data.t = conact::type::CONDITION;
-		r.parent->data.condition = r.conditions[0];
+		r.parent->data.condition = rs.conditions[r.conditions[0]];
 		auto leftNode = tree.make_node();
 		auto rightNode = tree.make_node();
 		r.parent->left = leftNode;
 		r.parent->right = rightNode;
-		auto leftAction = action_bitset().set(r.most_probable_action_index[r.conditions[0]][0]);
+		auto leftAction = action_bitset().set(r.most_probable_action_index_[r.conditions[0]][0]);
 		leftNode->data.t = conact::type::ACTION;
 		leftNode->data.action = leftAction;
-		auto rightAction = action_bitset().set(r.most_probable_action_index[r.conditions[0]][1]);
+		auto rightAction = action_bitset().set(r.most_probable_action_index_[r.conditions[0]][1]);
 		rightNode->data.t = conact::type::ACTION;
 		rightNode->data.action = rightAction;
 		//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
@@ -300,7 +302,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	}
 
 	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
-	std::string splitCandidate = r.conditions[0];
+	int splitCandidate = r.conditions[0];
 	double maximum_information_gain = 0;
 
 	double baseEntropy = entropy(r.all_single_actions);
@@ -331,58 +333,55 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	}
 	//std::cout << "Split candidate chosen: " << splitCandidate << std::endl;
 
-	bool LeftIsAction = r.most_probable_action_occurences[splitCandidate][0] == (1 << (r.conditions.size() - 1));
-	bool RightIsAction = r.most_probable_action_occurences[splitCandidate][1] == (1 << (r.conditions.size() - 1));
+	bool LeftIsAction = r.most_probable_action_occurences_[splitCandidate][0] == (1 << (r.conditions.size() - 1));
+	bool RightIsAction = r.most_probable_action_occurences_[splitCandidate][1] == (1 << (r.conditions.size() - 1));
 
 	r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), splitCandidate), r.conditions.end());
 
 	r.parent->data.t = conact::type::CONDITION;
-	r.parent->data.condition = splitCandidate;
+	r.parent->data.condition = rs.conditions[splitCandidate];
 
 	if (LeftIsAction) {
 		r.parent->left = tree.make_node();
 		r.parent->left->data.t = conact::type::ACTION;
-		r.parent->left->data.action = action_bitset().set(r.most_probable_action_index[splitCandidate][0]);
+		r.parent->left->data.action = action_bitset().set(r.most_probable_action_index_[splitCandidate][0]);
 		amount_of_action_children++;
 	}
 	else {
 		r.parent->left = tree.make_node();
 		auto newConditions0 = r.set_conditions0;
-		newConditions0[rs.conditions_pos.at(splitCandidate)] = 1;
+		newConditions0[splitCandidate] = 1;
 		upcoming_recursion_instances.push_back(RecursionInstance(r.conditions, newConditions0, r.set_conditions1, r.parent->left));
 	}
 
 	if (RightIsAction) {
 		r.parent->right = tree.make_node();
 		r.parent->right->data.t = conact::type::ACTION;
-		r.parent->right->data.action = action_bitset().set(r.most_probable_action_index[splitCandidate][1]);
+		r.parent->right->data.action = action_bitset().set(r.most_probable_action_index_[splitCandidate][1]);
 		amount_of_action_children++;
 	}
 	else {
 		r.parent->right = tree.make_node();
 		auto newConditions1 = r.set_conditions1;
-		newConditions1[rs.conditions_pos.at(splitCandidate)] = 1;
+		newConditions1[splitCandidate] = 1;
 		upcoming_recursion_instances.push_back(RecursionInstance(r.conditions, r.set_conditions0, newConditions1, r.parent->right));
 	}
 	r.processed = true;
 	return amount_of_action_children;
 }
 
-void FindHdtIteratively(std::vector<std::string> conditions, 
-	std::bitset<CONDITION_COUNT> set_conditions0, 
-	std::bitset<CONDITION_COUNT> set_conditions1, 
-	const rule_set& rs, 
+void FindHdtIteratively(const rule_set& rs, 
 	BaseRuleSet& brs,
-	BinaryDrag<conact>& tree, 
-	BinaryDrag<conact>::node* parent)
+	BinaryDrag<conact>& tree,
+	RecursionInstance& initial_recursion_instance)
 {
-
 	std::vector<RecursionInstance> pending_recursion_instances;
 	std::vector<RecursionInstance> upcoming_recursion_instances;
 	int depth = 0;
 	int nodes = 0;
 	int path_length_sum = 0;
-	pending_recursion_instances.push_back(RecursionInstance(conditions, set_conditions0, set_conditions1, parent));
+
+	pending_recursion_instances.push_back(initial_recursion_instance);
 
 	while (pending_recursion_instances.size() > 0) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances.size() << ")" << std::endl;
@@ -409,10 +408,14 @@ void FindHdtIteratively(std::vector<std::string> conditions,
 }
 
 BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
-	BinaryDrag<conact> t;
-	auto parent = t.make_root();
+	BinaryDrag<conact> tree;
+	auto parent = tree.make_root();
 
-	std::vector<std::string> remaining_conditions = rs.conditions; // copy
+	std::vector<int> conditions;
+	conditions.reserve(rs.conditions.size());
+	for (auto &c : rs.conditions) {
+		conditions.push_back(rs.conditions_pos.at(c));
+	}
 
 	std::bitset<CONDITION_COUNT> set_conditions0, set_conditions1;
 
@@ -433,13 +436,15 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	brs.OpenRuleFiles();
 	//brs.VerifyRuleFiles();
 
-	FindHdtIteratively(remaining_conditions, set_conditions0, set_conditions1, rs, brs, t, parent);
+	auto r = RecursionInstance(conditions, set_conditions0, set_conditions1, parent);
+
+	FindHdtIteratively(rs, brs, tree, r);
 
 	std::cout << "Total rule accesses: " << total_rule_accesses << "\n";
 	std::cout << "Necessary rule accesses: " << necessary_rule_accesses << "\n";
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 
-	return t;
+	return tree;
 }
 
 BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs, const string& filename)
