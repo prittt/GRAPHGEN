@@ -88,7 +88,7 @@ struct ConfigData {
     std::filesystem::path rstable_path_;
 
 	// Rule Set / Decision Table
-	std::string binary_rule_file_suffix_ = "_rules.bin";
+	std::string binary_rule_file_suffix_ = "_rules.zst";
 
 	std::string binary_rule_file_path_partitioned(std::string partitionId) {
 		//auto basepath = "E:/rules";

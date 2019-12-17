@@ -33,6 +33,8 @@ target_sources(GRAPHGEN PRIVATE
 	rule_set.h
 	compression.h
 	compression.cpp
+	zstdstream.h
+	zstdstream.cpp
 	tree.h
 	tree2dag_identities.cpp
 	tree2dag_identities.h

@@ -37,6 +37,7 @@
 #include <filesystem>
 
 #include "compression.h"
+#include "zstdstream.h"
 
 #include "yaml-cpp/yaml.h"
 #include "rule_set.h"
@@ -149,8 +150,8 @@ public:
 					}
 				}
 
-
-				std::ofstream os(tmp_path, std::ios::binary);
+				
+				zstd::ofstream os(tmp_path, std::ios::binary);
 				/*if (!streamingCompression.beginStreaming(tmp_path)) {
 					std::cerr << "[Partition " << p << "] Partition could not be saved to " << tmp_path << ": skipping.\n";
 					continue;
@@ -227,11 +228,10 @@ public:
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 
+		currently_loaded_rules.resize(static_cast<size_t>(rules_per_partition));
+
 		std::cout << "** Verifying rule files. (Partitions: " << PARTITIONS << " Rulecodes for each partition: " << rules_per_partition << ")" << std::endl;
 		
-		ZstdDecompression decompression_;
-		decompression_.allocateResources();
-
 		for (int p = 0; p < PARTITIONS; p++) {
 			const ullong begin_rule_code = p * rules_per_partition;
 			const ullong end_rule_code = (p + 1) * rules_per_partition;
@@ -239,13 +239,7 @@ public:
 			auto path = conf.binary_rule_file_path_partitioned(std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
 
 			// check status of existing files
-			if (std::filesystem::exists(path)) {
-				/*if (std::filesystem::file_size(path) != partition_size_bytes) {
-					std::cerr << "Partition " << p << " exists but is not complete: aborting.\n";
-					exit(EXIT_FAILURE);
-				}*/
-			}
-			else {
+			if (!std::filesystem::exists(path)) {
 				std::cerr << "Partition " << p << " does not exist: aborting.\n";
 				exit(EXIT_FAILURE);
 			}
@@ -253,17 +247,16 @@ public:
 			std::vector<action_bitset> actions;
 			actions.resize(static_cast<size_t>(rules_per_partition));
 
-			decompression_.decompressFileToMemory(path, actions);
-			//std::ifstream binary_rule_file = std::ifstream(path, std::ios::binary);
-			/*if (!binary_rule_file.is_open()) {
+			zstd::ifstream binary_rule_file(path, std::ios::binary);
+			if (!binary_rule_file) {
 				std::cout << "Could not open partition " << p << " at " << path << " \n";
 				exit(EXIT_FAILURE);
-			}*/
+			}
 			const action_bitset first_action_correct = GetActionFromRuleIndex(rs_, begin_rule_code);
 			const action_bitset last_action_correct = GetActionFromRuleIndex(rs_, end_rule_code - 1);
 
-			const action_bitset first_action_read = actions[0];
-			const action_bitset last_action_read = actions[actions.size() - 1];
+			const action_bitset first_action_read = LoadRuleFromBinaryRuleFiles(begin_rule_code);
+			const action_bitset last_action_read = LoadRuleFromBinaryRuleFiles(end_rule_code - 1);
 
 			if (first_action_correct != first_action_read || last_action_correct != last_action_read) {
 				std::cout << "************************************************************" << std::endl;
@@ -275,14 +268,12 @@ public:
 			}
 		}
 		
-		decompression_.freeResources();
-
 		std::cout << "** All rule files verified." << std::endl;		
 	}
 
 	ullong previous_rule_code = UINT64_MAX;
 
-	action_bitset LoadRuleFromBinaryRuleFiles(ullong& rule_code) {
+	action_bitset LoadRuleFromBinaryRuleFiles(const ullong& rule_code) {
 		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / PARTITIONS;
 		const ullong partition_size_bytes = binary_rule_file_stream_size * rules_per_partition;
 
@@ -304,7 +295,7 @@ public:
 					exit(EXIT_FAILURE);
 				}
 
-				std::ifstream is = std::ifstream(path, std::ios::binary);
+				zstd::ifstream is(path, std::ios::binary);
 				int stream_size = binary_rule_file_stream_size;
 				currently_loaded_rules.clear();
 				currently_loaded_rules.reserve(rules_per_partition);

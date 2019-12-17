@@ -42,8 +42,8 @@ constexpr std::array<const char*, 3> HDT_ACTION_SOURCE_STRINGS = { "Memory (pre-
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_ACTION_SOURCE 2
 
-constexpr auto CONDITION_COUNT = 14;
-constexpr auto ACTION_COUNT = 77; // 5813, 77, 16, 8
+constexpr auto CONDITION_COUNT = 16; // 8, 14, 16, 36
+constexpr auto ACTION_COUNT = 16; // 5, 77, 16, 5813
 
 double entropy(std::vector<int>& vector) {
 	double s = 0, h = 0;
@@ -475,7 +475,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 
 	brs.OpenRuleFiles();
-	//brs.VerifyRuleFiles();
+	brs.VerifyRuleFiles();
 
 	auto r = RecursionInstance(conditions, 0, 0, parent);
 
