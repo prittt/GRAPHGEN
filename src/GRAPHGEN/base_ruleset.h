@@ -188,7 +188,8 @@ public:
 						}
 						//streamingCompression.compressDataChunk(&actions[0], static_cast<size_t>(batches_steps) * stream_size, b == BATCHES - 1);
 						for (const action_bitset& a : actions) {
-							os << reinterpret_cast<const char*>(a.size());
+							auto s = a.size();
+							os.write(reinterpret_cast<const char*>(&s), 1);
 							for (const ushort& b : a.getSingleActions()) {
 								os.write(reinterpret_cast<const char*>(&b), 2);
 							}
