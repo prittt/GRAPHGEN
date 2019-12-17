@@ -106,7 +106,7 @@ public:
 		bool X = r["o"] || r["p"] || r["s"] || r["t"];
 		if (!X) {
 			//r << "nothing";
-			return action_bitset().set(0);
+			return action_bitset(1).set(0);
 		}
 
 		connectivity_mat con({ "P", "Q", "R", "S", "x" });
@@ -127,7 +127,7 @@ public:
 		MergeSet ms(con);
 		ms.BuildMergeSet();
 
-		action_bitset combined_actions;
+		action_bitset combined_actions(ms.mergesets_.size());
 		for (const auto& s : ms.mergesets_) {
 			std::string action = "x<-";
 			if (s.empty())
@@ -139,6 +139,7 @@ public:
 			}
 			combined_actions.set(rs.actions_pos.at(action) - 1);
 		}
+
 		return combined_actions;
 	}
 

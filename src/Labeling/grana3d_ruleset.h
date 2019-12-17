@@ -263,7 +263,7 @@ action_bitset GetActions(rule_wrapper& r,
 	MergeSet ms(con);
 	ms.BuildMergeSet();
 
-	action_bitset combined_actions;
+	action_bitset combined_actions(ms.mergesets_.size());
 	for (const auto& s : ms.mergesets_) {
 		std::string action = "x<-";
 		if (s.empty())
@@ -380,7 +380,7 @@ public:
 		bool X = r[Xa] || r[Xb] || r[Xc] || r[Xd] || r[Xe] || r[Xf] || r[Xg] || r[Xh];
 		if (!X) {
 			//r << "nothing";
-			return action_bitset().set(0);
+			return action_bitset(1).set(0);
 		}
 
 		const bool K = r[Kh];

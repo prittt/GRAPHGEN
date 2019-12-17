@@ -41,9 +41,10 @@
 
 extern ConfigData conf;
 
-constexpr auto MAX_COMBINED_ACTIONS_COUNT = 108; // 56 is upper limit for block based 3D; all equivalent actions between a 7 and 8 block component: 7*8=56
+constexpr auto MAX_COMBINED_ACTIONS_COUNT = 0; // 56 is upper limit for block based 3D; all equivalent actions between a 7 and 8 block component: 7*8=56
 constexpr auto MAX_ACTION_BITS = 13; // ceil(log2(5813)), with 5813 being the amount of action in block based 3D with 36 conditions
 
+using uchar = unsigned char;
 using ushort = uint16_t;
 using uint = uint32_t;
 using ullong = uint64_t;
@@ -56,21 +57,23 @@ public:
 
 private:
 	//std::bitset<MAX_COMBINED_ACTIONS_COUNT * MAX_ACTION_BITS> data;
-	std::array<ushort, MAX_COMBINED_ACTIONS_COUNT> data_;
+	std::vector<ushort> data_;
 
 public:
 	// CONSTRUCTORS
 	action_bitset() {
-		data_ = { 0 };
+	}
+	action_bitset(size_t i) {
+		data_.reserve(i);
 	}
 
 	// OPERATORS
 	const ushort operator[] (const ushort a) const {
-		return test(a + 1) ? 1 : 0;
+		return test(a) ? 1 : 0;
 	}
 
 	const ushort getActionByDataIndex(const ushort& index) const {
-		return data_[index] - 1;
+		return data_[index];
 	}
 
 	bool operator==(const action_bitset& rhs) const {
@@ -94,70 +97,49 @@ public:
 
 	// METHODS
 
-	// semantic in internal data_: 0 equals to no action, 1 equals to the "x<-nothing" action, 2 equals to the first action after that etc.
-	// semantic in parameter: 0 equals to the "x<-nothing" action, 1 to the first action after that etc.
 	action_bitset& set(const ushort& a) {
-		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
-			if (data_[i] == 0) {
-				data_[i] = a + 1;
-				return *this;
-			}
-		}
-		std::cerr << "Cannot add action to a full action_set." << std::endl;
-		throw std::runtime_error("Cannot add action to a full action_set.");
+		data_.push_back(a);
+		return *this;
 	}
 
 	void clear() {
-		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
-			data_[i] = 0;
-		}
+		data_.clear();
 	}
 
-	std::vector<ushort> getSingleActions() const {
-		std::vector<ushort> output;
-		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
-			if (data_[i] == 0) {
-				break;
-			}
-			output.push_back(data_[i] - 1);
-		}
-		return output;
+	void reserve(size_t i) {
+		data_.reserve(i);
+	}
+
+	const std::vector<ushort>& getSingleActions() const {
+		return data_;
 	}
 
 	const bool test(const ushort& action) const {
-		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
-			if (data_[i] == 0) {
-				return false;
-			}
-			if ((data_[i] - 1) == action) {
+		for (size_t i = 0; i < size(); i++) {
+			if (data_[i] == action) {
 				return true;
+			} 
+			if (data_[i] > action) { // data array is always ordered
+				return false;
 			}
 		}
 		return false;
 	}
 
 	size_t size() const {
-		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
-			if (data_[i] == 0) {
-				return i;
-			}
-		}
-		return MAX_COMBINED_ACTIONS_COUNT;
+		return data_.size();
 	}
 	
 	action_bitset operator&(const action_bitset& rhs) const {
 		action_bitset output;
 
-		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
-			if (data_[i] == 0) {
-				break;
-			}
-			for (int j = 0; j < MAX_COMBINED_ACTIONS_COUNT; j++) {
-				if (rhs.data_[j] == 0) {
+		for (size_t i = 0; i < size(); i++) {
+			for (size_t j = 0; j < rhs.size(); j++) {
+				if (data_[i] < rhs.data_[j]) {
 					break;
 				}
 				if (data_[i] == rhs.data_[j]) {
-					output.set(data_[i] - 1);
+					output.set(data_[i]);
 				}
 			}			
 		}
@@ -177,11 +159,8 @@ public:
 
 	const ullong to_ullong() const {
 		ullong output = 0;
-		for (int i = 0; i < MAX_COMBINED_ACTIONS_COUNT; i++) {
-			if (data_[i] == 0) {
-				break;
-			}
-			output |= (1ULL << (data_[i] - 1));
+		for (size_t i = 0; i < size(); i++) {
+			output |= (1ULL << (data_[i]));
 		}
 		return output;
 	}

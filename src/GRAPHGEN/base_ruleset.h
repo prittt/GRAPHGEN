@@ -42,8 +42,8 @@
 #include "rule_set.h"
 #include <zstd.h>
 
-constexpr int PARTITIONS = 4096;
-constexpr int BATCHES = 16;
+constexpr int PARTITIONS = 1;
+constexpr int BATCHES = 1;
 
 
 class BaseRuleSet {
@@ -104,8 +104,8 @@ public:
 			TLOG("Writing rules to disk",
 				SaveAllRulesBinary();
 			);
-			std::cout << "** DONE" << std::endl;
-			exit(EXIT_SUCCESS);
+			//std::cout << "** DONE" << std::endl;
+			//exit(EXIT_SUCCESS);
             SaveRuleSet();
         }
         return rs_;
@@ -120,8 +120,8 @@ public:
 		
 		#pragma omp parallel
 		{
-			ZstdStreamingCompression streamingCompression;
-			streamingCompression.allocateResources();
+			//ZstdStreamingCompression streamingCompression;
+			//streamingCompression.allocateResources();
 			
 			#pragma omp for
 			for (int p = 0; p < PARTITIONS; p++) {
@@ -150,11 +150,11 @@ public:
 				}
 
 
-				//std::ofstream os(path, std::ios::binary);
-				if (!streamingCompression.beginStreaming(tmp_path)) {
+				std::ofstream os(tmp_path, std::ios::binary);
+				/*if (!streamingCompression.beginStreaming(tmp_path)) {
 					std::cerr << "[Partition " << p << "] Partition could not be saved to " << tmp_path << ": skipping.\n";
 					continue;
-				}
+				}*/
 
 				std::cout << "[Partition " << p << "] Begin processing. First Rule Code: " << begin_rule_code << " Last (exclusive) Rule Code: " << end_rule_code << std::endl;
 
@@ -186,19 +186,23 @@ public:
 						for (ullong rule_code = batch_begin_rule_code; rule_code < batch_end_rule_code; rule_code++, i++) {
 							actions[i] = GetActionFromRuleIndex(rs_, rule_code);
 						}
-						streamingCompression.compressDataChunk(&actions[0], static_cast<size_t>(batches_steps) * stream_size, b == BATCHES - 1);
-						/*for (const action_bitset& a : actions) {
-							os.write(reinterpret_cast<const char*>(&a), stream_size);
-						}*/
+						//streamingCompression.compressDataChunk(&actions[0], static_cast<size_t>(batches_steps) * stream_size, b == BATCHES - 1);
+						for (const action_bitset& a : actions) {
+							os << static_cast<uchar>(a.size());
+							for (const ushort& b : a.getSingleActions()) {
+								os.write(reinterpret_cast<const char*>(&b), 2);
+							}
+							//os.write(reinterpret_cast<const char*>(&a), 2 * a.size());
+						}
 					}
 					//);
 				}
-				streamingCompression.endStreaming();
+				//streamingCompression.endStreaming();
+				os.close();
 				std::filesystem::rename(tmp_path, final_path);
-				//os.close();
 			}
 			
-			streamingCompression.freeResources();
+			//streamingCompression.freeResources();
 		}		
 	}
 
@@ -208,7 +212,7 @@ public:
 			std::cerr << "Cannot store 1 partition in memory, aborting. (" << rules_per_partition << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
-		decompression.allocateResources();
+		//decompression.allocateResources();
 		currently_loaded_rules.resize(static_cast<size_t>(rules_per_partition));
 		std::cout << "Rule files opened." << std::endl;
 	}
@@ -300,15 +304,23 @@ public:
 					exit(EXIT_FAILURE);
 				}
 
-				//std::ifstream is = std::ifstream(path, std::ios::binary);
-				//int stream_size = binary_rule_file_stream_size;
-				/*std::for_each(currently_loaded_rules.begin(), currently_loaded_rules.end(), 
-					[&is, stream_size](action_bitset& a) { 
-					is.read(reinterpret_cast<char*>(&a), stream_size); 
-				});*/
+				std::ifstream is = std::ifstream(path, std::ios::binary);
+				int stream_size = binary_rule_file_stream_size;
+				for (int i = 0; i < rules_per_partition; i++) {
+					uchar size;
+					is >> size;
 
-				decompression.decompressFileToMemory(path, currently_loaded_rules);
+					currently_loaded_rules[i] = action_bitset(size);
+					ushort val;
+					for (uchar x = 0; x < size; x++) {
+						is.read(reinterpret_cast<char*>(&val), 2);
+						//is >> val;
+						currently_loaded_rules[i].set(val);
+					}
+				}
 
+				//decompression.decompressFileToMemory(path, currently_loaded_rules);
+				
 				currently_open_partition = p;
 			}
 

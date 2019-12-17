@@ -437,7 +437,7 @@ void ZstdDecompression::decompressFileToFileAlt(std::string input_file_name, std
 	/* When zstd knows the content size, it will error if it doesn't match. */
 	CHECK(dSize == rSize, "Impossible because zstd will check this condition!");
 
-	saveFile(oname, rBuff, rSize);
+	saveFile(oname, rBuff, static_cast<size_t>(rSize));
 
 	/* success */
 	printf("%25s : %6u -> %7u \n", fname, (unsigned)cSize, (unsigned)rSize);
