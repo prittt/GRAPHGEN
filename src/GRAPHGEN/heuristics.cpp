@@ -175,8 +175,8 @@ uint64_t necessary_rule_accesses = 0;
 struct RecursionInstance {
 	// parameters
 	std::vector<int> conditions;
-	std::bitset<CONDITION_COUNT> set_conditions0;
-	std::bitset<CONDITION_COUNT> set_conditions1;
+	ullong set_conditions0;
+	ullong set_conditions1;
 	BinaryDrag<conact>::node* parent;
 
 	// local vars
@@ -190,8 +190,8 @@ struct RecursionInstance {
 	bool processed = false;
 
 	RecursionInstance(std::vector<int> conditions,
-		std::bitset<CONDITION_COUNT> set_conditions0,
-		std::bitset<CONDITION_COUNT> set_conditions1,
+		ullong set_conditions0,
+		ullong set_conditions1,
 		BinaryDrag<conact>::node* parent) : 
 			conditions(conditions),
 			set_conditions0(set_conditions0),
@@ -213,8 +213,7 @@ struct RecursionInstance {
 };
 
 void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vector<RecursionInstance>& r_insts) {
-	std::vector<char> rule_matches;
-	rule_matches.resize(r_insts.size());
+	std::vector<int> rule_matches(r_insts.size(), -1);
 	bool rule_match_with_any;
 
 	for (ullong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += 1) {
@@ -223,11 +222,13 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vect
 		//}
 		rule_match_with_any = false;
 		for (size_t i = 0; i < r_insts.size(); i++) {
-			if ((rule_code & r_insts[i].set_conditions1.to_ullong()) != r_insts[i].set_conditions1.to_ullong()) {
-				rule_matches[i] = -1;
-			} else if ((rule_code & r_insts[i].set_conditions0.to_ullong()) != 0u) {
-				rule_matches[i] = -1;
-			} else {
+			if ((rule_code & r_insts[i].set_conditions0) != 0ULL) {
+				rule_matches[i] = 0;
+			}
+			else if ((rule_code & r_insts[i].set_conditions1) != r_insts[i].set_conditions1) {
+				rule_matches[i] = 0;
+			}
+			else {
 				rule_matches[i] = 1;
 				rule_match_with_any = true;
 			}
@@ -238,17 +239,17 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vect
 		}
 
 #if (HDT_ACTION_SOURCE == 0)
-		action_bitset action = rs.rules[rule_code].actions;				// 2) load from rule table
+		action_bitset action = rs.rules[rule_code].actions;				// 0) load from rule table
 #elif (HDT_ACTION_SOURCE == 1)
-		action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 3) generate during run-time
+		action_bitset action = brs.GetActionFromRuleIndex(rs, rule_code);	// 1) generate during run-time
 #elif (HDT_ACTION_SOURCE == 2)
-		action_bitset action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 4) read from file
+		action_bitset action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 2) read from file
 #endif
 		total_rule_accesses++;
 		necessary_rule_accesses++;
 
 		for (size_t i = 0; i < r_insts.size(); i++) {
-			if (rule_matches[i] == -1) {
+			if (rule_matches[i] < 1) {
 				continue;
 			}
 
@@ -404,8 +405,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	}
 	else {
 		r.parent->left = tree.make_node();
-		auto newConditions0 = r.set_conditions0;
-		newConditions0[splitCandidate] = 1;
+		auto newConditions0 = r.set_conditions0 | (1ULL << splitCandidate);
 		upcoming_recursion_instances.push_back(RecursionInstance(r.conditions, newConditions0, r.set_conditions1, r.parent->left));
 	}
 
@@ -417,8 +417,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	}
 	else {
 		r.parent->right = tree.make_node();
-		auto newConditions1 = r.set_conditions1;
-		newConditions1[splitCandidate] = 1;
+		auto newConditions1 = r.set_conditions1 | (1ULL << splitCandidate);
 		upcoming_recursion_instances.push_back(RecursionInstance(r.conditions, r.set_conditions0, newConditions1, r.parent->right));
 	}
 	r.processed = true;
@@ -495,7 +494,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	brs.OpenRuleFiles();
 	//brs.VerifyRuleFiles();
 
-	auto r = RecursionInstance(conditions, set_conditions0, set_conditions1, parent);
+	auto r = RecursionInstance(conditions, 0, 0, parent);
 
 	FindHdtIteratively(rs, brs, tree, r);
 
