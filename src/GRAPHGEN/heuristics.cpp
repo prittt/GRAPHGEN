@@ -147,7 +147,7 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 
 void FindBestSingleActionCombinationRunningCombined(
 	std::vector<int>& all_single_actions,
-	std::vector<std::array<std::vector<int>, 2>>& single_actions,
+	std::vector<std::vector<int>>& single_actions,
 	action_bitset* combined_action,
 	const ullong& rule_code) {
 
@@ -155,7 +155,7 @@ void FindBestSingleActionCombinationRunningCombined(
 	int most_popular_single_action_index = -1;
 
 	for (ushort i = 0; i < combined_action->size(); i++) { // TODO: replace with for each loop
-		auto s = combined_action->getActionByDataIndex(i);
+		const auto s = combined_action->getActionByDataIndex(i);
 		if (all_single_actions[s] > most_popular_single_action_occurences) {
 			most_popular_single_action_index = s;
 			most_popular_single_action_occurences = all_single_actions[s];
@@ -163,9 +163,8 @@ void FindBestSingleActionCombinationRunningCombined(
 	}
 	all_single_actions[most_popular_single_action_index]++;
 
-	for (size_t i = 0; i < single_actions.size(); i++) {
-		int bit_value = (rule_code >> i) & 1;
-		single_actions[i][bit_value][most_popular_single_action_index]++;
+	for (size_t i = 0; i < (single_actions.size() / 2); i++) {
+		single_actions[(i * 2) + ((rule_code >> i) & 1)][most_popular_single_action_index]++;
 	}
 }
 
@@ -180,8 +179,8 @@ struct RecursionInstance {
 	BinaryDrag<conact>::node* parent;
 
 	// local vars
-	std::vector<std::array<std::vector<int>, 2>> single_actions;
-	std::vector<int> all_single_actions = std::vector<int>(ACTION_COUNT);
+	std::vector<std::vector<int>> single_actions;
+	std::vector<int> all_single_actions = std::vector<int>(ACTION_COUNT); // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
 #if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
 	std::vector<std::array<int, 2>> most_probable_action_occurences_;
@@ -199,10 +198,8 @@ struct RecursionInstance {
 			parent(parent)
 	{
 		for (int i = 0; i < CONDITION_COUNT; i++) {
-			single_actions.push_back(std::array<std::vector<int>, 2>({
-				std::vector<int>(ACTION_COUNT),
-				std::vector<int>(ACTION_COUNT)
-				}));
+			single_actions.push_back(std::vector<int>(ACTION_COUNT));
+			single_actions.push_back(std::vector<int>(ACTION_COUNT));
 #if HDT_COMBINED_CLASSIFIER == false
 			most_probable_action_index_.push_back(std::array<int, 2>());
 			most_probable_action_occurences_.push_back(std::array<int, 2>());
@@ -212,7 +209,7 @@ struct RecursionInstance {
 
 };
 
-void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vector<RecursionInstance>& r_insts) {
+void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts) {
 	bool first_match;
 	action_bitset* action;
 
@@ -225,9 +222,9 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vect
 			if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
 				if (first_match) {
 #if (HDT_ACTION_SOURCE == 0)
-					action = rs.rules[rule_code].actions;				// 0) load from rule table
+					action = &rs.rules[rule_code].actions;				// 0) load from rule table
 #elif (HDT_ACTION_SOURCE == 1)
-					action = brs.GetActionFromRuleIndex(rs, rule_code);	// 1) generate during run-time
+					action = &brs.GetActionFromRuleIndex(rs, rule_code);	// 1) generate during run-time
 #elif (HDT_ACTION_SOURCE == 2)
 					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 2) read from file
 #endif
@@ -326,10 +323,10 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 		auto rightNode = tree.make_node();
 		r.parent->left = leftNode;
 		r.parent->right = rightNode;
-		auto leftAction = action_bitset().set(getFirstCountedAction(r.single_actions[r.conditions[0]][0]));
+		auto leftAction = action_bitset().set(getFirstCountedAction(r.single_actions[r.conditions[0] * 2]));
 		leftNode->data.t = conact::type::ACTION;
 		leftNode->data.action = leftAction;
-		auto rightAction = action_bitset().set(getFirstCountedAction(r.single_actions[r.conditions[0]][1]));
+		auto rightAction = action_bitset().set(getFirstCountedAction(r.single_actions[r.conditions[0] * 2]));
 		rightNode->data.t = conact::type::ACTION;
 		rightNode->data.action = rightAction;
 		//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
@@ -348,8 +345,8 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	bool rightIsAction = false;
 
 	for (auto& c : r.conditions) {
-		double leftEntropy = entropy(r.single_actions[c][0]);
-		double rightEntropy = entropy(r.single_actions[c][1]);
+		double leftEntropy = entropy(r.single_actions[c * 2]);
+		double rightEntropy = entropy(r.single_actions[c * 2 + 1]);
 
 #if HDT_INFORMATION_GAIN_METHOD_VERSION == 1
 		// 1) Simple Information Gain
@@ -383,7 +380,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	if (leftIsAction) {
 		r.parent->left = tree.make_node();
 		r.parent->left->data.t = conact::type::ACTION;
-		r.parent->left->data.action = action_bitset().set(getFirstCountedAction(r.single_actions[splitCandidate][0]));
+		r.parent->left->data.action = action_bitset().set(getFirstCountedAction(r.single_actions[splitCandidate * 2]));
 		amount_of_action_children++;
 	}
 	else {
@@ -395,7 +392,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	if (rightIsAction) {
 		r.parent->right = tree.make_node();
 		r.parent->right->data.t = conact::type::ACTION;
-		r.parent->right->data.action = action_bitset().set(getFirstCountedAction(r.single_actions[splitCandidate][1]));
+		r.parent->right->data.action = action_bitset().set(getFirstCountedAction(r.single_actions[splitCandidate * 2 + 1]));
 		amount_of_action_children++;
 	}
 	else {
@@ -407,7 +404,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	return amount_of_action_children;
 }
 
-void FindHdtIteratively(const rule_set& rs, 
+void FindHdtIteratively(rule_set& rs, 
 	BaseRuleSet& brs,
 	BinaryDrag<conact>& tree,
 	RecursionInstance& initial_recursion_instance)
@@ -479,7 +476,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 
 	auto r = RecursionInstance(conditions, 0, 0, parent);
 
-	FindHdtIteratively(rs, brs, tree, r);
+	FindHdtIteratively(const_cast<rule_set&>(rs), brs, tree, r);
 
 	std::cout << "Total rule accesses: " << total_rule_accesses << " - Necessary rule accesses : " << necessary_rule_accesses << "\n";
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
