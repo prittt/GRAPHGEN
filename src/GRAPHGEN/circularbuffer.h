@@ -10,8 +10,10 @@
 #include <algorithm>
 #include <cstdlib>
 
+#if !defined(unix) && !defined(__unix__) && !defined(__unix)
 #include <BaseTsd.h>
 typedef SSIZE_T ssize_t;
+#endif
 
 namespace common {
 	template <typename T>

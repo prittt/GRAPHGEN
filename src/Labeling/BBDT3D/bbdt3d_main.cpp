@@ -44,14 +44,21 @@ int main()
     // 1) Load or generate Optimal Decision Tree based on Grana mask
     BinaryDrag<conact> bd = GetHdt(rs, g_rs, true);
 
+	std::cout << " --> DrawDagOnFile()" << std::endl;
 
     // 2) Draw the generated tree
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
+	std::cout << " --> GenerateDragCode()" << std::endl;
+
     // 3) Generate the tree C/C++ code taking care of the names used
     //    in the Grana's rule set GranaRS
     GenerateDragCode(bd);
+
+	std::cout << " ** DONE" << std::endl;
+	exit(EXIT_SUCCESS);
+
     pixel_set block_positions{
            { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
            { "S", {-2, +0} },{ "x", {+0, +0} }
