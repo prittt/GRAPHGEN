@@ -76,6 +76,15 @@ public:
 		return data_[index];
 	}
 
+	void writeActionByDataIndex(const ushort& action, const ushort& index) {
+		data_[index] = action;
+	}
+
+	ushort& getActionByDataIndex(const ushort& index) {
+		return data_[index];
+	}
+
+
 	bool operator==(const action_bitset& rhs) const {
 		int my_size = size();
 		int their_size = rhs.size();
@@ -106,8 +115,8 @@ public:
 		data_.clear();
 	}
 
-	void reserve(size_t i) {
-		data_.reserve(i);
+	void resize(size_t i) {
+		data_.resize(i);
 	}
 
 	const std::vector<ushort>& getSingleActions() const {

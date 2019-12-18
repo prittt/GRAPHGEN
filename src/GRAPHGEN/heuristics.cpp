@@ -42,8 +42,8 @@ constexpr std::array<const char*, 3> HDT_ACTION_SOURCE_STRINGS = { "Memory (pre-
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_ACTION_SOURCE 2
 
-constexpr auto CONDITION_COUNT = 36; // 8, 14, 16, 36
-constexpr auto ACTION_COUNT = 5813; // 5, 77, 16, 5813
+constexpr auto CONDITION_COUNT = 16; // 8, 14, 16, 36
+constexpr auto ACTION_COUNT = 16; // 5, 77, 16, 5813
 
 double entropy(std::vector<int>& vector) {
 	double s = 0, h = 0;
@@ -221,8 +221,8 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vect
 		//	std::cout << "Rule " << rule_code << " of " << (1ULL << condition_count) << " (" << 100 * rule_code / (1ULL << condition_count) << "%)." << std::endl;
 		//}
 		first_match = true;
-		for (size_t i = 0; i < r_insts.size(); i++) {
-			if (((rule_code & r_insts[i].set_conditions0) == 0ULL) && ((rule_code & r_insts[i].set_conditions1) == r_insts[i].set_conditions1)) {
+		for (auto& r : r_insts) {
+			if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
 				if (first_match) {
 #if (HDT_ACTION_SOURCE == 0)
 					action = rs.rules[rule_code].actions;				// 0) load from rule table
@@ -237,22 +237,22 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vect
 				}
 #if HDT_COMBINED_CLASSIFIER == true
 				FindBestSingleActionCombinationRunningCombined(
-					r_insts[i].all_single_actions,
-					r_insts[i].single_actions,
+					r.all_single_actions,
+					r.single_actions,
 					action,
 					rule_code);
 #else
-				FindBestSingleActionCombinationRunning(r_insts[i].all_single_actions, action);
+				FindBestSingleActionCombinationRunning(r.all_single_actions, action);
 
-				for (auto& c : r_insts[i].conditions) {
+				for (auto& c : r.conditions) {
 					int bit_value = (rule_code >> c) & 1;
 
-					int return_code = FindBestSingleActionCombinationRunning(r_insts[i].single_actions[c][bit_value], action, r_insts[i].most_probable_action_occurences_[c][bit_value]);
+					int return_code = FindBestSingleActionCombinationRunning(r.single_actions[c][bit_value], action, r.most_probable_action_occurences_[c][bit_value]);
 
 					if (return_code >= 0) {
 						{
-							r_insts[i].most_probable_action_index_[c][bit_value] = return_code;
-							r_insts[i].most_probable_action_occurences_[c][bit_value] = r_insts[i].single_actions[c][bit_value][return_code];
+							r.most_probable_action_index_[c][bit_value] = return_code;
+							r.most_probable_action_occurences_[c][bit_value] = r.single_actions[c][bit_value][return_code];
 						}
 					}
 				}

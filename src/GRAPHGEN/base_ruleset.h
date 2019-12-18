@@ -215,6 +215,7 @@ public:
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 		//decompression.allocateResources();
+		currently_loaded_rules.resize(static_cast<size_t>(rules_per_partition));
 		std::cout << "Rule files opened." << std::endl;
 	}
 
@@ -261,8 +262,8 @@ public:
 			if (first_action_correct != first_action_read || last_action_correct != last_action_read) {
 				std::cout << "************************************************************" << std::endl;
 				std::cout << "Incorrect rule found in rule partition " << p << " at " << path << std::endl;
-				std::cout << "Rule Code: " << begin_rule_code << " Correct action: " << first_action_correct.to_string() << "\t Read action: " << first_action_read.to_string() << std::endl;
-				std::cout << "Rule Code: " << (end_rule_code - 1) << " Correct action: " << last_action_correct.to_string() << "\t Read action: " << last_action_read.to_string() << std::endl;
+				std::cout << "Rule Code: " << begin_rule_code << "\tCorrect action: " << first_action_correct.to_string() << "\tRead action: " << first_action_read.to_string() << std::endl;
+				std::cout << "Rule Code: " << (end_rule_code - 1) << "\tCorrect action: " << last_action_correct.to_string() << "\tRead action: " << last_action_read.to_string() << std::endl;
 				std::cout << "************************************************************" << std::endl;
 				exit(EXIT_FAILURE);
 			}
@@ -297,17 +298,12 @@ public:
 
 				zstd::ifstream is(path, std::ios::binary);
 				int stream_size = binary_rule_file_stream_size;
-				currently_loaded_rules.clear();
-				currently_loaded_rules.reserve(static_cast<uint>(rules_per_partition));
 				for (int i = 0; i < rules_per_partition; i++) {
 					uchar size;
 					is.read(reinterpret_cast<char*>(&size), 1);
-					currently_loaded_rules.push_back(action_bitset(size));
-					ushort val;
+					currently_loaded_rules[i].resize(size);
 					for (uchar x = 0; x < size; x++) {
-						is.read(reinterpret_cast<char*>(&val), 2);
-						//is >> val;
-						currently_loaded_rules[i].set(val);
+						is.read(reinterpret_cast<char*>(&(currently_loaded_rules[i].getActionByDataIndex(x))), 2);
 					}
 				}
 
