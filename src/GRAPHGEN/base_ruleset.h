@@ -149,13 +149,16 @@ public:
 						continue;
 					}
 				}
-
+				if (!std::filesystem::is_directory(std::filesystem::path(tmp_path).remove_filename())) {
+					std::cerr << "[Partition " << p << "] Rules directory does not exist, aborting.\n";
+					exit(EXIT_FAILURE);
+				}
 				
 				zstd::ofstream os(tmp_path, std::ios::binary);
-				/*if (!streamingCompression.beginStreaming(tmp_path)) {
+				if (!os) {
 					std::cerr << "[Partition " << p << "] Partition could not be saved to " << tmp_path << ": skipping.\n";
 					continue;
-				}*/
+				}
 
 				std::cout << "[Partition " << p << "] Begin processing. First Rule Code: " << begin_rule_code << " Last (exclusive) Rule Code: " << end_rule_code << std::endl;
 
