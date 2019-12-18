@@ -41,20 +41,12 @@
 
 extern ConfigData conf;
 
-constexpr auto MAX_COMBINED_ACTIONS_COUNT = 0; // 56 is upper limit for block based 3D; all equivalent actions between a 7 and 8 block component: 7*8=56
-constexpr auto MAX_ACTION_BITS = 13; // ceil(log2(5813)), with 5813 being the amount of action in block based 3D with 36 conditions
-
 using uchar = unsigned char;
 using ushort = uint16_t;
 using uint = uint32_t;
 using ullong = uint64_t;
 
 class action_bitset {
-public:
-	static const size_t max_size_in_bits() {
-		return 16 * MAX_COMBINED_ACTIONS_COUNT; // because ushort is 16 bit type
-	}
-
 private:
 	//std::bitset<MAX_COMBINED_ACTIONS_COUNT * MAX_ACTION_BITS> data;
 	std::vector<ushort> data_;

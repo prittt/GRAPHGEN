@@ -8,6 +8,7 @@ endif()
 
 target_sources(GRAPHGEN PRIVATE
     drag_statistics.cpp
+        constants.h
 	drag_statistics.h
 	drag2optimal.cpp
 	drag2optimal.h

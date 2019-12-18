@@ -34,7 +34,7 @@
 #include "utilities.h"
 #include "drag_statistics.h"
 
-using namespace std;
+#include "constants.h"
 
 constexpr std::array<const char*, 3> HDT_ACTION_SOURCE_STRINGS = { "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
 
@@ -42,8 +42,7 @@ constexpr std::array<const char*, 3> HDT_ACTION_SOURCE_STRINGS = { "Memory (pre-
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_ACTION_SOURCE 2
 
-constexpr auto CONDITION_COUNT = 16; // 8, 14, 16, 36
-constexpr auto ACTION_COUNT = 16; // 5, 77, 16, 5813
+using namespace std;
 
 double entropy(std::vector<int>& vector) {
 	double s = 0, h = 0;
