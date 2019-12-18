@@ -213,10 +213,16 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	action_bitset zero_action = action_bitset(1).set(0);
 #endif
 	action_bitset* action;
+	auto start = std::chrono::system_clock::now();
 
 	for (llong rule_code = 0; rule_code < TOTAL_RULES; rule_code++) {
 		if (rule_code % (1ULL << 28) == 0) {
-			std::cout << "Rule " << rule_code << " of " << TOTAL_RULES << " (" <<  rule_code * 100.f / TOTAL_RULES << "%)." << std::endl;
+			auto end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed_seconds = end - start;
+			std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+			double progress = rule_code * 1.f / TOTAL_RULES;
+			double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+			std::cout << "[" << std::ctime(&end_time) << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" <<  progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
 		}
 		first_match = true;
 
@@ -373,7 +379,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 		}
 		//std::cout << "Condition: " << c << " Max information gain: " << informationGain << " Ratio: " << difference << " LIG*RIG: " << LigTimesRig << "\tEntropy Left (0): " << leftEntropy << "\tEntropy Right (1): " << rightEntropy << std::endl;
 	}
-	//std::cout << "Split candidate chosen: " << splitCandidate << std::endl;
+	//std::cout << "Split candidate chosen: " << rs.conditions[splitCandidate] << std::endl;
 
 
 	r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), splitCandidate), r.conditions.end());
@@ -404,7 +410,9 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 		auto newConditions1 = r.set_conditions1 | (1ULL << splitCandidate);
 		upcoming_recursion_instances.push_back(RecursionInstance(r.conditions, r.set_conditions0, newConditions1, r.parent->right));
 	}
+
 	r.processed = true;
+	std::cout << "Processed instance. Split Candidate: " << rs.conditions[splitCandidate] << " Action Children: " << amount_of_action_children << std::endl;
 	return amount_of_action_children;
 }
 
