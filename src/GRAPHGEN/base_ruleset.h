@@ -43,8 +43,8 @@
 #include "rule_set.h"
 #include <zstd.h>
 
-constexpr int PARTITIONS = 1024;
-constexpr int BATCHES = 32;
+constexpr int PARTITIONS = 1;
+constexpr int BATCHES = 1;
 
 
 class BaseRuleSet {
@@ -256,14 +256,15 @@ public:
 			const action_bitset first_action_correct = GetActionFromRuleIndex(rs_, begin_rule_code);
 			const action_bitset last_action_correct = GetActionFromRuleIndex(rs_, end_rule_code - 1);
 
-			const action_bitset first_action_read = LoadRuleFromBinaryRuleFiles(begin_rule_code);
-			const action_bitset last_action_read = LoadRuleFromBinaryRuleFiles(end_rule_code - 1);
+			action_bitset* first_action_read = LoadRuleFromBinaryRuleFiles(begin_rule_code);
+			
+			action_bitset* last_action_read = LoadRuleFromBinaryRuleFiles(end_rule_code - 1);
 
-			if (first_action_correct != first_action_read || last_action_correct != last_action_read) {
+			if (first_action_correct != *first_action_read || last_action_correct != *last_action_read) {
 				std::cout << "************************************************************" << std::endl;
 				std::cout << "Incorrect rule found in rule partition " << p << " at " << path << std::endl;
-				std::cout << "Rule Code: " << begin_rule_code << "\tCorrect action: " << first_action_correct.to_string() << "\tRead action: " << first_action_read.to_string() << std::endl;
-				std::cout << "Rule Code: " << (end_rule_code - 1) << "\tCorrect action: " << last_action_correct.to_string() << "\tRead action: " << last_action_read.to_string() << std::endl;
+				std::cout << "Rule Code: " << begin_rule_code << "\tCorrect action: " << first_action_correct.to_string() << "\tRead action: " << first_action_read->to_string() << std::endl;
+				std::cout << "Rule Code: " << (end_rule_code - 1) << "\tCorrect action: " << last_action_correct.to_string() << "\tRead action: " << last_action_read->to_string() << std::endl;
 				std::cout << "************************************************************" << std::endl;
 				exit(EXIT_FAILURE);
 			}
@@ -274,13 +275,11 @@ public:
 
 	ullong previous_rule_code = UINT64_MAX;
 
-	action_bitset LoadRuleFromBinaryRuleFiles(const ullong& rule_code) {
+	action_bitset* LoadRuleFromBinaryRuleFiles(const ullong& rule_code) {
 		const ullong rules_per_partition = (1ULL << rs_.conditions.size()) / PARTITIONS;
 		const ullong partition_size_bytes = binary_rule_file_stream_size * rules_per_partition;
 
 		try {
-			action_bitset action;
-
 			int p = static_cast<int>(rule_code / rules_per_partition);
 
 			if (p != currently_open_partition) {
@@ -297,7 +296,6 @@ public:
 				}
 
 				zstd::ifstream is(path, std::ios::binary);
-				int stream_size = binary_rule_file_stream_size;
 				for (int i = 0; i < rules_per_partition; i++) {
 					uchar size;
 					is.read(reinterpret_cast<char*>(&size), 1);
@@ -307,12 +305,10 @@ public:
 					}
 				}
 
-				//decompression.decompressFileToMemory(path, currently_loaded_rules);
-				
 				currently_open_partition = p;
 			}
 
-			return currently_loaded_rules[static_cast<size_t>(rule_code % rules_per_partition)];
+			return &currently_loaded_rules[static_cast<size_t>(rule_code % rules_per_partition)];
 		}
 		catch (const std::ifstream::failure&) {
 			std::cout << "Binary rule " << rule_code << " couldn't be loaded from binary rule file (stream failure).\n";
@@ -320,7 +316,8 @@ public:
 		catch (const std::runtime_error&) {
 			std::cout << "Binary rule " << rule_code << " couldn't be loaded from binary rule file (runtime error).\n";
 		}
-		return action_bitset();
+		std::cerr << "Rule lookup from binary rule file failed. Rule code: " << rule_code << std::endl;
+		throw std::runtime_error("Rule lookup from binary rule file failed.");
 	}
 
     virtual rule_set GenerateRuleSet() = 0;

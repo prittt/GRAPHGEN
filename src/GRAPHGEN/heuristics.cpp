@@ -148,14 +148,14 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 void FindBestSingleActionCombinationRunningCombined(
 	std::vector<int>& all_single_actions,
 	std::vector<std::array<std::vector<int>, 2>>& single_actions,
-	action_bitset& combined_action,
+	action_bitset* combined_action,
 	const ullong& rule_code) {
 
 	int most_popular_single_action_occurences = -1;
 	int most_popular_single_action_index = -1;
 
-	for (ushort i = 0; i < combined_action.size(); i++) {
-		auto s = combined_action.getActionByDataIndex(i);
+	for (ushort i = 0; i < combined_action->size(); i++) { // TODO: replace with for each loop
+		auto s = combined_action->getActionByDataIndex(i);
 		if (all_single_actions[s] > most_popular_single_action_occurences) {
 			most_popular_single_action_index = s;
 			most_popular_single_action_occurences = all_single_actions[s];
@@ -214,7 +214,7 @@ struct RecursionInstance {
 
 void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, const rule_set& rs, std::vector<RecursionInstance>& r_insts) {
 	bool first_match;
-	action_bitset action;
+	action_bitset* action;
 
 	for (ullong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += 1) {
 		//if (rule_code % (1ULL << 12) == 0) {
