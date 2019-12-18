@@ -110,7 +110,7 @@ public:
     }
 
 	void SaveAllRulesBinary() {
-		std::cout << "[Rule Files] Partitions: " << PARTITIONS << " Rulecodes for each partition: " << rules_per_partition << std::endl;
+		std::cout << "[Rule Files] Partitions: " << PARTITIONS << " Rulecodes for each partition: " << RULES_PER_PARTITION << std::endl;
 		
 		#pragma omp parallel
 		{
@@ -119,8 +119,8 @@ public:
 			
 			#pragma omp for
 			for (int p = 0; p < PARTITIONS; p++) {
-				const ullong begin_rule_code = p * rules_per_partition;
-				const ullong end_rule_code = (p + 1) * rules_per_partition;
+				const ullong begin_rule_code = p * RULES_PER_PARTITION;
+				const ullong end_rule_code = (p + 1) * RULES_PER_PARTITION;
 
 				auto final_path = conf.binary_rule_file_path_partitioned(std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
 				auto tmp_path = final_path + ".tmp";
@@ -162,7 +162,7 @@ public:
 				}
 				else {
 					// rules are generated during the writing
-					const ullong batches_steps = rules_per_partition / BATCHES;
+					const ullong batches_steps = RULES_PER_PARTITION / BATCHES;
 
 					std::vector<action_bitset> actions;
 					if (batches_steps > actions.max_size()) {
@@ -204,28 +204,28 @@ public:
 	}
 
 	void OpenRuleFiles() {
-		if (rules_per_partition > currently_loaded_rules.max_size()) {
-			std::cerr << "Cannot store 1 partition in memory, aborting. (" << rules_per_partition << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
+		if (RULES_PER_PARTITION > currently_loaded_rules.max_size()) {
+			std::cerr << "Cannot store 1 partition in memory, aborting. (" << RULES_PER_PARTITION << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 		//decompression.allocateResources();
-		currently_loaded_rules.resize(static_cast<size_t>(rules_per_partition));
+		currently_loaded_rules.resize(static_cast<size_t>(RULES_PER_PARTITION));
 		std::cout << "Rule files opened." << std::endl;
 	}
 
 	void VerifyRuleFiles() {
-		if (rules_per_partition > currently_loaded_rules.max_size()) {
-			std::cerr << "Cannot store 1 partition in memory, aborting. (" << rules_per_partition << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
+		if (RULES_PER_PARTITION > currently_loaded_rules.max_size()) {
+			std::cerr << "Cannot store 1 partition in memory, aborting. (" << RULES_PER_PARTITION << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 
-		currently_loaded_rules.resize(static_cast<size_t>(rules_per_partition));
+		currently_loaded_rules.resize(static_cast<size_t>(RULES_PER_PARTITION));
 
-		std::cout << "** Verifying rule files. (Partitions: " << PARTITIONS << " Rulecodes for each partition: " << rules_per_partition << ")" << std::endl;
+		std::cout << "** Verifying rule files. (Partitions: " << PARTITIONS << " Rulecodes for each partition: " << RULES_PER_PARTITION << ")" << std::endl;
 		
 		for (int p = 0; p < PARTITIONS; p++) {
-			const ullong begin_rule_code = p * rules_per_partition;
-			const ullong end_rule_code = (p + 1) * rules_per_partition;
+			const ullong begin_rule_code = p * RULES_PER_PARTITION;
+			const ullong end_rule_code = (p + 1) * RULES_PER_PARTITION;
 
 			auto path = conf.binary_rule_file_path_partitioned(std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
 
@@ -236,7 +236,7 @@ public:
 			}
 
 			std::vector<action_bitset> actions;
-			actions.resize(static_cast<size_t>(rules_per_partition));
+			actions.resize(static_cast<size_t>(RULES_PER_PARTITION));
 
 			zstd::ifstream binary_rule_file(path, std::ios::binary);
 			if (!binary_rule_file) {
@@ -267,12 +267,12 @@ public:
 
 	action_bitset* LoadRuleFromBinaryRuleFiles(const ullong& rule_code) {
 		try {
-			int p = static_cast<int>(rule_code / rules_per_partition);
+			int p = static_cast<int>(rule_code / RULES_PER_PARTITION);
 
 			if (p != currently_open_partition) {
 				// rule is in a different partition, open it
-				const ullong begin_rule_code = p * rules_per_partition;
-				const ullong end_rule_code = (p + 1) * rules_per_partition;
+				const ullong begin_rule_code = p * RULES_PER_PARTITION;
+				const ullong end_rule_code = (p + 1) * RULES_PER_PARTITION;
 
 				auto path = conf.binary_rule_file_path_partitioned(std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
 
@@ -284,7 +284,7 @@ public:
 
 				zstd::ifstream is(path, std::ios::binary);
 				uchar size;
-				for (int i = 0; i < rules_per_partition; i++) {
+				for (int i = 0; i < RULES_PER_PARTITION; i++) {
 					is.read(reinterpret_cast<char*>(&size), 1);
 					currently_loaded_rules[i].resize(size);
 					for (ushort& x : currently_loaded_rules[i].getSingleActions()) {
@@ -295,13 +295,13 @@ public:
 				currently_open_partition = p;
 			}
 
-			return &currently_loaded_rules[static_cast<size_t>(rule_code % rules_per_partition)];
+			return &currently_loaded_rules[static_cast<size_t>(rule_code % RULES_PER_PARTITION)];
 		}
 		catch (const std::ifstream::failure&) {
-			std::cout << "Binary rule " << rule_code << " couldn't be loaded from binary rule file (stream failure).\n";
+			std::cerr << "Binary rule " << rule_code << " couldn't be loaded from binary rule file (stream failure).\n";
 		}
 		catch (const std::runtime_error&) {
-			std::cout << "Binary rule " << rule_code << " couldn't be loaded from binary rule file (runtime error).\n";
+			std::cerr << "Binary rule " << rule_code << " couldn't be loaded from binary rule file (runtime error).\n";
 		}
 		std::cerr << "Rule lookup from binary rule file failed. Rule code: " << rule_code << std::endl;
 		throw std::runtime_error("Rule lookup from binary rule file failed.");
