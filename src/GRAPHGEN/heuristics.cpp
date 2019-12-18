@@ -196,16 +196,12 @@ struct RecursionInstance {
 			set_conditions1(set_conditions1),
 			parent(parent)
 	{
-		for (int i = 0; i < CONDITION_COUNT; i++) {
-			single_actions.push_back(std::vector<int>(ACTION_COUNT));
-			single_actions.push_back(std::vector<int>(ACTION_COUNT));
+		single_actions.resize(CONDITION_COUNT * 2, std::vector<int>(ACTION_COUNT));
 #if HDT_COMBINED_CLASSIFIER == false
-			most_probable_action_index_.push_back(std::array<int, 2>());
-			most_probable_action_occurences_.push_back(std::array<int, 2>());
+		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
+		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
 #endif
-		}
 	}
-
 };
 
 void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts) {
