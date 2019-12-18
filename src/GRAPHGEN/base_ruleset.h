@@ -202,13 +202,15 @@ public:
 	}
 
 	void OpenRuleFiles() {
+		std::cout << "Opening rule files...";
+
 		if (RULES_PER_PARTITION > currently_loaded_rules.max_size()) {
 			std::cerr << "Cannot store 1 partition in memory, aborting. (" << RULES_PER_PARTITION << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 		//decompression.allocateResources();
 		currently_loaded_rules.resize(RULES_PER_PARTITION);
-		std::cout << "Rule files opened." << std::endl;
+		std::cout << "done." << std::endl;
 	}
 
 	void VerifyRuleFiles() {
@@ -217,11 +219,12 @@ public:
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 
-		currently_loaded_rules.resize(RULES_PER_PARTITION);
-
 		std::cout << "** Verifying rule files. (Partitions: " << PARTITIONS << " Rulecodes for each partition: " << RULES_PER_PARTITION << ")" << std::endl;
+
+		currently_loaded_rules.resize(RULES_PER_PARTITION);
 		
 		for (int p = 0; p < PARTITIONS; p++) {
+			std::cout << "Verifying partition " << p << "...\n";
 			const ullong begin_rule_code = p * RULES_PER_PARTITION;
 			const ullong end_rule_code = (p + 1) * RULES_PER_PARTITION;
 
@@ -229,7 +232,7 @@ public:
 
 			// check status of existing files
 			if (!std::filesystem::exists(path)) {
-				std::cerr << "Partition " << p << " does not exist: aborting.\n";
+				std::cerr << "Partition " << p << "(" << begin_rule_code << " - " << end_rule_code << ", " << path << ") does not exist: aborting.\n";
 				exit(EXIT_FAILURE);
 			}
 
