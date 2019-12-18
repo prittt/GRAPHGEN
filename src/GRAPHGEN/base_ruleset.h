@@ -162,20 +162,18 @@ public:
 				}
 				else {
 					// rules are generated during the writing
-					const ullong batches_steps = RULES_PER_PARTITION / BATCHES;
-
 					std::vector<action_bitset> actions;
-					if (batches_steps > actions.max_size()) {
-						std::cerr << "ERROR: Batches are too big to be stored in a vector. (batch size: " << batches_steps << " vector.max_size: " << actions.max_size() << ")" << std::endl;
+					if (RULES_PER_BATCH > actions.max_size()) {
+						std::cerr << "ERROR: Batches are too big to be stored in a vector. (batch size: " << RULES_PER_BATCH << " vector.max_size: " << actions.max_size() << ")" << std::endl;
 						exit(EXIT_FAILURE);
 					}
-					actions.resize(static_cast<size_t>(batches_steps));
+					actions.resize(RULES_PER_BATCH);
 
 					//TLOG("rules batched", 
 
 					for (int b = 0; b < BATCHES; b++) {
-						const ullong batch_begin_rule_code = (begin_rule_code + b * batches_steps);
-						const ullong batch_end_rule_code = (begin_rule_code + (b + 1) * batches_steps);
+						const ullong batch_begin_rule_code = (begin_rule_code + b * RULES_PER_BATCH);
+						const ullong batch_end_rule_code = (begin_rule_code + (b + 1) * RULES_PER_BATCH);
 
 						std::cout << "[Partition " << p << "] Processing rule batch " << (b + 1) << " of " << BATCHES << ", rules from " << batch_begin_rule_code << " to " << batch_end_rule_code << ".\n";
 						size_t i = 0;
@@ -209,7 +207,7 @@ public:
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 		//decompression.allocateResources();
-		currently_loaded_rules.resize(static_cast<size_t>(RULES_PER_PARTITION));
+		currently_loaded_rules.resize(RULES_PER_PARTITION);
 		std::cout << "Rule files opened." << std::endl;
 	}
 
@@ -219,7 +217,7 @@ public:
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
 
-		currently_loaded_rules.resize(static_cast<size_t>(RULES_PER_PARTITION));
+		currently_loaded_rules.resize(RULES_PER_PARTITION);
 
 		std::cout << "** Verifying rule files. (Partitions: " << PARTITIONS << " Rulecodes for each partition: " << RULES_PER_PARTITION << ")" << std::endl;
 		
@@ -236,7 +234,7 @@ public:
 			}
 
 			std::vector<action_bitset> actions;
-			actions.resize(static_cast<size_t>(RULES_PER_PARTITION));
+			actions.resize(RULES_PER_PARTITION);
 
 			zstd::ifstream binary_rule_file(path, std::ios::binary);
 			if (!binary_rule_file) {
@@ -262,8 +260,6 @@ public:
 		
 		std::cout << "** All rule files verified." << std::endl;		
 	}
-
-	ullong previous_rule_code = UINT64_MAX;
 
 	action_bitset* LoadRuleFromBinaryRuleFiles(const ullong& rule_code) {
 		try {

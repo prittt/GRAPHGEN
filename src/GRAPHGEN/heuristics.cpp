@@ -36,11 +36,11 @@
 
 #include "constants.h"
 
-constexpr std::array<const char*, 3> HDT_ACTION_SOURCE_STRINGS = { "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
+constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO ACTION = GARBAGE DATA !! ****", "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
 
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
 #define HDT_COMBINED_CLASSIFIER true
-#define HDT_ACTION_SOURCE 2
+#define HDT_ACTION_SOURCE 3
 
 using namespace std;
 
@@ -209,22 +209,28 @@ struct RecursionInstance {
 
 void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts) {
 	bool first_match;
+#if (HDT_ACTION_SOURCE == 0)
+	action_bitset zero_action = action_bitset(1).set(0);
+#endif
 	action_bitset* action;
 
-	for (ullong rule_code = 0; rule_code < (1ULL << CONDITION_COUNT); rule_code += 1) {
-		//if (rule_code % (1ULL << 12) == 0) {
-		//	std::cout << "Rule " << rule_code << " of " << (1ULL << condition_count) << " (" << 100 * rule_code / (1ULL << condition_count) << "%)." << std::endl;
-		//}
+	for (llong rule_code = 0; rule_code < TOTAL_RULES; rule_code++) {
+		if (rule_code % (1ULL << 28) == 0) {
+			std::cout << "Rule " << rule_code << " of " << TOTAL_RULES << " (" <<  rule_code * 100.f / TOTAL_RULES << "%)." << std::endl;
+		}
 		first_match = true;
+
 		for (auto& r : r_insts) {
 			if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
 				if (first_match) {
 #if (HDT_ACTION_SOURCE == 0)
-					action = &rs.rules[rule_code].actions;				// 0) load from rule table
+					action = &zero_action;									// 0) Zero action
 #elif (HDT_ACTION_SOURCE == 1)
-					action = &brs.GetActionFromRuleIndex(rs, rule_code);	// 1) generate during run-time
+					action = &rs.rules[rule_code].actions;					// 1) load from rule table
 #elif (HDT_ACTION_SOURCE == 2)
-					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 2) read from file
+					action = &brs.GetActionFromRuleIndex(rs, rule_code);	// 2) generate during run-time
+#elif (HDT_ACTION_SOURCE == 3)
+					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 3) read from file
 #endif
 					total_rule_accesses++;
 					necessary_rule_accesses++;
@@ -460,17 +466,19 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	}
 
 	bool b3 = (HDT_INFORMATION_GAIN_METHOD_VERSION >= 1 && HDT_INFORMATION_GAIN_METHOD_VERSION <= 3);
-	bool b4 = (HDT_ACTION_SOURCE >= 0 && HDT_ACTION_SOURCE <= 2);
+	bool b4 = (HDT_ACTION_SOURCE >= 0 && HDT_ACTION_SOURCE <= 3);
 	
 	if (!(b3 && b4)) {
 		std::cerr << "Assert failed: check HDT_ACTION_SOURCE and HDT_INFORMATION_GAIN_METHOD_VERSION." << std::endl;
 		throw std::runtime_error("Assert failed: check HDT_ACTION_SOURCE and HDT_INFORMATION_GAIN_METHOD_VERSION.");
 	}
 
-	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
+	std::cout << "\nInformation gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
+	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;
+	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
 
 	brs.OpenRuleFiles();
-	brs.VerifyRuleFiles();
+	//brs.VerifyRuleFiles();
 
 	auto r = RecursionInstance(conditions, 0, 0, parent);
 
