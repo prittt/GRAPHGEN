@@ -154,8 +154,7 @@ void FindBestSingleActionCombinationRunningCombined(
 	int most_popular_single_action_occurences = -1;
 	int most_popular_single_action_index = -1;
 
-	for (ushort i = 0; i < combined_action->size(); i++) { // TODO: replace with for each loop
-		const auto s = combined_action->getActionByDataIndex(i);
+	for (const auto& s : combined_action->getSingleActions()) { 
 		if (all_single_actions[s] > most_popular_single_action_occurences) {
 			most_popular_single_action_index = s;
 			most_popular_single_action_occurences = all_single_actions[s];
@@ -163,7 +162,7 @@ void FindBestSingleActionCombinationRunningCombined(
 	}
 	all_single_actions[most_popular_single_action_index]++;
 
-	for (size_t i = 0; i < (single_actions.size() / 2); i++) {
+	for (size_t i = 0; i < CONDITION_COUNT; i++) {
 		single_actions[(i * 2) + ((rule_code >> i) & 1)][most_popular_single_action_index]++;
 	}
 }
