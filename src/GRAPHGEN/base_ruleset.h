@@ -287,8 +287,8 @@ public:
 				for (int i = 0; i < rules_per_partition; i++) {
 					is.read(reinterpret_cast<char*>(&size), 1);
 					currently_loaded_rules[i].resize(size);
-					for (uchar x = 0; x < size; x++) {
-						is.read(reinterpret_cast<char*>(&(currently_loaded_rules[i].getActionByDataIndex(x))), 2);
+					for (ushort& x : currently_loaded_rules[i].getSingleActions()) {
+						is.read(reinterpret_cast<char*>(&x), 2);
 					}
 				}
 

@@ -68,10 +68,6 @@ public:
 		return data_[index];
 	}
 
-	void writeActionByDataIndex(const ushort& action, const ushort& index) {
-		data_[index] = action;
-	}
-
 	ushort& getActionByDataIndex(const ushort& index) {
 		return data_[index];
 	}
@@ -112,6 +108,10 @@ public:
 	}
 
 	const std::vector<ushort>& getSingleActions() const {
+		return data_;
+	}
+
+	std::vector<ushort>& getSingleActions() {
 		return data_;
 	}
 
