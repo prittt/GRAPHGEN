@@ -44,6 +44,7 @@ extern ConfigData conf;
 using uchar = unsigned char;
 using ushort = uint16_t;
 using uint = uint32_t;
+using llong = int64_t;
 using ullong = uint64_t;
 
 class action_bitset {

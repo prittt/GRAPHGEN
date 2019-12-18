@@ -44,7 +44,7 @@ constexpr std::array<const char*, 3> HDT_ACTION_SOURCE_STRINGS = { "Memory (pre-
 
 using namespace std;
 
-double entropy(std::vector<int>& vector) {
+double entropy(std::vector<llong>& vector) {
 	double s = 0, h = 0;
 	for (const auto& x : vector) {
 		if (x == 0) {
@@ -145,18 +145,18 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 }
 
 void FindBestSingleActionCombinationRunningCombined(
-	std::vector<int>& all_single_actions,
-	std::vector<std::vector<int>>& single_actions,
+	std::vector<llong>& all_single_actions,
+	std::vector<std::vector<llong>>& single_actions,
 	action_bitset* combined_action,
 	const ullong& rule_code) {
 
-	int most_popular_single_action_occurences = -1;
+	llong most_popular_single_action_occurences = -1;
 	int most_popular_single_action_index = -1;
 
-	for (const auto& s : combined_action->getSingleActions()) { 
-		if (all_single_actions[s] > most_popular_single_action_occurences) {
-			most_popular_single_action_index = s;
-			most_popular_single_action_occurences = all_single_actions[s];
+	for (const auto& a : combined_action->getSingleActions()) { 
+		if (all_single_actions[a] > most_popular_single_action_occurences) {
+			most_popular_single_action_index = a;
+			most_popular_single_action_occurences = all_single_actions[a];
 		}
 	}
 	all_single_actions[most_popular_single_action_index]++;
@@ -181,8 +181,8 @@ struct RecursionInstance {
 	BinaryDrag<conact>::node* parent;
 
 	// local vars
-	std::vector<std::vector<int>> single_actions;
-	std::vector<int> all_single_actions = std::vector<int>(ACTION_COUNT); // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
+	std::vector<std::vector<llong>> single_actions;
+	std::vector<llong> all_single_actions = std::vector<llong>(ACTION_COUNT); // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
 #if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
 	std::vector<std::array<int, 2>> most_probable_action_occurences_;
@@ -199,7 +199,7 @@ struct RecursionInstance {
 			set_conditions1(set_conditions1),
 			parent(parent)
 	{
-		single_actions.resize(CONDITION_COUNT * 2, std::vector<int>(ACTION_COUNT));
+		single_actions.resize(CONDITION_COUNT * 2, std::vector<llong>(ACTION_COUNT));
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
@@ -300,7 +300,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 //
 //}
 
-uint getFirstCountedAction(std::vector<int> b) {
+uint getFirstCountedAction(std::vector<llong> b) {
 	for (size_t i = 0; i < b.size(); i++) {
 		if (b[i] > 0) {
 			return i;
