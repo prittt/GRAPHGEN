@@ -41,6 +41,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_ACTION_SOURCE 3
+#define HDT_PROGRESS_ENABLED true
 
 using namespace std;
 
@@ -462,7 +463,7 @@ std::string GetLatestProgressFilePath() {
 	return (conf.progress_file_path_ / std::filesystem::path("progress-latest.txt")).string();
 }
 
-void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<conact>& tree, int depth, int nodes, int path_length_sum, ullong rule_accesses) {
+void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<conact>& tree, int depth, int nodes, int path_length_sum, uint64_t rule_accesses) {
 	std::stringstream ss;
 	ss << "progress-" << conf.algorithm_name_ << "-";
 	char mbstr[100];
@@ -612,14 +613,14 @@ void FindHdtIteratively(rule_set& rs,
 	BinaryDrag<conact>& tree,
 	std::vector<RecursionInstance>& initial_recursion_instances,
 	int start_depth = 0,
-	int start_nodes = 0,
+	int start_leaves = 0,
 	int start_path_length_sum = 0,
 	ullong start_rule_accesses = 0)
 {
 	std::vector<RecursionInstance> pending_recursion_instances(initial_recursion_instances);
 	std::vector<RecursionInstance> upcoming_recursion_instances;
 	int depth = start_depth;
-	int nodes = start_nodes;
+	int leaves = start_leaves;
 	int path_length_sum = start_path_length_sum;
 	necessary_rule_accesses = total_rule_accesses = start_rule_accesses;
 
@@ -633,35 +634,46 @@ void FindHdtIteratively(rule_set& rs,
 		TLOG2("Processing instances", 
 			for (auto& r : pending_recursion_instances) {
 				int amount_of_action_children = HdtProcessNode(r, tree, rs, upcoming_recursion_instances);
-				nodes += amount_of_action_children;
+				leaves += amount_of_action_children;
 				path_length_sum += (depth + 1) * amount_of_action_children;
 			}
 		);
 		pending_recursion_instances = upcoming_recursion_instances;
 		upcoming_recursion_instances.clear();
 		depth++;
-		SaveProgressToFiles(pending_recursion_instances, tree, depth, nodes, path_length_sum, total_rule_accesses);
+#if HDT_PROGRESS_ENABLED == true
+		SaveProgressToFiles(pending_recursion_instances, tree, depth, leaves, path_length_sum, total_rule_accesses);
+#endif
 		//getchar();
 	}
-	float average_path_length = path_length_sum / static_cast<float>(nodes);
-	std::cout << "HDT construction done. Nodes: " << nodes << " Average path length: " << average_path_length << std::endl;
+	float average_path_length = path_length_sum / static_cast<float>(leaves);
+	std::cout << "HDT construction done. Nodes: " << leaves << " Average path length: " << average_path_length << std::endl;
+#if HDT_PROGRESS_ENABLED == true
 	try {
 		std::filesystem::remove(GetLatestProgressFilePath());
 	} 
 	catch (std::filesystem::filesystem_error e) {
 		std::cerr << "Could not delete 'latest progress file'." << std::endl;
 	}
+#endif
 }
 
 void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, BinaryDrag<conact>& tree) {
+#if HDT_PROGRESS_ENABLED == true
 	std::string path = GetLatestProgressFilePath();
-	if (std::filesystem::exists(path)) {
+	bool load = std::filesystem::exists(path);
+#else
+	bool load = false;
+#endif
+	if (load) {
 		// continue existing run
-		std::cout << "Progress file found, loading progress." << std::endl;
+		std::cout << "Progress file found, loading progress: ";
 		std::ifstream is(path, ios::binary);
 		std::string line;
 		std::vector<RecursionInstance> r_insts;
-		int depth, nodes, path_length_sum, rule_accesses;
+		int depth, leaves, path_length_sum;
+		uint64_t rule_accesses;
+		bool tree_found = false, meta_found = false;
 		while (std::getline(is, line))
 		{
 			std::istringstream iss(line);
@@ -676,23 +688,44 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 				iss >> s;
 				int val = 0;
 				StringToTreeRec(s, tree, root, r_insts, val);
+				tree_found = true;
 			}
 			else if (keyword.compare("Meta(Depth/Nodes/Pathlengthsum/Ruleaccesses)") == 0) {
 				iss >> depth;
-				iss >> nodes;
+				iss >> leaves;
 				iss >> path_length_sum;
 				iss >> rule_accesses;
+				meta_found = true;
 			}	
 		}
+		is.close();
+
+		// checks
 		if (r_insts.size() == 0) {
 			std::cerr << "No RecursionInstances found in loaded progress file. Aborting." << std::endl;
 			exit(EXIT_FAILURE);
 		}
-		is.close();
-		FindHdtIteratively(rs, brs, tree, r_insts, depth, nodes, path_length_sum, rule_accesses);
+		if (!meta_found) {
+			std::cerr << "No Meta section found in loaded progress file. Aborting." << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		if (!tree_found) {
+			std::cerr << "No Tree found in loaded progress file. Aborting." << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		for (const auto& r : r_insts) {
+			if (r.parent == nullptr) {
+				std::cerr << "RecursionInstance with NULL parent found after loading progress file. Aborting." << std::endl;
+				exit(EXIT_FAILURE);
+			}
+		}
+		std::cout << "Depth: " << depth << ", RecursionInstances: " << r_insts.size() << ", Leaves: " << leaves << std::endl;
+		FindHdtIteratively(rs, brs, tree, r_insts, depth, leaves, path_length_sum, rule_accesses);
 	} else {
 		// start new run
+#if HDT_PROGRESS_ENABLED
 		std::cout << "No progress file found, starting new run from depth 0." << std::endl;
+#endif
 		std::vector<int> conditions;
 		conditions.reserve(rs.conditions.size());
 		for (auto &c : rs.conditions) {
