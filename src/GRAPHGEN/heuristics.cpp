@@ -190,20 +190,75 @@ struct RecursionInstance {
 	// state
 	bool processed = false;
 
-	RecursionInstance(std::vector<int> conditions,
-		ullong set_conditions0,
-		ullong set_conditions1,
-		BinaryDrag<conact>::node* parent) : 
-			conditions(conditions),
-			set_conditions0(set_conditions0),
-			set_conditions1(set_conditions1),
-			parent(parent)
-	{
+	void initialize(std::vector<int> c,
+		ullong sc0,
+		ullong sc1,
+		BinaryDrag<conact>::node* p) {
+		conditions = c;
+		set_conditions0 = sc0;
+		set_conditions1 = sc1;
+		parent = p;
 		single_actions.resize(CONDITION_COUNT * 2, std::vector<llong>(ACTION_COUNT));
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
 #endif
+	}
+
+	RecursionInstance(std::vector<int> conditions,
+		ullong set_conditions0,
+		ullong set_conditions1,
+		BinaryDrag<conact>::node* parent) 
+	{
+		initialize(conditions, set_conditions0, set_conditions1, parent);
+	}
+
+	RecursionInstance(istringstream& iss) {
+		// source: "RecursionInstance 1,2,3,4,5,6,7,8,9, 2048 0"
+		std::vector<int> conditions;
+		ullong set_conditions0;
+		ullong set_conditions1;
+
+		int counter = 1;
+		do
+		{
+			string subs;
+			iss >> subs;
+			if (counter == 1) {
+				// parse conditions
+				istringstream iss(subs);
+				std::string delimiter = ",";
+				size_t last = 0; 
+				size_t next = 0; 
+				while ((next = subs.find(delimiter, last)) != string::npos) { 
+					conditions.push_back(std::stoi(subs.substr(last, next - last)));
+					last = next + 1; 
+				} 
+				//conditions.push_back(std::stoi(subs.substr(last)));
+			}
+			else if (counter == 2) {
+				set_conditions0 = std::stoull(subs);
+			}
+			else if (counter == 3) {
+				set_conditions1 = std::stoull(subs);
+			}
+			counter++;
+		} while (iss);
+		initialize(conditions, set_conditions0, set_conditions1, nullptr);
+	}
+
+	void setParent(BinaryDrag<conact>::node* p) {
+		parent = p;
+	}
+
+	std::string to_string() const {
+		stringstream ss;
+		ss << "RecursionInstance ";
+		for (const auto& c : conditions) {
+			ss << c << ",";
+		}
+		ss << " " << std::to_string(set_conditions0) << " " << std::to_string(set_conditions1);
+		return ss.str();
 	}
 };
 
@@ -216,13 +271,19 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	auto start = std::chrono::system_clock::now();
 
 	for (llong rule_code = 0; rule_code < TOTAL_RULES; rule_code++) {
-		if (rule_code % (1ULL << 28) == 0) {
+		if (rule_code % (1ULL << 31) == 0) {
 			auto end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
 			std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 			double progress = rule_code * 1.f / TOTAL_RULES;
 			double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
-			std::cout << "[" << std::ctime(&end_time) << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" <<  progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+			char mbstr[100];
+			if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
+				std::cout << "[" << mbstr << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" <<  progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+			}
+			else {
+				std::cout << "[" << std::ctime(&end_time) << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+			}
 		}
 		first_match = true;
 
@@ -312,14 +373,142 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 //
 //}
 
-uint getFirstCountedAction(std::vector<llong> b) {
+void NodeToStringRec(BinaryDrag<conact>::node* n, std::stringstream& ss) {
+	if (n->data.t == conact::type::ACTION) {
+		ss << "[";
+		for (const auto& a : n->data.action.getSingleActions()) {
+			ss << a << ",";
+		}
+		ss << "]";
+	}
+	else if (n->data.t == conact::type::CONDITION) {
+		ss << n->data.condition << "(";
+		NodeToStringRec(n->left, ss);
+		ss << ",";
+		NodeToStringRec(n->right, ss);
+		ss << ")";
+	}
+	else {
+		ss << "*";
+	}
+}
+
+std::string TreeToString(BinaryDrag<conact>& tree) {
+	stringstream ss;
+	ss << "Tree ";
+	NodeToStringRec(tree.roots_[0], ss);
+	return ss.str();
+}
+
+
+void StringToTreeRec(
+	std::string s, 
+	BinaryDrag<conact>& tree, 
+	BinaryDrag<conact>::node* node, 
+	std::vector<RecursionInstance>& r_insts,
+	int& next_recursion_index) {
+	auto bracket_pos = s.find('(');
+
+	if (bracket_pos == 1 || bracket_pos == 2) { // support 1 or 2 character pixel/voxel names
+		std::string condition = s.substr(0, bracket_pos);
+		node->data.t = conact::type::CONDITION;
+		node->data.condition = condition;
+
+		auto left = tree.make_node();
+		auto right = tree.make_node();
+
+		node->left = left;
+		node->right = right;
+
+		std::string remaining = s.substr(bracket_pos + 1, s.size() - 3);
+		int separator_pos, open = 0, closed = 0;
+		for (int i = 0; i < remaining.size(); i++) {
+			if (remaining[i] == '(') {
+				open++;
+			}
+			else if (remaining[i] == ')') {
+				closed++;
+			}
+			else if (remaining[i] == ',' && open == closed) {
+				separator_pos = i;
+				break;
+			}
+		}
+		StringToTreeRec(remaining.substr(0, separator_pos), tree, left, r_insts, next_recursion_index);
+		StringToTreeRec(remaining.substr(separator_pos + 1, remaining.size() - separator_pos), tree, right, r_insts, next_recursion_index);
+	}
+	else {
+		if (s[0] == '*' && s.size() == 1) {
+			// wildcard for pending recursion instances
+			r_insts[next_recursion_index++].setParent(node);
+		}
+		else {
+			// no brackets and no wild card = action node
+			istringstream iss(s.substr(1, s.size() - 1));
+			std::string s;
+			node->data.t = conact::type::ACTION;
+			action_bitset action;
+			while (std::getline(iss, s, ',')) {
+				action.set(stoi(s));
+			}
+			node->data.action = action;
+		}
+	}
+}
+
+std::string GetLatestProgressFilePath() {
+	return (conf.progress_file_path_ / std::filesystem::path("progress-latest.txt")).string();
+}
+
+void SaveProgressToFiles(int depth, int nodes, int path_length_sum, std::vector<RecursionInstance>& r_insts, BinaryDrag<conact>& tree) {
+	std::stringstream ss;
+	ss << "progress-" << conf.algorithm_name_ << "-";
+	char mbstr[100];
+	std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d_%H-%M-%S", std::localtime(&time))) {
+		ss << mbstr;
+	}
+	ss << "-depth" << depth;
+	ss << ".txt";
+	std::string filename = ss.str();
+	std::string path = (conf.progress_file_path_ / std::filesystem::path(filename)).string();
+
+	if (!std::filesystem::exists(conf.progress_file_path_)) {
+		std::filesystem::create_directory(conf.progress_file_path_);
+	}
+	
+	std::ofstream os(path, ios::binary);
+	if (!os) {
+		std::cout << "Could not save progress to file: " << path << std::endl;
+		return;
+	}
+	for (const auto& r : r_insts) {
+		os << r.to_string() << "\n";
+	}
+	os << TreeToString(tree) << "\n";
+	os << "Meta(Depth/Nodes/Pathlengthsum) " << depth << " " << nodes << " " << path_length_sum << "\n";
+	os.close();
+	std::cout << "Saved progress successfully to file: " << path << std::endl;
+	std::string latest_path = GetLatestProgressFilePath();
+	try {
+		if (std::filesystem::exists(latest_path)) {
+			std::filesystem::remove(latest_path);
+		}
+		std::filesystem::copy(path, latest_path);
+	}
+	catch (std::filesystem::filesystem_error e) {
+		std::cerr << "Could not save progress to 'latest file': " << latest_path << std::endl;
+	}	
+}
+
+uint GetFirstCountedAction(std::vector<llong> b) {
 	for (size_t i = 0; i < b.size(); i++) {
 		if (b[i] > 0) {
 			return i;
 		}
 	}
-	std::cerr << "getFirstCountedAction called with empty vector" << std::endl;
-	throw std::runtime_error("getFirstCountedAction called with empty vector");
+	std::cerr << "GetFirstCountedAction called with empty vector" << std::endl;
+	throw std::runtime_error("GetFirstCountedAction called with empty vector");
 }
 
 int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_set& rs, std::vector<RecursionInstance>& upcoming_recursion_instances) {
@@ -333,10 +522,10 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 		auto rightNode = tree.make_node();
 		r.parent->left = leftNode;
 		r.parent->right = rightNode;
-		auto leftAction = action_bitset().set(getFirstCountedAction(r.single_actions[r.conditions[0] * 2]));
+		auto leftAction = action_bitset().set(GetFirstCountedAction(r.single_actions[r.conditions[0] * 2]));
 		leftNode->data.t = conact::type::ACTION;
 		leftNode->data.action = leftAction;
-		auto rightAction = action_bitset().set(getFirstCountedAction(r.single_actions[r.conditions[0] * 2]));
+		auto rightAction = action_bitset().set(GetFirstCountedAction(r.single_actions[r.conditions[0] * 2]));
 		rightNode->data.t = conact::type::ACTION;
 		rightNode->data.action = rightAction;
 		//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
@@ -390,7 +579,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	if (leftIsAction) {
 		r.parent->left = tree.make_node();
 		r.parent->left->data.t = conact::type::ACTION;
-		r.parent->left->data.action = action_bitset().set(getFirstCountedAction(r.single_actions[splitCandidate * 2]));
+		r.parent->left->data.action = action_bitset().set(GetFirstCountedAction(r.single_actions[splitCandidate * 2]));
 		amount_of_action_children++;
 	}
 	else {
@@ -402,7 +591,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	if (rightIsAction) {
 		r.parent->right = tree.make_node();
 		r.parent->right->data.t = conact::type::ACTION;
-		r.parent->right->data.action = action_bitset().set(getFirstCountedAction(r.single_actions[splitCandidate * 2 + 1]));
+		r.parent->right->data.action = action_bitset().set(GetFirstCountedAction(r.single_actions[splitCandidate * 2 + 1]));
 		amount_of_action_children++;
 	}
 	else {
@@ -412,24 +601,25 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	}
 
 	r.processed = true;
-	std::cout << "Processed instance. Split Candidate: " << rs.conditions[splitCandidate] << " Action Children: " << amount_of_action_children << std::endl;
+	//std::cout << "Processed instance. Split Candidate: " << rs.conditions[splitCandidate] << " Action Children: " << amount_of_action_children << std::endl;
 	return amount_of_action_children;
 }
 
 void FindHdtIteratively(rule_set& rs, 
 	BaseRuleSet& brs,
 	BinaryDrag<conact>& tree,
-	RecursionInstance& initial_recursion_instance)
+	std::vector<RecursionInstance>& initial_recursion_instances,
+	int start_depth = 0,
+	int start_nodes = 0,
+	int start_path_length_sum = 0)
 {
-	std::vector<RecursionInstance> pending_recursion_instances;
+	std::vector<RecursionInstance> pending_recursion_instances(initial_recursion_instances);
 	std::vector<RecursionInstance> upcoming_recursion_instances;
-	int depth = 0;
-	int nodes = 0;
-	int path_length_sum = 0;
+	int depth = start_depth;
+	int nodes = start_nodes;
+	int path_length_sum = start_path_length_sum;
 
-	pending_recursion_instances.push_back(initial_recursion_instance);
-
-	while (pending_recursion_instances.size() > 0) {
+	while (pending_recursion_instances.size() > 0 && depth < 5) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances.size() << ")" << std::endl;
 
 		TLOG("Reading rules and classifying",
@@ -442,26 +632,71 @@ void FindHdtIteratively(rule_set& rs,
 				nodes += amount_of_action_children;
 				path_length_sum += (depth + 1) * amount_of_action_children;
 			}
-		);		
+		);	
+
 
 		pending_recursion_instances = upcoming_recursion_instances;
 		upcoming_recursion_instances.clear();
 		depth++;
+		SaveProgressToFiles(depth, nodes, path_length_sum, pending_recursion_instances, tree);
 		//getchar();
 	}
 	float average_path_length = path_length_sum / static_cast<float>(nodes);
 	std::cout << "HDT construction done. Nodes: " << nodes << " Average path length: " << average_path_length << std::endl;
 }
 
+void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, BinaryDrag<conact>& tree) {
+	std::string path = GetLatestProgressFilePath();
+	if (std::filesystem::exists(path)) {
+		// continue existing run
+		std::cout << "Progress file found, loading progress." << std::endl;
+		std::ifstream is(path, ios::binary);
+		std::string line;
+		std::vector<RecursionInstance> r_insts;
+		int depth, nodes, path_length_sum;
+		while (std::getline(is, line))
+		{
+			std::istringstream iss(line);
+			std::string keyword;
+			iss >> keyword;
+
+			if (keyword.compare("RecursionInstance") == 0) {
+				r_insts.push_back(RecursionInstance(iss));
+			}
+			else if (keyword.compare("Tree") == 0) {
+				std::string s;
+				iss >> s;
+				int val = 0;
+				StringToTreeRec(s, tree, root, r_insts, val);
+			}
+			else if (keyword.compare("Meta(Depth/Nodes/Pathlengthsum)") == 0) {
+				iss >> depth;
+				iss >> nodes;
+				iss >> path_length_sum;
+			}	
+		}
+		if (r_insts.size() == 0) {
+			std::cerr << "No RecursionInstances found in loaded progress file. Aborting." << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		FindHdtIteratively(rs, brs, tree, r_insts, depth, nodes, path_length_sum);
+	} else {
+		// start new run
+		std::cout << "No progress file found, starting new run from depth 0." << std::endl;
+		std::vector<int> conditions;
+		conditions.reserve(rs.conditions.size());
+		for (auto &c : rs.conditions) {
+			conditions.push_back(rs.conditions_pos.at(c));
+		}
+		auto r = RecursionInstance(conditions, 0, 0, root);
+		auto r_insts = std::vector<RecursionInstance>(1, r);
+		FindHdtIteratively(rs, brs, tree, r_insts);
+	}
+}
+
 BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	BinaryDrag<conact> tree;
 	auto parent = tree.make_root();
-
-	std::vector<int> conditions;
-	conditions.reserve(rs.conditions.size());
-	for (auto &c : rs.conditions) {
-		conditions.push_back(rs.conditions_pos.at(c));
-	}
 
 	std::bitset<CONDITION_COUNT> set_conditions0, set_conditions1;
 
@@ -488,9 +723,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	brs.OpenRuleFiles();
 	//brs.VerifyRuleFiles();
 
-	auto r = RecursionInstance(conditions, 0, 0, parent);
-
-	FindHdtIteratively(const_cast<rule_set&>(rs), brs, tree, r);
+	FindHdt(parent, const_cast<rule_set&>(rs), brs, tree);
 
 	std::cout << "Total rule accesses: " << total_rule_accesses << " - Necessary rule accesses : " << necessary_rule_accesses << "\n";
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;

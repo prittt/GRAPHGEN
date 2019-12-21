@@ -68,6 +68,7 @@ ConfigData::ConfigData(string& algorithm_name, const string& mask_name, bool use
         
         // HDT
         hdt_path_ = algorithm_output_path_ / path(algorithm_name + hdt_suffix_);
+		progress_file_path_ = algorithm_output_path_ / "progress";
 
         // Code
         code_path_ = algorithm_output_path_ / path(algorithm_name + code_suffix_);

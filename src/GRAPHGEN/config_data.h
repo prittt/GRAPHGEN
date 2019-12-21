@@ -67,6 +67,7 @@ struct ConfigData {
 	// HDT
 	std::string hdt_suffix_ = "_hdt.txt";
 	std::filesystem::path hdt_path_;
+	std::filesystem::path progress_file_path_;
 
     // Code
     std::string code_suffix_ = "_code.cpp";

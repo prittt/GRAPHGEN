@@ -159,6 +159,7 @@ public:
 		return std::to_string(to_ullong());
 	}
 
+	// overflows as soon as there is an action >64 in there
 	const ullong to_ullong() const {
 		ullong output = 0;
 		for (size_t i = 0; i < size(); i++) {
