@@ -272,13 +272,16 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	auto start = std::chrono::system_clock::now();
 
 	for (llong rule_code = 0; rule_code < TOTAL_RULES; rule_code++) {
-		if (rule_code % (1ULL << 31) == 0) {
+		if (rule_code % (1ULL << 32) == 0) {
 			auto end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
 			std::time_t end_time = std::chrono::system_clock::to_time_t(end);
 			double progress = rule_code * 1.f / TOTAL_RULES;
 			double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
 			char mbstr[100];
+			if (rule_code == 0) {
+				std::cout << std::endl;
+			}
 			if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
 				std::cout << "[" << mbstr << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" <<  progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
 			}
@@ -421,7 +424,7 @@ void StringToTreeRec(
 		node->left = left;
 		node->right = right;
 
-		std::string remaining = s.substr(bracket_pos + 1, s.size() - 3);
+		std::string remaining = s.substr(bracket_pos + 1, s.size() - (2+bracket_pos));
 		int separator_pos, open = 0, closed = 0;
 		for (int i = 0; i < remaining.size(); i++) {
 			if (remaining[i] == '(') {
@@ -714,6 +717,10 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 			exit(EXIT_FAILURE);
 		}
 		for (const auto& r : r_insts) {
+			if (r.conditions.size() != CONDITION_COUNT - depth) {
+				std::cerr << "RecursionInstance with wrongly sized condition array found. Aborting." << std::endl;
+				exit(EXIT_FAILURE);
+			}
 			if (r.parent == nullptr) {
 				std::cerr << "RecursionInstance with NULL parent found after loading progress file. Aborting." << std::endl;
 				exit(EXIT_FAILURE);
