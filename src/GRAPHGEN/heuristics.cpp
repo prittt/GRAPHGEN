@@ -384,7 +384,7 @@ void NodeToStringRec(BinaryDrag<conact>::node* n, std::stringstream& ss) {
 	else if (n->data.t == conact::type::CONDITION) {
 		ss << n->data.condition << "(";
 		NodeToStringRec(n->left, ss);
-		ss << ",";
+		ss << ".";
 		NodeToStringRec(n->right, ss);
 		ss << ")";
 	}
@@ -429,27 +429,29 @@ void StringToTreeRec(
 			else if (remaining[i] == ')') {
 				closed++;
 			}
-			else if (remaining[i] == ',' && open == closed) {
+			else if (remaining[i] == '.' && open == closed) {
 				separator_pos = i;
 				break;
 			}
 		}
-		StringToTreeRec(remaining.substr(0, separator_pos), tree, left, r_insts, next_recursion_index);
-		StringToTreeRec(remaining.substr(separator_pos + 1, remaining.size() - separator_pos), tree, right, r_insts, next_recursion_index);
+		auto lsubstr = remaining.substr(0, separator_pos);
+		auto rsubstr = remaining.substr(separator_pos + 1, remaining.size() - separator_pos);
+		StringToTreeRec(lsubstr, tree, left, r_insts, next_recursion_index);
+		StringToTreeRec(rsubstr, tree, right, r_insts, next_recursion_index);
 	}
 	else {
 		if (s[0] == '*' && s.size() == 1) {
 			// wildcard for pending recursion instances
 			r_insts[next_recursion_index++].setParent(node);
 		}
-		else {
+		else if (s[0] == '[' && s[s.size() - 1] == ']') {
 			// no brackets and no wild card = action node
-			istringstream iss(s.substr(1, s.size() - 1));
-			std::string s;
+			istringstream iss(s.substr(1, s.size() - 2));
+			std::string str;
 			node->data.t = conact::type::ACTION;
 			action_bitset action;
-			while (std::getline(iss, s, ',')) {
-				action.set(stoi(s));
+			while (std::getline(iss, str, ',')) {
+				action.set(stoi(str));
 			}
 			node->data.action = action;
 		}
@@ -460,7 +462,7 @@ std::string GetLatestProgressFilePath() {
 	return (conf.progress_file_path_ / std::filesystem::path("progress-latest.txt")).string();
 }
 
-void SaveProgressToFiles(int depth, int nodes, int path_length_sum, std::vector<RecursionInstance>& r_insts, BinaryDrag<conact>& tree) {
+void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<conact>& tree, int depth, int nodes, int path_length_sum, ullong rule_accesses) {
 	std::stringstream ss;
 	ss << "progress-" << conf.algorithm_name_ << "-";
 	char mbstr[100];
@@ -486,9 +488,9 @@ void SaveProgressToFiles(int depth, int nodes, int path_length_sum, std::vector<
 		os << r.to_string() << "\n";
 	}
 	os << TreeToString(tree) << "\n";
-	os << "Meta(Depth/Nodes/Pathlengthsum) " << depth << " " << nodes << " " << path_length_sum << "\n";
+	os << "Meta(Depth/Nodes/Pathlengthsum/Ruleaccesses) " << depth << " " << nodes << " " << path_length_sum << " " << rule_accesses << "\n";
 	os.close();
-	std::cout << "Saved progress successfully to file: " << path << std::endl;
+	std::cout << "Saved progress to file: " << path << std::endl;
 	std::string latest_path = GetLatestProgressFilePath();
 	try {
 		if (std::filesystem::exists(latest_path)) {
@@ -611,15 +613,17 @@ void FindHdtIteratively(rule_set& rs,
 	std::vector<RecursionInstance>& initial_recursion_instances,
 	int start_depth = 0,
 	int start_nodes = 0,
-	int start_path_length_sum = 0)
+	int start_path_length_sum = 0,
+	ullong start_rule_accesses = 0)
 {
 	std::vector<RecursionInstance> pending_recursion_instances(initial_recursion_instances);
 	std::vector<RecursionInstance> upcoming_recursion_instances;
 	int depth = start_depth;
 	int nodes = start_nodes;
 	int path_length_sum = start_path_length_sum;
+	necessary_rule_accesses = total_rule_accesses = start_rule_accesses;
 
-	while (pending_recursion_instances.size() > 0 && depth < 5) {
+	while (pending_recursion_instances.size() > 0) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances.size() << ")" << std::endl;
 
 		TLOG("Reading rules and classifying",
@@ -632,17 +636,21 @@ void FindHdtIteratively(rule_set& rs,
 				nodes += amount_of_action_children;
 				path_length_sum += (depth + 1) * amount_of_action_children;
 			}
-		);	
-
-
+		);
 		pending_recursion_instances = upcoming_recursion_instances;
 		upcoming_recursion_instances.clear();
 		depth++;
-		SaveProgressToFiles(depth, nodes, path_length_sum, pending_recursion_instances, tree);
+		SaveProgressToFiles(pending_recursion_instances, tree, depth, nodes, path_length_sum, total_rule_accesses);
 		//getchar();
 	}
 	float average_path_length = path_length_sum / static_cast<float>(nodes);
 	std::cout << "HDT construction done. Nodes: " << nodes << " Average path length: " << average_path_length << std::endl;
+	try {
+		std::filesystem::remove(GetLatestProgressFilePath());
+	} 
+	catch (std::filesystem::filesystem_error e) {
+		std::cerr << "Could not delete 'latest progress file'." << std::endl;
+	}
 }
 
 void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, BinaryDrag<conact>& tree) {
@@ -653,7 +661,7 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 		std::ifstream is(path, ios::binary);
 		std::string line;
 		std::vector<RecursionInstance> r_insts;
-		int depth, nodes, path_length_sum;
+		int depth, nodes, path_length_sum, rule_accesses;
 		while (std::getline(is, line))
 		{
 			std::istringstream iss(line);
@@ -669,17 +677,19 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 				int val = 0;
 				StringToTreeRec(s, tree, root, r_insts, val);
 			}
-			else if (keyword.compare("Meta(Depth/Nodes/Pathlengthsum)") == 0) {
+			else if (keyword.compare("Meta(Depth/Nodes/Pathlengthsum/Ruleaccesses)") == 0) {
 				iss >> depth;
 				iss >> nodes;
 				iss >> path_length_sum;
+				iss >> rule_accesses;
 			}	
 		}
 		if (r_insts.size() == 0) {
 			std::cerr << "No RecursionInstances found in loaded progress file. Aborting." << std::endl;
 			exit(EXIT_FAILURE);
 		}
-		FindHdtIteratively(rs, brs, tree, r_insts, depth, nodes, path_length_sum);
+		is.close();
+		FindHdtIteratively(rs, brs, tree, r_insts, depth, nodes, path_length_sum, rule_accesses);
 	} else {
 		// start new run
 		std::cout << "No progress file found, starting new run from depth 0." << std::endl;
