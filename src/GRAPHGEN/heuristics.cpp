@@ -378,7 +378,10 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 //}
 
 void NodeToStringRec(BinaryDrag<conact>::node* n, std::stringstream& ss) {
-	if (n->data.t == conact::type::ACTION) {
+	if (n == nullptr || (n->data.action.size() == 0 && n->data.condition.size() == 0)) {
+		ss << "*";
+	}
+	else if (n->data.t == conact::type::ACTION) {
 		ss << "[";
 		for (const auto& a : n->data.action.getSingleActions()) {
 			ss << a << ",";
@@ -391,9 +394,6 @@ void NodeToStringRec(BinaryDrag<conact>::node* n, std::stringstream& ss) {
 		ss << ".";
 		NodeToStringRec(n->right, ss);
 		ss << ")";
-	}
-	else {
-		ss << "*";
 	}
 }
 
