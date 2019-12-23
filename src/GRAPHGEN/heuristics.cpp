@@ -482,18 +482,60 @@ void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<con
 	if (!std::filesystem::exists(conf.progress_file_path_)) {
 		std::filesystem::create_directory(conf.progress_file_path_);
 	}
-	
-	std::ofstream os(path, ios::binary);
-	if (!os) {
-		std::cout << "Could not save progress to file: " << path << std::endl;
-		return;
+
+	std::stringstream oss;
+	bool retry = false;
+	try {
+		std::ofstream os(path, ios::binary);
+		if (!os) {
+			std::cout << "Could not save progress to file: " << path << std::endl;
+			return;
+		}
+		for (const auto& r : r_insts) {
+			auto r_string = r.to_string();
+			oss << r_string << "\n";
+			os << r_string << "\n";
+		}
+		auto tree_string = TreeToString(tree);
+		oss << tree_string << "\n";
+		os << tree_string << "\n";
+		os << "Meta(Depth/Nodes/Pathlengthsum/Ruleaccesses) " << depth << " " << nodes << " " << path_length_sum << " " << rule_accesses << "\n";
+		os.close();
 	}
-	for (const auto& r : r_insts) {
-		os << r.to_string() << "\n";
+	catch (const std::exception &e) {
+		std::cout << "exception: " << e.what() << std::endl;
+		std::cout << "The following output has been generated before the program crashed:" << std::endl;
+		std::cout << oss.str() << std::endl;
+		std::cout << "--- end of output" << std::endl;
+		retry = true;
 	}
-	os << TreeToString(tree) << "\n";
-	os << "Meta(Depth/Nodes/Pathlengthsum/Ruleaccesses) " << depth << " " << nodes << " " << path_length_sum << " " << rule_accesses << "\n";
-	os.close();
+	catch (...) {
+		std::cout << "Miscellenanous exception" << std::endl;
+		std::cout << "The following output has been generated before the program crashed:" << std::endl;
+		std::cout << oss.str() << std::endl;
+		std::cout << "--- end of output" << std::endl;
+		retry = true;
+	}
+
+	if (retry) {
+		try {
+			std::cout << "Since there was an exception, I will now try to generate the complete output again and output it to stdout." << std::endl;
+			for (const auto& r : r_insts) {
+				auto r_string = r.to_string();
+				std::cout << r_string << "\n";
+			}
+			auto tree_string = TreeToString(tree);
+			std::cout << tree_string << "\n";
+			std::cout << "Meta(Depth/Nodes/Pathlengthsum/Ruleaccesses) " << depth << " " << nodes << " " << path_length_sum << " " << rule_accesses << "\n";
+		}
+		catch (const std::exception &e) {
+			std::cout << "exception: " << e.what() << std::endl;
+		}
+		catch (...) {
+			std::cout << "Miscellenanous exception" << std::endl;
+		}
+	}
+
 	std::cout << "Saved progress to file: " << path << std::endl;
 	std::string latest_path = GetLatestProgressFilePath();
 	try {
