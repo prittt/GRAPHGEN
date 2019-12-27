@@ -683,12 +683,12 @@ void FindHdtIteratively(rule_set& rs,
 				path_length_sum += (depth + 1) * amount_of_action_children;
 			}
 		);
-		pending_recursion_instances = upcoming_recursion_instances;
-		upcoming_recursion_instances.clear();
 		depth++;
 #if HDT_PROGRESS_ENABLED == true
-		SaveProgressToFiles(pending_recursion_instances, tree, depth, leaves, path_length_sum, total_rule_accesses);
+		SaveProgressToFiles(upcoming_recursion_instances, tree, depth, leaves, path_length_sum, total_rule_accesses);
 #endif
+		pending_recursion_instances = std::move(upcoming_recursion_instances);
+		upcoming_recursion_instances.clear();
 		//getchar();
 	}
 	float average_path_length = path_length_sum / static_cast<float>(leaves);
