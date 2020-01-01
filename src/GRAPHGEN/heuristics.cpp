@@ -793,7 +793,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	std::bitset<CONDITION_COUNT> set_conditions0, set_conditions1;
 
 	bool b1 = set_conditions0.size() == rs.conditions.size();
-	bool b2 = ACTION_COUNT == rs.actions.size();
+	bool b2 = true;//ACTION_COUNT == rs.actions.size();
 
 	if (!(b1 && b2)) {
 		std::cerr << "Assert failed: check ACTION_COUNT and CONDITION_COUNT." << std::endl;

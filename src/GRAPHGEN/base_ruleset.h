@@ -266,6 +266,8 @@ public:
 		std::cout << "** All rule files verified." << std::endl;		
 	}
 
+#include "bbtd3d-36-reductiontable-5813-2829.inc"
+
 	action_bitset* LoadRuleFromBinaryRuleFiles(const ullong& rule_code) {
 		try {
 			int p = static_cast<int>(rule_code / RULES_PER_PARTITION);
@@ -290,6 +292,7 @@ public:
 					currently_loaded_rules[i].resize(size);
 					for (ushort& x : currently_loaded_rules[i].getSingleActions()) {
 						is.read(reinterpret_cast<char*>(&x), 2);
+						x = action_reduction_mapping[x];
 					}
 				}
 
@@ -311,7 +314,7 @@ public:
 	void ReduceActionsInRuleFiles() {
 		OpenRuleFiles();
 		std::bitset<ACTION_COUNT> counts;
-		for (int p = PARTITIONS/8; p < PARTITIONS / 4; p++) {
+		for (int p = 0; p < PARTITIONS; p++) {
 			TLOG("load partition",
 				LoadRuleFromBinaryRuleFiles(p * RULES_PER_PARTITION);    // hacky way of loading the desired partition
 			);
@@ -329,7 +332,7 @@ public:
 		}
 		
 		std::cout << "writing" << std::endl;
-		std::ofstream os("actions2.csv", std::ios::binary);
+		std::ofstream os("actions5-8.csv", std::ios::binary);
 		for (int n = 0; n < ACTION_COUNT; n++) {
 			os << n << ',' << counts[n] << ",\n";
 		}
