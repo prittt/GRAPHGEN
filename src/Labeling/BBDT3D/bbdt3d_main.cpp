@@ -40,6 +40,9 @@ int main()
     Grana3dRS g_rs;
     auto rs = g_rs.GetRuleSet();
 
+	g_rs.ReduceActionsInRuleFiles();
+	exit(EXIT_SUCCESS);
+
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
     BinaryDrag<conact> bd = GetHdt(rs, g_rs, true);

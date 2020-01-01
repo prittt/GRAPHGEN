@@ -44,6 +44,8 @@
 #include <zstd.h>
 
 #include "constants.h"
+#include "utilities.h"
+#include <omp.h>
 
 class BaseRuleSet {
     std::filesystem::path p_;
@@ -304,6 +306,35 @@ public:
 		}
 		std::cerr << "Rule lookup from binary rule file failed. Rule code: " << rule_code << std::endl;
 		throw std::runtime_error("Rule lookup from binary rule file failed.");
+	}
+
+	void ReduceActionsInRuleFiles() {
+		OpenRuleFiles();
+		std::bitset<ACTION_COUNT> counts;
+		for (int p = PARTITIONS/8; p < PARTITIONS / 4; p++) {
+			TLOG("load partition",
+				LoadRuleFromBinaryRuleFiles(p * RULES_PER_PARTITION);    // hacky way of loading the desired partition
+			);
+
+			for (llong rule_code = p * RULES_PER_PARTITION; rule_code < (p + 1) * RULES_PER_PARTITION; rule_code++) {
+				if (rule_code % (TOTAL_RULES >> 8) == 0) {
+					std::cout << "rule " << rule_code << " out of " << TOTAL_RULES << std::endl;
+				}
+				for (const auto& s : LoadRuleFromBinaryRuleFiles(rule_code)->getSingleActions()) {
+					if (!counts.test(s)) {
+						counts.set(s);
+					}
+				}
+			}
+		}
+		
+		std::cout << "writing" << std::endl;
+		std::ofstream os("actions2.csv", std::ios::binary);
+		for (int n = 0; n < ACTION_COUNT; n++) {
+			os << n << ',' << counts[n] << ",\n";
+		}
+		os.close();
+		std::cout << "done reducing.";
 	}
 
     virtual rule_set GenerateRuleSet() = 0;
