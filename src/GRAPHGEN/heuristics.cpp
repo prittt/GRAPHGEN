@@ -45,7 +45,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 
 using namespace std;
 
-double entropy(std::vector<llong>& vector) {
+double entropy(std::vector<int>& vector) {
 	double s = 0, h = 0;
 	for (const auto& x : vector) {
 		if (x == 0) {
@@ -146,12 +146,12 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 }
 
 void FindBestSingleActionCombinationRunningCombined(
-	std::vector<llong>& all_single_actions,
-	std::vector<std::vector<llong>>& single_actions,
+	std::vector<int>& all_single_actions,
+	std::vector<std::vector<int>>& single_actions,
 	action_bitset* combined_action,
 	const ullong& rule_code) {
 
-	llong most_popular_single_action_occurences = -1;
+	int most_popular_single_action_occurences = -1;
 	int most_popular_single_action_index = -1;
 
 	for (const auto& a : combined_action->getSingleActions()) { 
@@ -171,19 +171,19 @@ void FindBestSingleActionCombinationRunningCombined(
 	}
 }
 
-uint64_t total_rule_accesses = 0;
+uint64_t rule_accesses = 0;
 uint64_t necessary_rule_accesses = 0;
 
 struct RecursionInstance {
 	// parameters
 	std::vector<int> conditions;
-	ullong set_conditions0;
+	ullong set_conditions0; // assume: condition count < 64
 	ullong set_conditions1;
 	BinaryDrag<conact>::node* parent;
 
 	// local vars
-	std::vector<std::vector<llong>> single_actions;
-	std::vector<llong> all_single_actions = std::vector<llong>(ACTION_COUNT); // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
+	std::vector<std::vector<int>> single_actions;
+	std::vector<int> all_single_actions = std::vector<int>(ACTION_COUNT); // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
 #if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
 	std::vector<std::array<int, 2>> most_probable_action_occurences_;
@@ -199,7 +199,7 @@ struct RecursionInstance {
 		set_conditions0 = sc0;
 		set_conditions1 = sc1;
 		parent = p;
-		single_actions.resize(CONDITION_COUNT * 2, std::vector<llong>(ACTION_COUNT));
+		single_actions.resize(CONDITION_COUNT * 2, std::vector<int>(ACTION_COUNT));
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
@@ -303,8 +303,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 #elif (HDT_ACTION_SOURCE == 3)
 					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 3) read from file
 #endif
-					total_rule_accesses++;
-					necessary_rule_accesses++;
+					rule_accesses++;
 					first_match = false;
 				}
 #if HDT_COMBINED_CLASSIFIER == true
@@ -549,7 +548,7 @@ void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<con
 	}	
 }
 
-uint GetFirstCountedAction(std::vector<llong> b) {
+uint GetFirstCountedAction(std::vector<int>& b) {
 	for (size_t i = 0; i < b.size(); i++) {
 		if (b[i] > 0) {
 			return i;
@@ -667,7 +666,7 @@ void FindHdtIteratively(rule_set& rs,
 	int depth = start_depth;
 	int leaves = start_leaves;
 	int path_length_sum = start_path_length_sum;
-	necessary_rule_accesses = total_rule_accesses = start_rule_accesses;
+	rule_accesses = start_rule_accesses;
 
 	while (pending_recursion_instances.size() > 0) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances.size() << ")" << std::endl;
@@ -685,7 +684,7 @@ void FindHdtIteratively(rule_set& rs,
 		);
 		depth++;
 #if HDT_PROGRESS_ENABLED == true
-		SaveProgressToFiles(upcoming_recursion_instances, tree, depth, leaves, path_length_sum, total_rule_accesses);
+		SaveProgressToFiles(upcoming_recursion_instances, tree, depth, leaves, path_length_sum, rule_accesses);
 #endif
 		pending_recursion_instances = std::move(upcoming_recursion_instances);
 		upcoming_recursion_instances.clear();
@@ -808,6 +807,13 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 		throw std::runtime_error("Assert failed: check HDT_ACTION_SOURCE and HDT_INFORMATION_GAIN_METHOD_VERSION.");
 	}
 
+	bool b5 = RULES_PER_PARTITION < INT_MAX;
+
+	if (!(b5)) {
+		std::cerr << "Assert failed: RULES_PER_PARTITION is not smaller than INT_MAX. This is assumed in the algorithm to increase performance." << std::endl;
+		throw std::runtime_error("Assert failed: RULES_PER_PARTITION is not smaller than INT_MAX.");
+	}
+
 	std::cout << "\nInformation gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;
 	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
@@ -817,7 +823,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 
 	FindHdt(parent, const_cast<rule_set&>(rs), brs, tree);
 
-	std::cout << "Total rule accesses: " << total_rule_accesses << " - Necessary rule accesses : " << necessary_rule_accesses << "\n";
+	std::cout << "Total rule accesses: " << rule_accesses << "\n";
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;
 	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
