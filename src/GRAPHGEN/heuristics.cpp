@@ -83,7 +83,7 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 
 void FindBestSingleActionCombinationRunningCombined(
 	std::array<int, ACTION_COUNT>& all_single_actions,
-	std::vector<std::array<int, ACTION_COUNT>>& single_actions,
+	std::array<std::array<int, ACTION_COUNT>, CONDITION_COUNT * 2>& single_actions,
 	action_bitset* combined_action,
 	const ullong& rule_code) {
 
@@ -118,7 +118,7 @@ struct RecursionInstance {
 	BinaryDrag<conact>::node* parent;
 
 	// local vars
-	std::vector<std::array<int, ACTION_COUNT>> single_actions;
+	std::array<std::array<int, ACTION_COUNT>, CONDITION_COUNT * 2> single_actions;
 	std::array<int, ACTION_COUNT> all_single_actions = {}; // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
 #if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
@@ -135,7 +135,7 @@ struct RecursionInstance {
 		set_conditions0 = sc0;
 		set_conditions1 = sc1;
 		parent = p;
-		single_actions.resize(CONDITION_COUNT * 2, std::array<int, ACTION_COUNT>());
+		single_actions.fill(std::array<int, ACTION_COUNT>());
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
