@@ -45,7 +45,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 
 using namespace std;
 
-double entropy(std::vector<int>& vector) {
+double entropy(std::array<int, ACTION_COUNT>& vector) {
 	double s = 0, h = 0;
 	for (const auto& x : vector) {
 		if (x == 0) {
@@ -56,70 +56,6 @@ double entropy(std::vector<int>& vector) {
 	}
 	return log2(s) - h / s;
 }
-
-
-//double entropy(std::unordered_map<int, int>& map) {
-//	double s = 0, h = 0;
-//	for (const auto& x : map) {
-//		s += x.second;
-//		h += x.second * log2(x.second);
-//	}
-//	return log2(s) - h / s;
-//}
-//
-//enum Classifier {
-//	Popularity,
-//	GreedyAscending,
-//	Random,
-//};
-//
-//Classifier currentClassifier = Classifier::Popularity;
-//
-//template <int maxActions>
-//std::unordered_map<int, int> FindBestSingleActionCombination(std::vector<action_bitset>& combined_actions) {
-//	std::unordered_map<int, int> single_actions;
-//	std::vector<std::pair<int, int>> singleActionCount;
-//
-//	for (int i = 0; i < maxActions; i++) {
-//		singleActionCount.push_back(std::pair(i, 0));
-//	}
-//
-//	if (currentClassifier == Classifier::Popularity) {
-//		for (size_t i = 0; i < combined_actions.size(); i++) {
-//			for (int bit_index = 0; bit_index < maxActions; bit_index++) {
-//				if (combined_actions[i].test(bit_index)) {
-//					singleActionCount[bit_index].second++;
-//				}
-//			}
-//		}
-//		sort(singleActionCount.begin(), singleActionCount.end(),
-//			[](const std::pair<int, int> & a, const std::pair<int, int> & b) -> bool
-//		{
-//			return a.second > b.second;
-//		});
-//	}
-//
-//	if (currentClassifier == Classifier::Random) {
-//		auto rng = std::mt19937(static_cast<unsigned int>(std::time(nullptr)));
-//		std::shuffle(singleActionCount.begin(), singleActionCount.end(), rng);
-//	}
-//
-//	if (currentClassifier == Classifier::GreedyAscending) {
-//		// do nothing
-//	}
-//	
-//	for (auto& r : combined_actions) {
-//		for (auto& x : singleActionCount) {
-//			if (r.test(x.first)) {
-//				single_actions[x.first]++;
-//				break;
-//			}
-//		}
-//	}
-//
-//
-//	return single_actions;
-//}
 
 int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, action_bitset& combined_action, int previous_most_probable_action_occurences = -1) {
 	int most_popular_single_action_occurences = -1;
@@ -146,8 +82,8 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 }
 
 void FindBestSingleActionCombinationRunningCombined(
-	std::vector<int>& all_single_actions,
-	std::vector<std::vector<int>>& single_actions,
+	std::array<int, ACTION_COUNT>& all_single_actions,
+	std::vector<std::array<int, ACTION_COUNT>>& single_actions,
 	action_bitset* combined_action,
 	const ullong& rule_code) {
 
@@ -182,8 +118,8 @@ struct RecursionInstance {
 	BinaryDrag<conact>::node* parent;
 
 	// local vars
-	std::vector<std::vector<int>> single_actions;
-	std::vector<int> all_single_actions = std::vector<int>(ACTION_COUNT); // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
+	std::vector<std::array<int, ACTION_COUNT>> single_actions;
+	std::array<int, ACTION_COUNT> all_single_actions = {}; // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
 #if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
 	std::vector<std::array<int, 2>> most_probable_action_occurences_;
@@ -199,7 +135,7 @@ struct RecursionInstance {
 		set_conditions0 = sc0;
 		set_conditions1 = sc1;
 		parent = p;
-		single_actions.resize(CONDITION_COUNT * 2, std::vector<int>(ACTION_COUNT));
+		single_actions.resize(CONDITION_COUNT * 2, std::array<int, ACTION_COUNT>());
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
@@ -403,7 +339,6 @@ std::string TreeToString(BinaryDrag<conact>& tree) {
 	return ss.str();
 }
 
-
 void StringToTreeRec(
 	std::string s, 
 	BinaryDrag<conact>& tree, 
@@ -548,7 +483,7 @@ void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<con
 	}	
 }
 
-uint GetFirstCountedAction(std::vector<int>& b) {
+uint GetFirstCountedAction(std::array<int, ACTION_COUNT>& b) {
 	for (size_t i = 0; i < b.size(); i++) {
 		if (b[i] > 0) {
 			return i;
