@@ -115,10 +115,7 @@ public:
 		std::cout << "[Rule Files] Partitions: " << PARTITIONS << " Rulecodes for each partition: " << RULES_PER_PARTITION << std::endl;
 		
 		#pragma omp parallel
-		{
-			//ZstdStreamingCompression streamingCompression;
-			//streamingCompression.allocateResources();
-			
+		{			
 			#pragma omp for
 			for (int p = 0; p < PARTITIONS; p++) {
 				const ullong begin_rule_code = p * RULES_PER_PARTITION;
@@ -182,24 +179,19 @@ public:
 						for (ullong rule_code = batch_begin_rule_code; rule_code < batch_end_rule_code; rule_code++, i++) {
 							actions[i] = GetActionFromRuleIndex(rs_, rule_code);
 						}
-						//streamingCompression.compressDataChunk(&actions[0], static_cast<size_t>(batches_steps) * stream_size, b == BATCHES - 1);
 						for (const action_bitset& a : actions) {
 							auto s = a.size();
 							os.write(reinterpret_cast<const char*>(&s), 1);
 							for (const ushort& b : a.getSingleActions()) {
 								os.write(reinterpret_cast<const char*>(&b), 2);
 							}
-							//os.write(reinterpret_cast<const char*>(&a), 2 * a.size());
 						}
 					}
 					//);
 				}
-				//streamingCompression.endStreaming();
 				os.close();
 				std::filesystem::rename(tmp_path, final_path);
 			}
-			
-			//streamingCompression.freeResources();
 		}		
 	}
 
@@ -216,17 +208,10 @@ public:
 	}
 
 	void VerifyRuleFiles() {
-		if (RULES_PER_PARTITION > currently_loaded_rules.max_size()) {
-			std::cerr << "Cannot store 1 partition in memory, aborting. (" << RULES_PER_PARTITION << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
-			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
-		}
-
 		std::cout << "** Verifying rule files. (Partitions: " << PARTITIONS << " Rulecodes for each partition: " << RULES_PER_PARTITION << ")" << std::endl;
 
-		currently_loaded_rules.resize(RULES_PER_PARTITION);
-		
 		for (int p = 0; p < PARTITIONS; p++) {
-			std::cout << "Verifying partition " << p << "...\n";
+			//std::cout << "Verifying partition " << p << "...\n";
 			const ullong begin_rule_code = p * RULES_PER_PARTITION;
 			const ullong end_rule_code = (p + 1) * RULES_PER_PARTITION;
 
@@ -238,29 +223,51 @@ public:
 				exit(EXIT_FAILURE);
 			}
 
-			std::vector<action_bitset> actions;
-			actions.resize(RULES_PER_PARTITION);
-
-			zstd::ifstream binary_rule_file(path, std::ios::binary);
-			if (!binary_rule_file) {
+			zstd::ifstream is(path, std::ios::binary);
+			if (!is) {
 				std::cout << "Could not open partition " << p << " at " << path << " \n";
 				exit(EXIT_FAILURE);
 			}
-			const action_bitset first_action_correct = GetActionFromRuleIndex(rs_, begin_rule_code);
-			const action_bitset last_action_correct = GetActionFromRuleIndex(rs_, end_rule_code - 1);
 
-			action_bitset* first_action_read = LoadRuleFromBinaryRuleFiles(begin_rule_code);
-			
-			action_bitset* last_action_read = LoadRuleFromBinaryRuleFiles(end_rule_code - 1);
+			constexpr int actions_verified = 4;
 
-			if (first_action_correct != *first_action_read || last_action_correct != *last_action_read) {
+			std::vector<action_bitset> actions_correct(actions_verified);
+			std::vector<action_bitset> actions_read(actions_verified);
+
+			bool correct = true;
+
+			uchar size;
+			for (int i = 0; i < actions_verified; i++) {
+				actions_correct[i] = GetActionFromRuleIndex(rs_, begin_rule_code + i);
+				for (auto& s : actions_correct[i].getSingleActions()) {
+					if (s > 90) {
+						s = action_reduction_mapping[s];
+					}
+				}
+
+				is.read(reinterpret_cast<char*>(&size), 1);
+				actions_read[i].resize(size);
+				for (ushort& x : actions_read[i].getSingleActions()) {
+					is.read(reinterpret_cast<char*>(&x), 2);
+				}
+				if (actions_correct[i] != actions_read[i]) {
+					correct = false;
+				}
+			}
+
+			if (!correct) {
 				std::cout << "************************************************************" << std::endl;
 				std::cout << "Incorrect rule found in rule partition " << p << " at " << path << std::endl;
-				std::cout << "Rule Code: " << begin_rule_code << "\tCorrect action: " << first_action_correct.to_string() << "\tRead action: " << first_action_read->to_string() << std::endl;
-				std::cout << "Rule Code: " << (end_rule_code - 1) << "\tCorrect action: " << last_action_correct.to_string() << "\tRead action: " << last_action_read->to_string() << std::endl;
+				for (int i = 0; i < actions_verified; i++) {
+					std::cout << "Rule Code: " << (begin_rule_code + i) << "\tCorrect action: " << actions_correct[i].to_string() << "\tRead action: " << actions_read[i].to_string() << std::endl;
+				}
 				std::cout << "************************************************************" << std::endl;
 				exit(EXIT_FAILURE);
 			}
+			if (p % 256 == 0) {
+				std::cout << "P" << p << " correct. ";
+			}
+
 		}
 		
 		std::cout << "** All rule files verified." << std::endl;		
@@ -292,7 +299,6 @@ public:
 					currently_loaded_rules[i].resize(size);
 					for (ushort& x : currently_loaded_rules[i].getSingleActions()) {
 						is.read(reinterpret_cast<char*>(&x), 2);
-						x = action_reduction_mapping[x];
 					}
 				}
 
@@ -310,6 +316,80 @@ public:
 		std::cerr << "Rule lookup from binary rule file failed. Rule code: " << rule_code << std::endl;
 		throw std::runtime_error("Rule lookup from binary rule file failed.");
 	}
+
+	void ConvertPartitions(int old_partition_count = 1024, int new_partition_count = 65536, bool reduce_actions = true) {
+	    const auto old_basepath = "D:/rules-bkp/zst-variable-data-format-1024p-5813a";
+	    const auto new_basepath = "D:/rules-bkp/zst-variable-data-format-65536p-2829a";
+	    size_t old_rules_per_partition = TOTAL_RULES / old_partition_count;
+	    size_t new_rules_per_partition = TOTAL_RULES / new_partition_count;
+	
+	    // Assume: old partition count < new partition count
+	    // Assume: both partition counts can be divised through each other as a whole number
+
+		{
+			std::vector<action_bitset> actions;
+			actions.resize(old_rules_per_partition);
+
+			for (int old_p = 0; old_p < old_partition_count; old_p++) {
+				const ullong old_begin_rule_code = old_p * old_rules_per_partition;
+				const ullong old_end_rule_code = (old_p + 1) * old_rules_per_partition;
+
+				auto old_path = conf.binary_rule_file_path_partitioned(std::to_string(old_begin_rule_code) + "-" + std::to_string(old_end_rule_code), old_basepath);
+				zstd::ifstream is(old_path, std::ios::binary);
+				if (!is) {
+					std::cerr << "[Old Partition " << old_p << "] Partition could not be opened at " << old_path << ": skipping.\n";
+					continue;
+				}
+				std::cout << "[Old Partition " << old_p << "]\n";
+
+
+				uchar size;
+				for (int i = 0; i < old_rules_per_partition; i++) {
+					is.read(reinterpret_cast<char*>(&size), 1);
+					actions[i].resize(size);
+					for (ushort& x : actions[i].getSingleActions()) {
+						is.read(reinterpret_cast<char*>(&x), 2);
+					}
+				}
+
+				const int first_new_partition = old_begin_rule_code / new_rules_per_partition;
+				const int last_new_partition = old_end_rule_code / new_rules_per_partition;
+
+#pragma omp parallel for
+				for (int new_p = first_new_partition; new_p < last_new_partition; new_p++) {
+					const ullong new_begin_rule_code = new_p * new_rules_per_partition;
+					const ullong new_end_rule_code = (new_p + 1) * new_rules_per_partition;
+
+					auto new_path = conf.binary_rule_file_path_partitioned(std::to_string(new_begin_rule_code) + "-" + std::to_string(new_end_rule_code), new_basepath);
+					zstd::ofstream os(new_path, std::ios::binary);
+					if (!os) {
+						std::cerr << "[New Partition " << new_p << "] Partition could not be saved at " << new_path << ": skipping.\n";
+						continue;
+					}
+					std::cout << "[New Partition " << new_p << "] ";
+
+					const size_t actions_offset = new_begin_rule_code - old_begin_rule_code;
+					ushort converted;
+					for (int i = actions_offset; i < actions_offset + new_rules_per_partition; i++) {
+						const auto& a = actions[i];
+						auto s = a.size();
+						os.write(reinterpret_cast<const char*>(&s), 1);
+						for (const ushort& b : a.getSingleActions()) {
+							if (b > 90) {
+								converted = action_reduction_mapping[b];
+								os.write(reinterpret_cast<const char*>(&converted), 2);
+							}
+							else {
+								os.write(reinterpret_cast<const char*>(&b), 2);
+							}
+						}
+					}
+					os.close();
+				}
+			}
+		}
+	}
+
 
 	void ReduceActionsInRuleFiles() {
 		OpenRuleFiles();

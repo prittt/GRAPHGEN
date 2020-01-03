@@ -91,10 +91,9 @@ struct ConfigData {
 	// Rule Set / Decision Table
 	std::string binary_rule_file_suffix_ = "_rules.zst";
 
-	std::string binary_rule_file_path_partitioned(std::string partitionId) {
-		//auto basepath = "/mnt/data/rules";
-		auto basepath = global_output_path_ / algorithm_name_ / "rules";
-		auto p = basepath / std::filesystem::path(algorithm_name_ + "_" + partitionId + binary_rule_file_suffix_);
+	std::string binary_rule_file_path_partitioned(std::string partitionId, std::string basepath_override = "") {
+		auto basepath = (global_output_path_ / algorithm_name_ / "rules");
+		auto p = (basepath_override.size() > 0 ? basepath_override : basepath) / std::filesystem::path(algorithm_name_ + "_" + partitionId + binary_rule_file_suffix_);
 		return p.string();
 	}
 
