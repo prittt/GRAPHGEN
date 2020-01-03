@@ -100,7 +100,7 @@ void FindBestSingleActionCombinationRunningCombined(
 
 	int i = 0;
 	for (auto& s : single_actions) {
-		if (((rule_code >> (i / 2)) & 1) == (i % 2)) {
+		if (((rule_code >> (i / 2)) & 1) == (i & 1) && s != nullptr) {
 			(*s)[most_popular_single_action_index]++;
 		}
 		i++;
@@ -118,7 +118,7 @@ struct RecursionInstance {
 	BinaryDrag<conact>::node* parent;
 
 	// local vars
-	std::array<std::array<int, ACTION_COUNT>*, CONDITION_COUNT * 2> single_actions;
+	std::array<std::array<int, ACTION_COUNT>*, CONDITION_COUNT * 2> single_actions = { nullptr };
 	std::array<int, ACTION_COUNT> all_single_actions = {}; // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
 #if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
@@ -135,8 +135,11 @@ struct RecursionInstance {
 		set_conditions0 = sc0;
 		set_conditions1 = sc1;
 		parent = p;
-		for (int i = 0; i < single_actions.size(); i++) {
-			single_actions[i] = new std::array<int, ACTION_COUNT>();
+		for (int i = 0; i < single_actions.size() / 2; i++) {
+			if (std::find(c.begin(), c.end(), i) != c.end()) {
+				single_actions[2 * i] = new std::array<int, ACTION_COUNT>();
+				single_actions[2 * i + 1] = new std::array<int, ACTION_COUNT>();
+			}
 		}
 		//single_actions.fill(std::array<int, ACTION_COUNT>());
 #if HDT_COMBINED_CLASSIFIER == false
@@ -211,7 +214,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	auto start = std::chrono::system_clock::now();
 
 	for (llong rule_code = 0; rule_code < TOTAL_RULES; rule_code++) {
-		if (rule_code % (1ULL << 24) == 0) {
+		if (rule_code % (1ULL << 18) == 0) {
 			auto end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
 			std::time_t end_time = std::chrono::system_clock::to_time_t(end);
