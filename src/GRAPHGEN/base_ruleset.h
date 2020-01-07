@@ -102,7 +102,7 @@ public:
 
             rs_ = GenerateRuleSet();
 			TLOG("Writing rules to disk",
-				SaveAllRulesBinary();
+				//SaveAllRulesBinary();
 			);
 			//std::cout << "** DONE" << std::endl;
 			//exit(EXIT_SUCCESS);
@@ -239,11 +239,11 @@ public:
 			uchar size;
 			for (int i = 0; i < actions_verified; i++) {
 				actions_correct[i] = GetActionFromRuleIndex(rs_, begin_rule_code + i);
-				for (auto& s : actions_correct[i].getSingleActions()) {
+				/*for (auto& s : actions_correct[i].getSingleActions()) {
 					if (s > 90) {
 						s = action_reduction_mapping[s];
 					}
-				}
+				}*/
 
 				is.read(reinterpret_cast<char*>(&size), 1);
 				actions_read[i].resize(size);

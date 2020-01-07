@@ -37,7 +37,7 @@ int main()
     string algorithm_name = "BBDT3D";
     conf = ConfigData(algorithm_name, "Grana3D");
 
-    Grana3dRS g_rs;
+    Grana3dRS g_rs(true);
     auto rs = g_rs.GetRuleSet();
 
     // Call GRAPHGEN:
