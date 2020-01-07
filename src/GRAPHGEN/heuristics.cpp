@@ -195,12 +195,8 @@ void FindBestSingleActionCombinationRunningCombined(
 	}
 	all_single_actions[most_popular_single_action_index]++;
 
-	int i = 0;
-	for (auto& s : single_actions) {
-		if (((rule_code >> (i / 2)) & 1) == (i & 1)) {
-			s[most_popular_single_action_index]++;
-		}
-		i++;
+	for (int i = 0; i < CONDITION_COUNT; i++) {
+		single_actions[2 * i + ((rule_code >> i) & 1)][most_popular_single_action_index]++;
 	}
 }
 
