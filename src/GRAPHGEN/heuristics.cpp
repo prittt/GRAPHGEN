@@ -602,7 +602,7 @@ void FindHdtIteratively(rule_set& rs,
 	int start_path_length_sum = 0,
 	ullong start_rule_accesses = 0)
 {
-	std::vector<RecursionInstance> pending_recursion_instances(initial_recursion_instances);
+	std::vector<RecursionInstance> pending_recursion_instances = std::move(initial_recursion_instances);
 	std::vector<RecursionInstance> upcoming_recursion_instances;
 	int depth = start_depth;
 	int leaves = start_leaves;
