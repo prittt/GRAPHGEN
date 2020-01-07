@@ -46,7 +46,100 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 
 using namespace std;
 
-double entropy(std::array<int, ACTION_COUNT>& vector) {
+uint64_t rule_accesses = 0;
+uint64_t necessary_rule_accesses = 0;
+
+struct RecursionInstance {
+	// parameters
+	std::vector<int> conditions;
+	ullong set_conditions0; // assume: condition count < 64
+	ullong set_conditions1;
+	BinaryDrag<conact>::node* parent;
+
+	// local vars
+	std::vector<std::vector<int>> single_actions;
+	std::vector<int> all_single_actions; // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
+#if HDT_COMBINED_CLASSIFIER == false
+	std::vector<std::array<int, 2>> most_probable_action_index_;
+	std::vector<std::array<int, 2>> most_probable_action_occurences_;
+#endif
+	// state
+	bool processed = false;
+
+	void initialize(std::vector<int> c,
+		ullong sc0,
+		ullong sc1,
+		BinaryDrag<conact>::node* p) {
+		conditions = c;
+		set_conditions0 = sc0;
+		set_conditions1 = sc1;
+		parent = p;
+		single_actions.resize(CONDITION_COUNT * 2, std::vector<int>(ACTION_COUNT, 0));
+		all_single_actions.resize(ACTION_COUNT, 0);
+#if HDT_COMBINED_CLASSIFIER == false
+		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
+		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
+#endif
+	}
+
+	RecursionInstance(std::vector<int> conditions,
+		ullong set_conditions0,
+		ullong set_conditions1,
+		BinaryDrag<conact>::node* parent)
+	{
+		initialize(conditions, set_conditions0, set_conditions1, parent);
+	}
+
+	RecursionInstance(istringstream& iss) {
+		// source: "RecursionInstance 1,2,3,4,5,6,7,8,9, 2048 0"
+		std::vector<int> conditions;
+		ullong set_conditions0;
+		ullong set_conditions1;
+
+		int counter = 1;
+		do
+		{
+			string subs;
+			iss >> subs;
+			if (counter == 1) {
+				// parse conditions
+				istringstream iss(subs);
+				std::string delimiter = ",";
+				size_t last = 0;
+				size_t next = 0;
+				while ((next = subs.find(delimiter, last)) != string::npos) {
+					conditions.push_back(std::stoi(subs.substr(last, next - last)));
+					last = next + 1;
+				}
+				//conditions.push_back(std::stoi(subs.substr(last)));
+			}
+			else if (counter == 2) {
+				set_conditions0 = std::stoull(subs);
+			}
+			else if (counter == 3) {
+				set_conditions1 = std::stoull(subs);
+			}
+			counter++;
+		} while (iss);
+		initialize(conditions, set_conditions0, set_conditions1, nullptr);
+	}
+
+	void setParent(BinaryDrag<conact>::node* p) {
+		parent = p;
+	}
+
+	std::string to_string() const {
+		stringstream ss;
+		ss << "RecursionInstance ";
+		for (const auto& c : conditions) {
+			ss << c << ",";
+		}
+		ss << " " << std::to_string(set_conditions0) << " " << std::to_string(set_conditions1);
+		return ss.str();
+	}
+};
+
+double entropy(std::vector<int>& vector) {
 	double s = 0, h = 0;
 	for (const auto& x : vector) {
 		if (x == 0) {
@@ -83,8 +176,8 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 }
 
 void FindBestSingleActionCombinationRunningCombined(
-	std::array<int, ACTION_COUNT>& all_single_actions,
-	std::array<std::array<int, ACTION_COUNT>*, CONDITION_COUNT * 2>& single_actions,
+	std::vector<int>& all_single_actions,
+	std::vector<std::vector<int>>& single_actions,
 	action_bitset* combined_action,
 	const ullong& rule_code) {
 
@@ -101,110 +194,12 @@ void FindBestSingleActionCombinationRunningCombined(
 
 	int i = 0;
 	for (auto& s : single_actions) {
-		if (((rule_code >> (i / 2)) & 1) == (i & 1) && s != nullptr) {
-			(*s)[most_popular_single_action_index]++;
+		if (((rule_code >> (i / 2)) & 1) == (i & 1)) {
+			s[most_popular_single_action_index]++;
 		}
 		i++;
 	}
 }
-
-uint64_t rule_accesses = 0;
-uint64_t necessary_rule_accesses = 0;
-
-struct RecursionInstance {
-	// parameters
-	std::vector<int> conditions;
-	ullong set_conditions0; // assume: condition count < 64
-	ullong set_conditions1;
-	BinaryDrag<conact>::node* parent;
-
-	// local vars
-	std::array<std::array<int, ACTION_COUNT>*, CONDITION_COUNT * 2> single_actions = { nullptr };
-	std::array<int, ACTION_COUNT> all_single_actions = {}; // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
-#if HDT_COMBINED_CLASSIFIER == false
-	std::vector<std::array<int, 2>> most_probable_action_index_;
-	std::vector<std::array<int, 2>> most_probable_action_occurences_;
-#endif
-	// state
-	bool processed = false;
-
-	void initialize(std::vector<int> c,
-		ullong sc0,
-		ullong sc1,
-		BinaryDrag<conact>::node* p) {
-		conditions = c;
-		set_conditions0 = sc0;
-		set_conditions1 = sc1;
-		parent = p;
-		for (int i = 0; i < single_actions.size() / 2; i++) {
-			if (std::find(c.begin(), c.end(), i) != c.end()) {
-				single_actions[2 * i] = new std::array<int, ACTION_COUNT>();
-				single_actions[2 * i + 1] = new std::array<int, ACTION_COUNT>();
-			}
-		}
-		//single_actions.fill(std::array<int, ACTION_COUNT>());
-#if HDT_COMBINED_CLASSIFIER == false
-		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
-		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
-#endif
-	}
-
-	RecursionInstance(std::vector<int> conditions,
-		ullong set_conditions0,
-		ullong set_conditions1,
-		BinaryDrag<conact>::node* parent) 
-	{
-		initialize(conditions, set_conditions0, set_conditions1, parent);
-	}
-
-	RecursionInstance(istringstream& iss) {
-		// source: "RecursionInstance 1,2,3,4,5,6,7,8,9, 2048 0"
-		std::vector<int> conditions;
-		ullong set_conditions0;
-		ullong set_conditions1;
-
-		int counter = 1;
-		do
-		{
-			string subs;
-			iss >> subs;
-			if (counter == 1) {
-				// parse conditions
-				istringstream iss(subs);
-				std::string delimiter = ",";
-				size_t last = 0; 
-				size_t next = 0; 
-				while ((next = subs.find(delimiter, last)) != string::npos) { 
-					conditions.push_back(std::stoi(subs.substr(last, next - last)));
-					last = next + 1; 
-				} 
-				//conditions.push_back(std::stoi(subs.substr(last)));
-			}
-			else if (counter == 2) {
-				set_conditions0 = std::stoull(subs);
-			}
-			else if (counter == 3) {
-				set_conditions1 = std::stoull(subs);
-			}
-			counter++;
-		} while (iss);
-		initialize(conditions, set_conditions0, set_conditions1, nullptr);
-	}
-
-	void setParent(BinaryDrag<conact>::node* p) {
-		parent = p;
-	}
-
-	std::string to_string() const {
-		stringstream ss;
-		ss << "RecursionInstance ";
-		for (const auto& c : conditions) {
-			ss << c << ",";
-		}
-		ss << " " << std::to_string(set_conditions0) << " " << std::to_string(set_conditions1);
-		return ss.str();
-	}
-};
 
 void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts) {
 	bool first_match;
@@ -215,9 +210,15 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	auto start = std::chrono::system_clock::now();
 
 #if HDT_BENCHMARK_READAPPLY == true
-	const llong begin_rule_code = TOTAL_RULES / 2;
-	const llong end_rule_code = TOTAL_RULES / 2 + (1ULL << 22);
-	int indicated_progress = 0;
+	int indicated_progress = -1;
+	bool benchmark_started = false;
+	std::chrono::system_clock::time_point benchmark_start_point;
+	std::cout << "warm up for benchmark - ";
+	
+	constexpr llong benchmark_sample_point = TOTAL_RULES / 2;
+	const llong begin_rule_code = benchmark_sample_point - (1ULL << 20);
+	const llong benchmark_start_rule_code = benchmark_sample_point;
+	const llong end_rule_code = benchmark_sample_point + (1ULL << 23);
 #else
 	const llong begin_rule_code = 0;
 	const llong end_rule_code = TOTAL_RULES;
@@ -245,9 +246,17 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 		}
 #endif
 #if HDT_BENCHMARK_READAPPLY == true
-		if ((rule_code - begin_rule_code) * 10 / (end_rule_code - begin_rule_code) > indicated_progress) {
-			indicated_progress = (rule_code - begin_rule_code) * 10 / (end_rule_code - begin_rule_code);
-			std::cout << (10 - indicated_progress);
+		if (benchmark_started && (rule_code - benchmark_start_rule_code) * 10 / (end_rule_code - benchmark_start_rule_code) > indicated_progress) {
+			indicated_progress = (rule_code - benchmark_start_rule_code) * 10 / (end_rule_code - benchmark_start_rule_code);
+			if (indicated_progress == 0) {
+				std::cout << "start - ";
+			} else {
+				std::cout << (10 - indicated_progress);
+			}
+		}
+		if (!benchmark_started && rule_code > benchmark_start_rule_code) {
+			benchmark_started = true;
+			benchmark_start_point = std::chrono::system_clock::now();
 		}
 #endif
 		first_match = true;
@@ -294,12 +303,12 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	}
 #if HDT_BENCHMARK_READAPPLY == true
 	auto end = std::chrono::system_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end - start;
-	std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+	std::chrono::duration<double> elapsed_seconds = end - benchmark_start_point;
 
-	double progress = (end_rule_code - begin_rule_code) * 1.f / TOTAL_RULES;
+	double progress = (end_rule_code - benchmark_start_rule_code) * 1.f / TOTAL_RULES;
 	double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
-	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << (end_rule_code - begin_rule_code) << " of " << TOTAL_RULES << " rules\n(" << progress * 100 << "%, ca. " << projected_mins << " minutes for total benchmarked depth)." << std::endl;
+	double corrected_projected_mins = projected_mins / 1.15f;
+	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << (end_rule_code - begin_rule_code) << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes (estimated realistic: " << corrected_projected_mins << " minutes) for total benchmarked depth.\nbegin_rule_code: " << begin_rule_code << " benchmark_start_rule_code: " << benchmark_start_rule_code << " end_rule_code: " << end_rule_code << std::endl;
 
 	exit(EXIT_SUCCESS);
 #endif
@@ -480,7 +489,7 @@ void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<con
 	}	
 }
 
-uint GetFirstCountedAction(std::array<int, ACTION_COUNT>& b) {
+uint GetFirstCountedAction(std::vector<int>& b) {
 	for (size_t i = 0; i < b.size(); i++) {
 		if (b[i] > 0) {
 			return i;
@@ -501,10 +510,10 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 		auto rightNode = tree.make_node();
 		r.parent->left = leftNode;
 		r.parent->right = rightNode;
-		auto leftAction = action_bitset().set(GetFirstCountedAction(*r.single_actions[r.conditions[0] * 2]));
+		auto leftAction = action_bitset().set(GetFirstCountedAction(r.single_actions[r.conditions[0] * 2]));
 		leftNode->data.t = conact::type::ACTION;
 		leftNode->data.action = leftAction;
-		auto rightAction = action_bitset().set(GetFirstCountedAction(*r.single_actions[r.conditions[0] * 2]));
+		auto rightAction = action_bitset().set(GetFirstCountedAction(r.single_actions[r.conditions[0] * 2]));
 		rightNode->data.t = conact::type::ACTION;
 		rightNode->data.action = rightAction;
 		//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
@@ -523,8 +532,8 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	bool rightIsAction = false;
 
 	for (auto& c : r.conditions) {
-		double leftEntropy = entropy(*r.single_actions[c * 2]);
-		double rightEntropy = entropy(*r.single_actions[c * 2 + 1]);
+		double leftEntropy = entropy(r.single_actions[c * 2]);
+		double rightEntropy = entropy(r.single_actions[c * 2 + 1]);
 
 #if HDT_INFORMATION_GAIN_METHOD_VERSION == 1
 		// 1) Simple Information Gain
@@ -558,7 +567,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	if (leftIsAction) {
 		r.parent->left = tree.make_node();
 		r.parent->left->data.t = conact::type::ACTION;
-		r.parent->left->data.action = action_bitset().set(GetFirstCountedAction(*r.single_actions[splitCandidate * 2]));
+		r.parent->left->data.action = action_bitset().set(GetFirstCountedAction(r.single_actions[splitCandidate * 2]));
 		amount_of_action_children++;
 	}
 	else {
@@ -570,7 +579,7 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	if (rightIsAction) {
 		r.parent->right = tree.make_node();
 		r.parent->right->data.t = conact::type::ACTION;
-		r.parent->right->data.action = action_bitset().set(GetFirstCountedAction(*r.single_actions[splitCandidate * 2 + 1]));
+		r.parent->right->data.action = action_bitset().set(GetFirstCountedAction(r.single_actions[splitCandidate * 2 + 1]));
 		amount_of_action_children++;
 	}
 	else {
@@ -756,8 +765,12 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 		throw std::runtime_error("Assert failed: RULES_PER_PARTITION is not smaller than INT_MAX.");
 	}
 
-	std::cout << "\nBenchmark Mode: [" << (HDT_BENCHMARK_READAPPLY ? "Yes" : "No") << "]" << std::endl;
-	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
+#if HDT_BENCHMARK_READAPPLY == true
+	std::cout << "\n\n***************************************************" << std::endl;
+	std::cout << "***************** Benchmark Mode ******************" << std::endl;
+	std::cout << "***************************************************" << std::endl;
+#endif
+	std::cout << "\nInformation gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;
 	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
 
