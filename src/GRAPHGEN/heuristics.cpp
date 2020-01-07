@@ -42,6 +42,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_ACTION_SOURCE 3
 #define HDT_PROGRESS_ENABLED true
+#define HDT_BENCHMARK_READAPPLY true
 
 using namespace std;
 
@@ -213,7 +214,18 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	action_bitset* action;
 	auto start = std::chrono::system_clock::now();
 
-	for (llong rule_code = 0; rule_code < TOTAL_RULES; rule_code++) {
+#if HDT_BENCHMARK_READAPPLY == true
+	const llong begin_rule_code = TOTAL_RULES / 2;
+	const llong end_rule_code = TOTAL_RULES / 2 + (1ULL << 22);
+	int indicated_progress = 0;
+#else
+	const llong begin_rule_code = 0;
+	const llong end_rule_code = TOTAL_RULES;
+#endif
+
+
+	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
+#if HDT_BENCHMARK_READAPPLY == false
 		if (rule_code % (1ULL << 32) == 0) {
 			auto end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
@@ -231,6 +243,13 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 				std::cout << "[" << std::ctime(&end_time) << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
 			}
 		}
+#endif
+#if HDT_BENCHMARK_READAPPLY == true
+		if ((rule_code - begin_rule_code) * 10 / (end_rule_code - begin_rule_code) > indicated_progress) {
+			indicated_progress = (rule_code - begin_rule_code) * 10 / (end_rule_code - begin_rule_code);
+			std::cout << (10 - indicated_progress);
+		}
+#endif
 		first_match = true;
 
 		for (auto& r : r_insts) {
@@ -273,6 +292,17 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 			}
 		}
 	}
+#if HDT_BENCHMARK_READAPPLY == true
+	auto end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end - start;
+	std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+
+	double progress = (end_rule_code - begin_rule_code) * 1.f / TOTAL_RULES;
+	double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << (end_rule_code - begin_rule_code) << " of " << TOTAL_RULES << " rules\n(" << progress * 100 << "%, ca. " << projected_mins << " minutes for total benchmarked depth)." << std::endl;
+
+	exit(EXIT_SUCCESS);
+#endif
 }
 
 void NodeToStringRec(BinaryDrag<conact>::node* n, std::stringstream& ss) {
@@ -361,6 +391,10 @@ void StringToTreeRec(
 
 std::string GetLatestProgressFilePath() {
 	return (conf.progress_file_path_ / std::filesystem::path("progress-latest.txt")).string();
+}
+
+std::string GetBenchmarkProgressFilePath() {
+	return (conf.progress_file_path_ / std::filesystem::path("progress-BBDT3D-benchmark-depth12.txt")).string();
 }
 
 void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<conact>& tree, int depth, int nodes, int path_length_sum, uint64_t rule_accesses) {
@@ -601,11 +635,21 @@ void FindHdtIteratively(rule_set& rs,
 }
 
 void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, BinaryDrag<conact>& tree) {
-#if HDT_PROGRESS_ENABLED == true
-	std::string path = GetLatestProgressFilePath();
-	bool load = std::filesystem::exists(path);
+
+#if HDT_BENCHMARK_READAPPLY == true
+	std::string path = GetBenchmarkProgressFilePath();
+	if (!std::filesystem::exists(path)) {
+		std::cerr << "Benchmark progress file not found at " << path << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	bool load = true;
 #else
-	bool load = false;
+	#if HDT_PROGRESS_ENABLED == true
+		std::string path = GetLatestProgressFilePath();
+		bool load = std::filesystem::exists(path);
+	#else
+		bool load = false;
+	#endif
 #endif
 	if (load) {
 		// continue existing run
@@ -712,7 +756,8 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 		throw std::runtime_error("Assert failed: RULES_PER_PARTITION is not smaller than INT_MAX.");
 	}
 
-	std::cout << "\nInformation gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
+	std::cout << "\nBenchmark Mode: [" << (HDT_BENCHMARK_READAPPLY ? "Yes" : "No") << "]" << std::endl;
+	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;
 	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
 
