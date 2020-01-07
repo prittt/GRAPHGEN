@@ -44,6 +44,9 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_PROGRESS_ENABLED true
 #define HDT_BENCHMARK_READAPPLY true
 
+#define HDT_PARALLEL_INNERLOOP_ENABLED false
+#define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
+
 using namespace std;
 
 uint64_t rule_accesses = 0;
@@ -261,7 +264,13 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 #endif
 		first_match = true;
 
+#if HDT_PARALLEL_INNERLOOP_ENABLED == true
+#pragma omp parallel for num_threads(HDT_PARALLEL_INNERLOOP_NUMTHREADS)
+		for (int i = 0; i < r_insts.size(); i++) {
+			auto& r = r_insts[i];
+#else
 		for (auto& r : r_insts) {
+#endif
 			if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
 				if (first_match) {
 #if (HDT_ACTION_SOURCE == 0)
