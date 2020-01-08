@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
+﻿// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -317,9 +317,44 @@ public:
 		throw std::runtime_error("Rule lookup from binary rule file failed.");
 	}
 
-	void ConvertPartitions(int old_partition_count = 1024, int new_partition_count = 65536, bool reduce_actions = true) {
-	    const auto old_basepath = "D:/rules-bkp/zst-variable-data-format-1024p-5813a";
-	    const auto new_basepath = "D:/rules-bkp/zst-variable-data-format-65536p-2829a";
+	void LoadPartition(const int p, std::vector<action_bitset>& actions) {
+		try {
+			const ullong begin_rule_code = p * RULES_PER_PARTITION;
+			const ullong end_rule_code = (p + 1) * RULES_PER_PARTITION;
+
+			auto path = conf.binary_rule_file_path_partitioned(std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code));
+
+			// check status of existing files
+			if (!std::filesystem::exists(path)) {
+				std::cerr << "Partition " << p << " does not exist: aborting.\n";
+				exit(EXIT_FAILURE);
+			}
+
+			zstd::ifstream is(path, std::ios::binary);
+			uchar size;
+			for (int i = 0; i < RULES_PER_PARTITION; i++) {
+				is.read(reinterpret_cast<char*>(&size), 1);
+				actions[i].resize(size);
+				for (ushort& x : actions[i].getSingleActions()) {
+					is.read(reinterpret_cast<char*>(&x), 2);
+				}
+			}
+			return;
+		}
+		catch (const std::ifstream::failure&) {
+			std::cerr << "Partition " << p << " couldn't be loaded from binary rule file (stream failure).\n";
+		}
+		catch (const std::runtime_error&) {
+			std::cerr << "Partition " << p << " couldn't be loaded from binary rule file (runtime error).\n";
+		}
+		std::cerr << "Rule lookup from binary rule file failed. Partition: " << p << std::endl;
+		throw std::runtime_error("Rule lookup from binary rule file failed.");
+	}
+
+
+	void ConvertPartitions(int old_partition_count = 65536, int new_partition_count = 1048576, bool reduce_actions = false) {
+	    const auto old_basepath = "D:/rules-bkp/zst-variable-data-format-65536p-2829a";
+	    const auto new_basepath = "D:/rules-bkp/zst-variable-data-format-1048576‬p-2829a";
 	    size_t old_rules_per_partition = TOTAL_RULES / old_partition_count;
 	    size_t new_rules_per_partition = TOTAL_RULES / new_partition_count;
 	

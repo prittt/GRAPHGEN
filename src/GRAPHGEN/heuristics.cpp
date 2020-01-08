@@ -47,6 +47,9 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
 
+#define HDT_PARALLEL_PARTITIONBASED true
+
+
 using namespace std;
 
 uint64_t rule_accesses = 0;
@@ -181,13 +184,36 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 void FindBestSingleActionCombinationRunningCombined(
 	std::vector<int>& all_single_actions,
 	std::vector<std::vector<int>>& single_actions,
-	action_bitset* combined_action,
+	const action_bitset& combined_action,
 	const ullong& rule_code) {
 
 	int most_popular_single_action_occurences = -1;
 	int most_popular_single_action_index = -1;
 
-	for (const auto& a : combined_action->getSingleActions()) { 
+	for (const auto& a : combined_action.getSingleActions()) {
+		if (all_single_actions[a] > most_popular_single_action_occurences) {
+			most_popular_single_action_index = a;
+			most_popular_single_action_occurences = all_single_actions[a];
+		}
+	}
+	all_single_actions[most_popular_single_action_index]++;
+
+	for (int i = 0; i < CONDITION_COUNT; i++) {
+		single_actions[2 * i + ((rule_code >> i) & 1)][most_popular_single_action_index]++;
+	}
+}
+
+
+void FindBestSingleActionCombinationRunningCombinedPtr(
+	std::vector<int>& all_single_actions,
+	std::vector<std::vector<int>>& single_actions,
+	const action_bitset* combined_action,
+	const ullong& rule_code) {
+
+	int most_popular_single_action_occurences = -1;
+	int most_popular_single_action_index = -1;
+
+	for (const auto& a : combined_action->getSingleActions()) {
 		if (all_single_actions[a] > most_popular_single_action_occurences) {
 			most_popular_single_action_index = a;
 			most_popular_single_action_occurences = all_single_actions[a];
@@ -215,18 +241,69 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	std::cout << "warm up for benchmark - ";
 	
 	constexpr llong benchmark_sample_point = TOTAL_RULES / 2;
-	const llong begin_rule_code = benchmark_sample_point - (1ULL << 20);
-	const llong benchmark_start_rule_code = benchmark_sample_point;
-	const llong end_rule_code = benchmark_sample_point + (1ULL << 23);
+
+	constexpr llong begin_rule_code = benchmark_sample_point - (1ULL << 20);
+	constexpr llong benchmark_start_rule_code = benchmark_sample_point;
+	constexpr llong end_rule_code = benchmark_sample_point + (1ULL << 25);
+
+	constexpr int begin_partition = begin_rule_code / RULES_PER_PARTITION;
+	constexpr int benchmark_start_partition = benchmark_start_rule_code / RULES_PER_PARTITION;
+	constexpr int end_partition = end_rule_code / RULES_PER_PARTITION;
 #else
-	const llong begin_rule_code = 0;
-	const llong end_rule_code = TOTAL_RULES;
+	constexpr llong begin_rule_code = 0;
+	constexpr llong end_rule_code = TOTAL_RULES;
+
+	constexpr int begin_partition = 0;
+	constexpr int end_partition = PARTITIONS;
 #endif
 
+#if HDT_PARALLEL_PARTITIONBASED == true 
+	std::vector<action_bitset> seen_actions(RULES_PER_PARTITION);
 
+	for (int p = begin_partition; p < end_partition; p++) {
+		#if HDT_BENCHMARK_READAPPLY == true
+			if (!benchmark_started && p >= benchmark_start_partition) {
+				benchmark_started = true;
+				benchmark_start_point = std::chrono::system_clock::now();
+				std::cout << "start - ";
+			}
+		#else
+			if (p % (PARTITIONS / 128) == 0) {
+				auto end = std::chrono::system_clock::now();
+				std::chrono::duration<double> elapsed_seconds = end - start;
+				std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+				double progress = p * 1.f / PARTITIONS;
+				double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+				char mbstr[100];
+				if (p == 0) {
+					std::cout << std::endl;
+				}
+				if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
+					std::cout << "[" << mbstr << "] Partition " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+				}
+				else {
+					std::cout << "[" << std::ctime(&end_time) << "] Rule " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+				}
+			}
+		#endif	
+		brs.LoadPartition(p, seen_actions);
+		rule_accesses += RULES_PER_PARTITION;
+		#pragma omp parallel for //num_threads(8)
+		for (int i = 0; i < r_insts.size(); i++) {
+			auto& r = r_insts[i];
+			ullong rule_code = p * RULES_PER_PARTITION;
+			for (const auto& p : seen_actions) {
+				if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
+					FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, p, rule_code);
+				}
+				rule_code++;
+			}
+		}
+	}
+#else
 	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
-#if HDT_BENCHMARK_READAPPLY == false
-		if (rule_code % (1ULL << 32) == 0) {
+	#if HDT_BENCHMARK_READAPPLY == false
+		if (rule_code % (TOTAL_RULES / 64) == 0) { // TODO: optimize this?
 			auto end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
 			std::time_t end_time = std::chrono::system_clock::to_time_t(end);
@@ -243,78 +320,87 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 				std::cout << "[" << std::ctime(&end_time) << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
 			}
 		}
-#endif
-#if HDT_BENCHMARK_READAPPLY == true
-		if (benchmark_started && (rule_code - benchmark_start_rule_code) * 10 / (end_rule_code - benchmark_start_rule_code) > indicated_progress) {
-			indicated_progress = (rule_code - benchmark_start_rule_code) * 10 / (end_rule_code - benchmark_start_rule_code);
-			if (indicated_progress == 0) {
-				std::cout << "start - ";
-			} else {
-				std::cout << (10 - indicated_progress);
-			}
-		}
+	#endif
+	#if HDT_BENCHMARK_READAPPLY == true
 		if (!benchmark_started && rule_code > benchmark_start_rule_code) {
 			benchmark_started = true;
 			benchmark_start_point = std::chrono::system_clock::now();
+			std::cout << "start - ";
 		}
-#endif
-		first_match = true;
+	#endif
+	first_match = true;
 
-#if HDT_PARALLEL_INNERLOOP_ENABLED == true
-#pragma omp parallel for num_threads(HDT_PARALLEL_INNERLOOP_NUMTHREADS)
+	#if HDT_PARALLEL_INNERLOOP_ENABLED == true
+		#pragma omp parallel for num_threads(HDT_PARALLEL_INNERLOOP_NUMTHREADS)
 		for (int i = 0; i < r_insts.size(); i++) {
 			auto& r = r_insts[i];
-#else
+	#else
 		for (auto& r : r_insts) {
-#endif
+	#endif
 			if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
 				if (first_match) {
-#if (HDT_ACTION_SOURCE == 0)
-					action = &zero_action;									// 0) Zero action
-#elif (HDT_ACTION_SOURCE == 1)
-					action = &rs.rules[rule_code].actions;					// 1) load from rule table
-#elif (HDT_ACTION_SOURCE == 2)
-					action = &brs.GetActionFromRuleIndex(rs, rule_code);	// 2) generate during run-time
-#elif (HDT_ACTION_SOURCE == 3)
-					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 3) read from file
-#endif
+					#if (HDT_ACTION_SOURCE == 0)
+						action = &zero_action;									// 0) Zero action
+					#elif (HDT_ACTION_SOURCE == 1)
+						action = &rs.rules[rule_code].actions;					// 1) load from rule table
+					#elif (HDT_ACTION_SOURCE == 2)
+						action = &brs.GetActionFromRuleIndex(rs, rule_code);	// 2) generate during run-time
+					#elif (HDT_ACTION_SOURCE == 3)
+						action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 3) read from file
+					#endif
 					rule_accesses++;
 					first_match = false;
 				}
-#if HDT_COMBINED_CLASSIFIER == true
-				FindBestSingleActionCombinationRunningCombined(
-					r.all_single_actions,
-					r.single_actions,
-					action,
-					rule_code);
-#else
-				FindBestSingleActionCombinationRunning(r.all_single_actions, action);
+				#if HDT_COMBINED_CLASSIFIER == true
+					FindBestSingleActionCombinationRunningCombinedPtr(
+						r.all_single_actions,
+						r.single_actions,
+						action,
+						rule_code);
+				#else
+					FindBestSingleActionCombinationRunning(r.all_single_actions, action);
 
-				for (auto& c : r.conditions) {
-					int bit_value = (rule_code >> c) & 1;
+					for (auto& c : r.conditions) {
+						int bit_value = (rule_code >> c) & 1;
 
-					int return_code = FindBestSingleActionCombinationRunning(r.single_actions[c][bit_value], action, r.most_probable_action_occurences_[c][bit_value]);
+						int return_code = FindBestSingleActionCombinationRunning(r.single_actions[c][bit_value], action, r.most_probable_action_occurences_[c][bit_value]);
 
-					if (return_code >= 0) {
-						{
-							r.most_probable_action_index_[c][bit_value] = return_code;
-							r.most_probable_action_occurences_[c][bit_value] = r.single_actions[c][bit_value][return_code];
+						if (return_code >= 0) {
+							{
+								r.most_probable_action_index_[c][bit_value] = return_code;
+								r.most_probable_action_occurences_[c][bit_value] = r.single_actions[c][bit_value][return_code];
+							}
 						}
 					}
-				}
-#endif
+				#endif
 			}
 		}
 	}
+#endif
+
 #if HDT_BENCHMARK_READAPPLY == true
 	auto end = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - benchmark_start_point;
 
-	double progress = (end_rule_code - benchmark_start_rule_code) * 1.f / TOTAL_RULES;
+	#if HDT_PARALLEL_PARTITIONBASED
+		ullong processed_rules = (end_partition - benchmark_start_partition) * RULES_PER_PARTITION;
+		double progress = processed_rules * 1. / TOTAL_RULES;
+	#else
+		ullong processed_rules = (end_rule_code - benchmark_start_rule_code);
+		double progress = (end_rule_code - benchmark_start_rule_code) * 1. / TOTAL_RULES;
+	#endif
+
 	double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
 	double corrected_projected_mins = projected_mins / 1.15f;
-	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << (end_rule_code - begin_rule_code) << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes (estimated realistic: " << corrected_projected_mins << " minutes) for total benchmarked depth.\nbegin_rule_code: " << begin_rule_code << " benchmark_start_rule_code: " << benchmark_start_rule_code << " end_rule_code: " << end_rule_code << std::endl;
-
+	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << processed_rules << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes (estimated realistic: " << corrected_projected_mins << " minutes) for total benchmarked depth." << std::endl;
+	
+	#if HDT_PARALLEL_PARTITIONBASED
+		std::cout << "begin_partition : " << begin_partition << " benchmark_start_partition : " << benchmark_start_partition << " end_partition : " << end_partition;
+	#else
+		std::cout << "begin_rule_code : " << begin_rule_code << " benchmark_start_rule_code : " << benchmark_start_rule_code << " end_rule_code : " << end_rule_code;
+	#endif
+	
+	getchar();
 	exit(EXIT_SUCCESS);
 #endif
 }
@@ -779,7 +865,10 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;
 	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
 
+	
+#if HDT_PARALLEL_PARTITIONBASED == false
 	brs.OpenRuleFiles();
+#endif
 	//brs.VerifyRuleFiles();
 
 	FindHdt(parent, const_cast<rule_set&>(rs), brs, tree);
