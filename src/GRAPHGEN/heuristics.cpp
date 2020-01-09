@@ -251,7 +251,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 
 	constexpr int begin_partition = begin_rule_code / RULES_PER_PARTITION;
 	constexpr int benchmark_start_partition = benchmark_start_rule_code / RULES_PER_PARTITION;
-	constexpr int end_partition = std::max(end_rule_code / RULES_PER_PARTITION, benchmark_start_partition + 1ULL);
+	constexpr int end_partition = std::max(static_cast<int>(end_rule_code / RULES_PER_PARTITION), benchmark_start_partition + 1);
 #else
 	constexpr llong begin_rule_code = 0;
 	constexpr llong end_rule_code = TOTAL_RULES;
