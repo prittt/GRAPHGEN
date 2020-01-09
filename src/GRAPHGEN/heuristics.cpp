@@ -291,15 +291,14 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 		#endif	
 		brs.LoadPartition(p, seen_actions);
 		rule_accesses += RULES_PER_PARTITION;
-		#pragma omp parallel for //num_threads(8)
+		const ullong first_rule_code = p * RULES_PER_PARTITION;
+		#pragma omp parallel for num_threads(8)
 		for (int i = 0; i < r_insts.size(); i++) {
 			auto& r = r_insts[i];
-			ullong rule_code = p * RULES_PER_PARTITION;
-			for (const auto& a : seen_actions) {
-				if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
-					FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, a, rule_code);
+			for (int n = 0; n < RULES_PER_PARTITION; n++) {
+				if ((((first_rule_code + n) & r.set_conditions0) == 0ULL) && (((first_rule_code + n) & r.set_conditions1) == r.set_conditions1)) {
+					FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, seen_actions[n], first_rule_code + n);
 				}
-				rule_code++;
 			}
 		}
 	}
