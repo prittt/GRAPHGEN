@@ -42,12 +42,15 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_ACTION_SOURCE 3
 #define HDT_PROGRESS_ENABLED true
-#define HDT_BENCHMARK_READAPPLY true
+#define HDT_BENCHMARK_READAPPLY false
 
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
 
 #define HDT_PARALLEL_PARTITIONBASED true
+
+// How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
+constexpr int HDT_GENERATION_LOG_FREQUENCY = 32;
 
 
 using namespace std;
@@ -248,7 +251,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 
 	constexpr int begin_partition = begin_rule_code / RULES_PER_PARTITION;
 	constexpr int benchmark_start_partition = benchmark_start_rule_code / RULES_PER_PARTITION;
-	constexpr int end_partition = end_rule_code / RULES_PER_PARTITION;
+	constexpr int end_partition = std::max(end_rule_code / RULES_PER_PARTITION, benchmark_start_partition + 1ULL);
 #else
 	constexpr llong begin_rule_code = 0;
 	constexpr llong end_rule_code = TOTAL_RULES;
@@ -268,7 +271,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 				std::cout << "start - ";
 			}
 		#else
-			if (p % (PARTITIONS / 128) == 0) {
+			if (p % (PARTITIONS / HDT_GENERATION_LOG_FREQUENCY) == 0) {
 				auto end = std::chrono::system_clock::now();
 				std::chrono::duration<double> elapsed_seconds = end - start;
 				std::time_t end_time = std::chrono::system_clock::to_time_t(end);
@@ -292,9 +295,9 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 		for (int i = 0; i < r_insts.size(); i++) {
 			auto& r = r_insts[i];
 			ullong rule_code = p * RULES_PER_PARTITION;
-			for (const auto& p : seen_actions) {
+			for (const auto& a : seen_actions) {
 				if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
-					FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, p, rule_code);
+					FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, a, rule_code);
 				}
 				rule_code++;
 			}
@@ -392,7 +395,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 
 	double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
 	double corrected_projected_mins = projected_mins / 1.15f;
-	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << processed_rules << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes (estimated realistic: " << corrected_projected_mins << " minutes) for total benchmarked depth." << std::endl;
+	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << processed_rules << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes for total benchmarked depth." << std::endl;
 	
 	#if HDT_PARALLEL_PARTITIONBASED
 		std::cout << "begin_partition : " << begin_partition << " benchmark_start_partition : " << benchmark_start_partition << " end_partition : " << end_partition;
@@ -735,7 +738,6 @@ void FindHdtIteratively(rule_set& rs,
 }
 
 void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, BinaryDrag<conact>& tree) {
-
 #if HDT_BENCHMARK_READAPPLY == true
 	std::string path = GetBenchmarkProgressFilePath();
 	if (!std::filesystem::exists(path)) {
@@ -813,9 +815,9 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 		FindHdtIteratively(rs, brs, tree, r_insts, depth, leaves, path_length_sum, rule_accesses);
 	} else {
 		// start new run
-#if HDT_PROGRESS_ENABLED
-		std::cout << "No progress file found, starting new run from depth 0." << std::endl;
-#endif
+		#if HDT_PROGRESS_ENABLED
+			std::cout << "No progress file found, starting new run from depth 0." << std::endl;
+		#endif
 		std::vector<int> conditions;
 		conditions.reserve(rs.conditions.size());
 		for (auto &c : rs.conditions) {

@@ -210,6 +210,7 @@ public:
 	void VerifyRuleFiles() {
 		std::cout << "** Verifying rule files. (Partitions: " << PARTITIONS << " Rulecodes for each partition: " << RULES_PER_PARTITION << ")" << std::endl;
 
+#pragma omp parallel for
 		for (int p = 0; p < PARTITIONS; p++) {
 			//std::cout << "Verifying partition " << p << "...\n";
 			const ullong begin_rule_code = p * RULES_PER_PARTITION;
@@ -229,21 +230,17 @@ public:
 				exit(EXIT_FAILURE);
 			}
 
-			constexpr int actions_verified = 4;
+			constexpr int actions_verified = 64000;
 
 			std::vector<action_bitset> actions_correct(actions_verified);
 			std::vector<action_bitset> actions_read(actions_verified);
 
 			bool correct = true;
-
+			int wrong_index;
 			uchar size;
+
 			for (int i = 0; i < actions_verified; i++) {
 				actions_correct[i] = GetActionFromRuleIndex(rs_, begin_rule_code + i);
-				/*for (auto& s : actions_correct[i].getSingleActions()) {
-					if (s > 90) {
-						s = action_reduction_mapping[s];
-					}
-				}*/
 
 				is.read(reinterpret_cast<char*>(&size), 1);
 				actions_read[i].resize(size);
@@ -252,19 +249,28 @@ public:
 				}
 				if (actions_correct[i] != actions_read[i]) {
 					correct = false;
+					wrong_index = i;
 				}
 			}
 
 			if (!correct) {
-				std::cout << "************************************************************" << std::endl;
-				std::cout << "Incorrect rule found in rule partition " << p << " at " << path << std::endl;
-				for (int i = 0; i < actions_verified; i++) {
-					std::cout << "Rule Code: " << (begin_rule_code + i) << "\tCorrect action: " << actions_correct[i].to_string() << "\tRead action: " << actions_read[i].to_string() << std::endl;
+				std::cout << "\n************************************************************" << std::endl;
+				std::cout << "Incorrect rule found in rule partition " << p << " at " << wrong_index << " at path: "<< path << std::endl;
+				for (int i = wrong_index; i <= wrong_index; i++) {
+					std::cout << "Rule Code: " << (begin_rule_code + i) << "\tCorrect action: ";
+					for (const auto& x : actions_correct[i].getSingleActions()) {
+						std::cout << x << ",";
+					}
+					std::cout << "\tRead action: ";
+					for (const auto& x : actions_read[i].getSingleActions()) {
+						std::cout << x << ",";
+					}
+					std::cout << std::endl;
 				}
 				std::cout << "************************************************************" << std::endl;
 				exit(EXIT_FAILURE);
 			}
-			if (p % 256 == 0) {
+			if (p % (PARTITIONS / 64) == 0) {
 				std::cout << "P" << p << " correct. ";
 			}
 
