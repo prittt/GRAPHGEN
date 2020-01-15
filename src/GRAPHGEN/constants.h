@@ -5,7 +5,7 @@
 // To balance file IO and memory consumption, the rules of each partition are generated and written to file in batches. 
 // Once all rules of one batch have been generated and saved in memory, all these rules are written to the partition.
 
-constexpr int PARTITIONS = 65536; // 1, 1024, 65536
+constexpr int PARTITIONS = 1024; // 1, 1024, 65536
 constexpr int BATCHES = 32;
 
 constexpr int CONDITION_COUNT = 36; // 8, 14, 16, 36

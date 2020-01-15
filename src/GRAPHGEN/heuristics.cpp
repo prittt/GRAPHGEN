@@ -65,7 +65,7 @@ constexpr int32_t ceiling(float num)
 		: static_cast<int32_t>(num) + ((num > 0) ? 1 : 0);
 }
 
-constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL = 64;
+constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL = 256;
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_COUNT = ceiling(ACTION_COUNT * 1.f / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL);
 
 struct LazyCountingVector {
@@ -293,17 +293,18 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	constexpr int end_partition = PARTITIONS;
 #endif
 
-#if HDT_PARALLEL_PARTITIONBASED == true 
-	std::vector<action_bitset> seen_actions(RULES_PER_PARTITION);
+#if HDT_PARALLEL_PARTITIONBASED == true
+	{
+		std::vector<action_bitset> seen_actions(RULES_PER_PARTITION);
 
-	for (int p = begin_partition; p < end_partition; p++) {
-		#if HDT_BENCHMARK_READAPPLY == true
+		for (int p = begin_partition; p < end_partition; p++) {
+#if HDT_BENCHMARK_READAPPLY == true
 			if (!benchmark_started && p >= benchmark_start_partition) {
 				benchmark_started = true;
 				benchmark_start_point = std::chrono::system_clock::now();
 				std::cout << "start - ";
 			}
-		#else
+#else
 			if (p % (PARTITIONS / HDT_GENERATION_LOG_FREQUENCY) == 0) {
 				auto end = std::chrono::system_clock::now();
 				std::chrono::duration<double> elapsed_seconds = end - start;
@@ -321,20 +322,21 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 					std::cout << "[" << std::ctime(&end_time) << "] Rule " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
 				}
 			}
-		#endif	
-		brs.LoadPartition(p, seen_actions);
-		rule_accesses += RULES_PER_PARTITION;
-		const ullong first_rule_code = p * RULES_PER_PARTITION;
-		//#pragma omp parallel for num_threads(6)
-		for (int i = 0; i < r_insts.size(); i++) {
-			auto& r = r_insts[i];
-			for (int n = 0; n < RULES_PER_PARTITION; n++) {
-				if ((((first_rule_code + n) & r.set_conditions0) == 0ULL) && (((first_rule_code + n) & r.set_conditions1) == r.set_conditions1)) {
-					FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, seen_actions[n], first_rule_code + n);
+#endif	
+			brs.LoadPartition(p, seen_actions);
+			rule_accesses += RULES_PER_PARTITION;
+			const ullong first_rule_code = p * RULES_PER_PARTITION;
+			#pragma omp parallel for num_threads(8)
+			for (int i = 0; i < r_insts.size(); i++) {
+				auto& r = r_insts[i];
+				for (int n = 0; n < RULES_PER_PARTITION; n++) {
+					if ((((first_rule_code + n) & r.set_conditions0) == 0ULL) && (((first_rule_code + n) & r.set_conditions1) == r.set_conditions1)) {
+						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, seen_actions[n], first_rule_code + n);
+					}
 				}
 			}
 		}
-	}
+	}	
 #else
 	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
 	#if HDT_BENCHMARK_READAPPLY == false
