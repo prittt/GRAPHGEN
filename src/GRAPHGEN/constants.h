@@ -14,3 +14,6 @@ constexpr int ACTION_COUNT = 2829; // 5, 77, 16, 5813 (reduced 2829)
 constexpr uint64_t TOTAL_RULES = (1ULL << CONDITION_COUNT);
 constexpr size_t RULES_PER_PARTITION = TOTAL_RULES / PARTITIONS;
 constexpr size_t RULES_PER_BATCH = RULES_PER_PARTITION / BATCHES;
+
+const std::string GLOBAL_RULEFILES_BASEPATH_OVERRIDE = "D:/rules-bkp/zst-variable-data-format-" + std::to_string(PARTITIONS) + "p-" + std::to_string(ACTION_COUNT) + "a";
+//const std::string GLOBAL_RULEFILES_BASEPATH_OVERRIDE = "";

@@ -42,7 +42,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_ACTION_SOURCE 3
 #define HDT_PROGRESS_ENABLED true
-#define HDT_BENCHMARK_READAPPLY false
+#define HDT_BENCHMARK_READAPPLY true
 
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
@@ -58,6 +58,39 @@ using namespace std;
 uint64_t rule_accesses = 0;
 uint64_t necessary_rule_accesses = 0;
 
+constexpr int32_t ceiling(float num)
+{
+	return (static_cast<float>(static_cast<int32_t>(num)) == num)
+		? static_cast<int32_t>(num)
+		: static_cast<int32_t>(num) + ((num > 0) ? 1 : 0);
+}
+
+constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL = 64;
+constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_COUNT = ceiling(ACTION_COUNT * 1.f / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL);
+
+struct LazyCountingVector {
+	std::array<std::vector<int>, LAZY_COUNTING_VECTOR_PARTITIONS_COUNT> data_;
+
+	LazyCountingVector() {
+	}
+
+	const size_t size() const {
+		return ACTION_COUNT;
+	}
+
+	int& operator[](const int t) {
+		auto& s = data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
+		if (s.size() == 0) {
+			s.resize(LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL, 0);
+		}
+		return s[t % LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
+	}
+
+	const int operator[](const int t) const {
+		return data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL][t % LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
+	}
+};
+
 struct RecursionInstance {
 	// parameters
 	std::vector<int> conditions;
@@ -66,8 +99,8 @@ struct RecursionInstance {
 	BinaryDrag<conact>::node* parent;
 
 	// local vars
-	std::vector<std::vector<int>> single_actions;
-	std::vector<int> all_single_actions; // TODO: Optimize this (also for single_actions), since not all actions are ever used -> lots of unused space and allocations
+	std::vector<LazyCountingVector> single_actions;
+	LazyCountingVector all_single_actions;
 #if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
 	std::vector<std::array<int, 2>> most_probable_action_occurences_;
@@ -83,8 +116,7 @@ struct RecursionInstance {
 		set_conditions0 = sc0;
 		set_conditions1 = sc1;
 		parent = p;
-		single_actions.resize(CONDITION_COUNT * 2, std::vector<int>(ACTION_COUNT, 0));
-		all_single_actions.resize(ACTION_COUNT, 0);
+		single_actions.resize(CONDITION_COUNT * 2);
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
@@ -148,9 +180,10 @@ struct RecursionInstance {
 	}
 };
 
-double entropy(std::vector<int>& vector) {
+double entropy(LazyCountingVector& vector) {
 	double s = 0, h = 0;
-	for (const auto& x : vector) {
+	for (int i = 0; i < vector.size(); i++) {
+		int x = vector[i];
 		if (x == 0) {
 			continue;
 		}
@@ -185,8 +218,8 @@ int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, act
 }
 
 void FindBestSingleActionCombinationRunningCombined(
-	std::vector<int>& all_single_actions,
-	std::vector<std::vector<int>>& single_actions,
+	LazyCountingVector& all_single_actions,
+	std::vector<LazyCountingVector>& single_actions,
 	const action_bitset& combined_action,
 	const ullong& rule_code) {
 
@@ -245,7 +278,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	
 	constexpr llong benchmark_sample_point = TOTAL_RULES / 2;
 
-	constexpr llong begin_rule_code = benchmark_sample_point - (1ULL << 20);
+	constexpr llong begin_rule_code = benchmark_sample_point - (1ULL << 21);
 	constexpr llong benchmark_start_rule_code = benchmark_sample_point;
 	constexpr llong end_rule_code = benchmark_sample_point + (1ULL << 25);
 
@@ -292,7 +325,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 		brs.LoadPartition(p, seen_actions);
 		rule_accesses += RULES_PER_PARTITION;
 		const ullong first_rule_code = p * RULES_PER_PARTITION;
-		#pragma omp parallel for num_threads(8)
+		//#pragma omp parallel for num_threads(6)
 		for (int i = 0; i < r_insts.size(); i++) {
 			auto& r = r_insts[i];
 			for (int n = 0; n < RULES_PER_PARTITION; n++) {
@@ -582,7 +615,7 @@ void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<con
 	}	
 }
 
-uint GetFirstCountedAction(std::vector<int>& b) {
+uint GetFirstCountedAction(LazyCountingVector& b) {
 	for (size_t i = 0; i < b.size(); i++) {
 		if (b[i] > 0) {
 			return i;
@@ -741,7 +774,7 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 	std::string path = GetBenchmarkProgressFilePath();
 	if (!std::filesystem::exists(path)) {
 		std::cerr << "Benchmark progress file not found at " << path << std::endl;
-		exit(EXIT_FAILURE);
+		throw std::runtime_error("Benchmark progress file not found at " + path);
 	}
 	bool load = true;
 #else
