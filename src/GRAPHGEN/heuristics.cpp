@@ -42,7 +42,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_ACTION_SOURCE 3
 #define HDT_PROGRESS_ENABLED true
-#define HDT_BENCHMARK_READAPPLY false
+#define HDT_BENCHMARK_READAPPLY true
 
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
@@ -75,6 +75,11 @@ struct RecursionInstance {
 	// state
 	bool processed = false;
 
+	void initializeTables() {
+		single_actions.resize(CONDITION_COUNT * 2, std::vector<int>(ACTION_COUNT, 0));
+		all_single_actions.resize(ACTION_COUNT, 0);
+	}
+
 	void initialize(std::vector<int> c,
 		ullong sc0,
 		ullong sc1,
@@ -83,8 +88,6 @@ struct RecursionInstance {
 		set_conditions0 = sc0;
 		set_conditions1 = sc1;
 		parent = p;
-		single_actions.resize(CONDITION_COUNT * 2, std::vector<int>(ACTION_COUNT, 0));
-		all_single_actions.resize(ACTION_COUNT, 0);
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
@@ -704,12 +707,19 @@ void FindHdtIteratively(rule_set& rs,
 
 	while (pending_recursion_instances.size() > 0) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances.size() << ")" << std::endl;
+		getchar();
+		TLOG("Initializing counting tables in memory",
+			for (auto& ri : pending_recursion_instances) {
+				ri.initializeTables();
+			}
+		);
+		getchar();
 
-		TLOG("Reading rules and classifying",
+		TLOG2("Reading rules and classifying",
 			HdtReadAndApplyRulesOnePass(brs, rs, pending_recursion_instances);
 		);
 
-		TLOG2("Processing instances", 
+		TLOG3("Processing instances", 
 			for (auto& r : pending_recursion_instances) {
 				int amount_of_action_children = HdtProcessNode(r, tree, rs, upcoming_recursion_instances);
 				leaves += amount_of_action_children;
