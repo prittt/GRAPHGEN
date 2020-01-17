@@ -47,7 +47,8 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
 
-#define HDT_PARALLEL_PARTITIONBASED true
+#define HDT_PARALLEL_PARTITIONBASED_ENABLED true
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS 8
 
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
 constexpr int HDT_GENERATION_LOG_FREQUENCY = 32;
@@ -193,29 +194,6 @@ double entropy(LazyCountingVector& vector) {
 	return log2(s) - h / s;
 }
 
-int FindBestSingleActionCombinationRunning(std::vector<int>& single_actions, action_bitset& combined_action, int previous_most_probable_action_occurences = -1) {
-	int most_popular_single_action_occurences = -1;
-	int most_popular_single_action_index = -1;
-
-	for (ushort i = 0; i < combined_action.size(); i++) {
-		auto s = combined_action.getActionByDataIndex(i);
-		if (single_actions[s] > most_popular_single_action_occurences) {
-			most_popular_single_action_index = s;
-			most_popular_single_action_occurences = single_actions[s];
-		}
-	}
-
-	single_actions[most_popular_single_action_index]++;
-	
-	if (previous_most_probable_action_occurences < 0) {
-		return 0;
-	}
-
-	if (single_actions[most_popular_single_action_index] > previous_most_probable_action_occurences) {
-		return most_popular_single_action_index;
-	}
-	return -1;
-}
 
 void FindBestSingleActionCombinationRunningCombined(
 	LazyCountingVector& all_single_actions,
@@ -293,40 +271,45 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	constexpr int end_partition = PARTITIONS;
 #endif
 
-#if HDT_PARALLEL_PARTITIONBASED == true
-	{
-		std::vector<action_bitset> seen_actions(RULES_PER_PARTITION);
+#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
+	std::vector<action_bitset> seen_actions(RULES_PER_PARTITION);
 
+	#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS)
+	{
 		for (int p = begin_partition; p < end_partition; p++) {
+			#pragma omp single
+			{
 #if HDT_BENCHMARK_READAPPLY == true
-			if (!benchmark_started && p >= benchmark_start_partition) {
-				benchmark_started = true;
-				benchmark_start_point = std::chrono::system_clock::now();
-				std::cout << "start - ";
-			}
+				if (!benchmark_started && p >= benchmark_start_partition) {
+					benchmark_started = true;
+					benchmark_start_point = std::chrono::system_clock::now();
+					std::cout << "start - ";
+				}
 #else
-			if (p % (PARTITIONS / HDT_GENERATION_LOG_FREQUENCY) == 0) {
-				auto end = std::chrono::system_clock::now();
-				std::chrono::duration<double> elapsed_seconds = end - start;
-				std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-				double progress = p * 1.f / PARTITIONS;
-				double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
-				char mbstr[100];
-				if (p == 0) {
-					std::cout << std::endl;
+				if (p % (PARTITIONS / HDT_GENERATION_LOG_FREQUENCY) == 0) {
+					auto end = std::chrono::system_clock::now();
+					std::chrono::duration<double> elapsed_seconds = end - start;
+					std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+					double progress = p * 1.f / PARTITIONS;
+					double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+					char mbstr[100];
+					if (p == 0) {
+						std::cout << std::endl;
+					}
+					if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
+						std::cout << "[" << mbstr << "] Partition " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+					}
+					else {
+						std::cout << "[" << std::ctime(&end_time) << "] Rule " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+					}
 				}
-				if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
-					std::cout << "[" << mbstr << "] Partition " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
-				}
-				else {
-					std::cout << "[" << std::ctime(&end_time) << "] Rule " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
-				}
+#endif
+				brs.LoadPartition(p, seen_actions);
+				rule_accesses += RULES_PER_PARTITION;
 			}
-#endif	
-			brs.LoadPartition(p, seen_actions);
-			rule_accesses += RULES_PER_PARTITION;
 			const ullong first_rule_code = p * RULES_PER_PARTITION;
-			#pragma omp parallel for num_threads(8)
+
+			#pragma omp for schedule(dynamic, 1)
 			for (int i = 0; i < r_insts.size(); i++) {
 				auto& r = r_insts[i];
 				for (int n = 0; n < RULES_PER_PARTITION; n++) {
@@ -419,7 +402,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	auto end = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - benchmark_start_point;
 
-	#if HDT_PARALLEL_PARTITIONBASED
+	#if HDT_PARALLEL_PARTITIONBASED_ENABLED
 		ullong processed_rules = (end_partition - benchmark_start_partition) * RULES_PER_PARTITION;
 		double progress = processed_rules * 1. / TOTAL_RULES;
 	#else
@@ -431,7 +414,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	double corrected_projected_mins = projected_mins / 1.15f;
 	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << processed_rules << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes for total benchmarked depth." << std::endl;
 	
-	#if HDT_PARALLEL_PARTITIONBASED
+	#if HDT_PARALLEL_PARTITIONBASED_ENABLED
 		std::cout << "begin_partition : " << begin_partition << " benchmark_start_partition : " << benchmark_start_partition << " end_partition : " << end_partition;
 	#else
 		std::cout << "begin_rule_code : " << begin_rule_code << " benchmark_start_rule_code : " << benchmark_start_rule_code << " end_rule_code : " << end_rule_code;
@@ -902,7 +885,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
 
 	
-#if HDT_PARALLEL_PARTITIONBASED == false
+#if HDT_PARALLEL_PARTITIONBASED_ENABLED == false
 	brs.OpenRuleFiles();
 #endif
 	//brs.VerifyRuleFiles();
