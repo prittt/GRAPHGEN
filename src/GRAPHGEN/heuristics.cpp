@@ -38,11 +38,14 @@
 
 constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO ACTION = GARBAGE DATA !! ****", "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
 
-#define HDT_INFORMATION_GAIN_METHOD_VERSION 2
-#define HDT_COMBINED_CLASSIFIER true
-#define HDT_ACTION_SOURCE 3
 #define HDT_PROGRESS_ENABLED true
-#define HDT_BENCHMARK_READAPPLY true
+
+#define HDT_ACTION_SOURCE 3
+#define HDT_COMBINED_CLASSIFIER true
+#define HDT_INFORMATION_GAIN_METHOD_VERSION 2
+
+#define HDT_BENCHMARK_READAPPLY_ENABLED true
+#define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS true && HDT_BENCHMARK_READAPPLY_ENABLED
 
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
@@ -70,9 +73,16 @@ constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL = 256;
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_COUNT = ceiling(ACTION_COUNT * 1.f / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL);
 
 struct LazyCountingVector {
-	std::array<std::vector<int>, LAZY_COUNTING_VECTOR_PARTITIONS_COUNT> data_;
+	std::vector<std::vector<int>> data_;
 
-	LazyCountingVector() {
+	LazyCountingVector(bool enabled = true) {
+		if (enabled) {
+			allocate();
+		}
+	}
+
+	void allocate() {
+		data_.resize(LAZY_COUNTING_VECTOR_PARTITIONS_COUNT);
 	}
 
 	const size_t size() const {
@@ -117,7 +127,11 @@ struct RecursionInstance {
 		set_conditions0 = sc0;
 		set_conditions1 = sc1;
 		parent = p;
-		single_actions.resize(CONDITION_COUNT * 2);
+		single_actions.resize(CONDITION_COUNT * 2, LazyCountingVector(false));
+		for (const auto& c : conditions) {
+			single_actions[2 * c].allocate();
+			single_actions[2 * c + 1].allocate();
+		}
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
@@ -198,6 +212,7 @@ double entropy(LazyCountingVector& vector) {
 void FindBestSingleActionCombinationRunningCombined(
 	LazyCountingVector& all_single_actions,
 	std::vector<LazyCountingVector>& single_actions,
+	const std::vector<int>& conditions,
 	const action_bitset& combined_action,
 	const ullong& rule_code) {
 
@@ -212,8 +227,8 @@ void FindBestSingleActionCombinationRunningCombined(
 	}
 	all_single_actions[most_popular_single_action_index]++;
 
-	for (int i = 0; i < CONDITION_COUNT; i++) {
-		single_actions[2 * i + ((rule_code >> i) & 1)][most_popular_single_action_index]++;
+	for (const auto& c : conditions) {
+		single_actions[2 * c + ((rule_code >> c) & 1)][most_popular_single_action_index]++;
 	}
 }
 
@@ -248,7 +263,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	action_bitset* action;
 	auto start = std::chrono::system_clock::now();
 
-#if HDT_BENCHMARK_READAPPLY == true
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
 	int indicated_progress = -1;
 	bool benchmark_started = false;
 	std::chrono::system_clock::time_point benchmark_start_point;
@@ -272,54 +287,66 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 #endif
 
 #if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
-	std::vector<action_bitset> seen_actions(RULES_PER_PARTITION);
-
-	#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS)
 	{
-		for (int p = begin_partition; p < end_partition; p++) {
-			#pragma omp single
-			{
-#if HDT_BENCHMARK_READAPPLY == true
-				if (!benchmark_started && p >= benchmark_start_partition) {
-					benchmark_started = true;
-					benchmark_start_point = std::chrono::system_clock::now();
-					std::cout << "start - ";
-				}
-#else
-				if (p % (PARTITIONS / HDT_GENERATION_LOG_FREQUENCY) == 0) {
-					auto end = std::chrono::system_clock::now();
-					std::chrono::duration<double> elapsed_seconds = end - start;
-					std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-					double progress = p * 1.f / PARTITIONS;
-					double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
-					char mbstr[100];
-					if (p == 0) {
-						std::cout << std::endl;
-					}
-					if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
-						std::cout << "[" << mbstr << "] Partition " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
-					}
-					else {
-						std::cout << "[" << std::ctime(&end_time) << "] Rule " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
-					}
-				}
+#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
+		std::cout << "Pre-partition memory - press enter to continue" << std::endl;
+		getchar();
 #endif
-				brs.LoadPartition(p, seen_actions);
-				rule_accesses += RULES_PER_PARTITION;
-			}
-			const ullong first_rule_code = p * RULES_PER_PARTITION;
 
-			#pragma omp for schedule(dynamic, 1)
-			for (int i = 0; i < r_insts.size(); i++) {
-				auto& r = r_insts[i];
-				for (int n = 0; n < RULES_PER_PARTITION; n++) {
-					if ((((first_rule_code + n) & r.set_conditions0) == 0ULL) && (((first_rule_code + n) & r.set_conditions1) == r.set_conditions1)) {
-						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, seen_actions[n], first_rule_code + n);
+		std::vector<action_bitset> seen_actions(RULES_PER_PARTITION);
+
+		#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS)
+		{
+			for (int p = begin_partition; p < end_partition; p++) {
+				#pragma omp single
+				{
+	#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+					if (!benchmark_started && p >= benchmark_start_partition) {
+						benchmark_started = true;
+						benchmark_start_point = std::chrono::system_clock::now();
+						std::cout << "start - ";
+					}
+	#else
+					if (p % (PARTITIONS / HDT_GENERATION_LOG_FREQUENCY) == 0) {
+						auto end = std::chrono::system_clock::now();
+						std::chrono::duration<double> elapsed_seconds = end - start;
+						std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+						double progress = p * 1.f / PARTITIONS;
+						double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+						char mbstr[100];
+						if (p == 0) {
+							std::cout << std::endl;
+						}
+						if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
+							std::cout << "[" << mbstr << "] Partition " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+						}
+						else {
+							std::cout << "[" << std::ctime(&end_time) << "] Rule " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+						}
+					}
+	#endif
+					brs.LoadPartition(p, seen_actions);
+					rule_accesses += RULES_PER_PARTITION;
+				}
+				const ullong first_rule_code = p * RULES_PER_PARTITION;
+
+				#pragma omp for schedule(dynamic, 1)
+				for (int i = 0; i < r_insts.size(); i++) {
+					auto& r = r_insts[i];
+					for (int n = 0; n < RULES_PER_PARTITION; n++) {
+						if ((((first_rule_code + n) & r.set_conditions0) == 0ULL) && (((first_rule_code + n) & r.set_conditions1) == r.set_conditions1)) {
+							FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
+						}
 					}
 				}
 			}
 		}
-	}	
+
+#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
+		std::cout << "Pre-finish memory - press enter to continue" << std::endl;
+		getchar();
+#endif
+	}
 #else
 	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
 	#if HDT_BENCHMARK_READAPPLY == false
@@ -398,7 +425,11 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	}
 #endif
 
-#if HDT_BENCHMARK_READAPPLY == true
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
+	std::cout << "Before finish memory - press enter to continue" << std::endl;
+	getchar();
+#endif
 	auto end = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - benchmark_start_point;
 
@@ -755,13 +786,17 @@ void FindHdtIteratively(rule_set& rs,
 }
 
 void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, BinaryDrag<conact>& tree) {
-#if HDT_BENCHMARK_READAPPLY == true
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
 	std::string path = GetBenchmarkProgressFilePath();
 	if (!std::filesystem::exists(path)) {
 		std::cerr << "Benchmark progress file not found at " << path << std::endl;
 		throw std::runtime_error("Benchmark progress file not found at " + path);
 	}
 	bool load = true;
+#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
+	std::cout << "Pre-load memory - press enter to continue" << std::endl;
+	getchar();
+#endif
 #else
 	#if HDT_PROGRESS_ENABLED == true
 		std::string path = GetLatestProgressFilePath();
@@ -875,7 +910,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 		throw std::runtime_error("Assert failed: RULES_PER_PARTITION is not smaller than INT_MAX.");
 	}
 
-#if HDT_BENCHMARK_READAPPLY == true
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
 	std::cout << "\n\n***************************************************" << std::endl;
 	std::cout << "***************** Benchmark Mode ******************" << std::endl;
 	std::cout << "***************************************************" << std::endl;
