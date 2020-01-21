@@ -44,8 +44,8 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
 
-#define HDT_BENCHMARK_READAPPLY_ENABLED true
-#define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS true && HDT_BENCHMARK_READAPPLY_ENABLED
+#define HDT_BENCHMARK_READAPPLY_ENABLED false
+#define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED
 
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
@@ -54,7 +54,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS 8
 
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
-constexpr int HDT_GENERATION_LOG_FREQUENCY = 32;
+constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
 
 
 using namespace std;
@@ -75,13 +75,13 @@ constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_COUNT = ceiling(ACTION_COUNT * 1.f
 struct LazyCountingVector {
 	std::vector<std::vector<int>> data_;
 
-	LazyCountingVector(bool enabled = true) {
-		if (enabled) {
-			allocate();
+	LazyCountingVector(bool allocate = true) {
+		if (allocate) {
+			allocateTables();
 		}
 	}
 
-	void allocate() {
+	void allocateTables() {
 		data_.resize(LAZY_COUNTING_VECTOR_PARTITIONS_COUNT);
 	}
 
@@ -89,6 +89,15 @@ struct LazyCountingVector {
 		return ACTION_COUNT;
 	}
 
+	const size_t sizeInMemory() const {
+		size_t result = 0;
+		for (const auto& t : data_) {
+			result += t.size();
+		}
+		return result;
+	}
+
+	// writable non-const return type, creates new partition.
 	int& operator[](const int t) {
 		auto& s = data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
 		if (s.size() == 0) {
@@ -97,8 +106,13 @@ struct LazyCountingVector {
 		return s[t % LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
 	}
 
+	// read only return type, do not create new partitions, instead return 0.
 	const int operator[](const int t) const {
-		return data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL][t % LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
+		auto& s = data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
+		if (s.size() == 0) {
+			return 0;
+		}
+		return s[t % LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
 	}
 };
 
@@ -129,8 +143,8 @@ struct RecursionInstance {
 		parent = p;
 		single_actions.resize(CONDITION_COUNT * 2, LazyCountingVector(false));
 		for (const auto& c : conditions) {
-			single_actions[2 * c].allocate();
-			single_actions[2 * c + 1].allocate();
+			single_actions[2 * c].allocateTables();
+			single_actions[2 * c + 1].allocateTables();
 		}
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
@@ -184,6 +198,15 @@ struct RecursionInstance {
 		parent = p;
 	}
 
+	const size_t tableSizeInMemory() const {
+		size_t result = 0;
+		result += all_single_actions.sizeInMemory();
+		for (const auto& s : single_actions) {
+			result += s.sizeInMemory();
+		}
+		return result;
+	}
+
 	std::string to_string() const {
 		stringstream ss;
 		ss << "RecursionInstance ";
@@ -195,10 +218,10 @@ struct RecursionInstance {
 	}
 };
 
-double entropy(LazyCountingVector& vector) {
+double entropy(const LazyCountingVector& vector) {
 	double s = 0, h = 0;
 	for (int i = 0; i < vector.size(); i++) {
-		int x = vector[i];
+		const int x = vector[i];
 		if (x == 0) {
 			continue;
 		}
@@ -631,7 +654,7 @@ void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<con
 	}	
 }
 
-uint GetFirstCountedAction(LazyCountingVector& b) {
+uint GetFirstCountedAction(const LazyCountingVector& b) {
 	for (size_t i = 0; i < b.size(); i++) {
 		if (b[i] > 0) {
 			return i;
@@ -766,6 +789,10 @@ void FindHdtIteratively(rule_set& rs,
 			}
 		);
 		depth++;
+
+		//for (const auto& c : pending_recursion_instances) {
+		//	std::cout << "Size: " << c.tableSizeInMemory() << std::endl;
+		//}
 #if HDT_PROGRESS_ENABLED == true
 		SaveProgressToFiles(upcoming_recursion_instances, tree, depth, leaves, path_length_sum, rule_accesses);
 #endif
