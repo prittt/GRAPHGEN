@@ -684,7 +684,7 @@ struct Log {
 	Log() {}
 #endif
 
-	Log& operator<<(const std::string s) {
+	const Log& operator<<(const std::string s) const {
 #if HDT_PROCESS_NODE_LOGGING_ENABLED == true
 		os_ << s;
 #endif
@@ -697,7 +697,7 @@ int HdtProcessNode(
 	BinaryDrag<conact>& tree, 
 	const rule_set& rs, 
 	std::vector<RecursionInstance>& upcoming_recursion_instances,
-	Log& log) {
+	const Log& log) {
 	int amount_of_action_children = 0;
 	log << "*********************************\nHdtProcessNode start with RecInst: " << r.to_string() << "\n";
 

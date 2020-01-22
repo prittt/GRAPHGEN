@@ -270,7 +270,7 @@ public:
 				std::cout << "************************************************************" << std::endl;
 				exit(EXIT_FAILURE);
 			}
-			if (p % (PARTITIONS / 64) == 0) {
+			if (p % std::max(1, (PARTITIONS / 64)) == 0) {
 				std::cout << "P" << p << " correct. ";
 			}
 
