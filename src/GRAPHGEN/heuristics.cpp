@@ -53,6 +53,8 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_PARALLEL_PARTITIONBASED_ENABLED true
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS 8
 
+#define HDT_PROCESS_NODE_LOGGING_ENABLED true
+
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
 constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
 
@@ -95,6 +97,15 @@ struct LazyCountingVector {
 			result += t.size();
 		}
 		return result;
+	}
+
+	const void print(ostringstream& oss) const {
+		if (data_.size() == 0) {
+			return;
+		}
+		for (int i = 0; i < size(); i++) {
+			oss << i << ": " << operator[](i) << "\n";
+		}
 	}
 
 	// writable non-const return type, creates new partition.
@@ -255,10 +266,10 @@ void FindBestSingleActionCombinationRunningCombined(
 	}
 }
 
-
 void FindBestSingleActionCombinationRunningCombinedPtr(
-	std::vector<int>& all_single_actions,
-	std::vector<std::vector<int>>& single_actions,
+	LazyCountingVector& all_single_actions,
+	std::vector<LazyCountingVector>& single_actions,
+	const std::vector<int>& conditions,
 	const action_bitset* combined_action,
 	const ullong& rule_code) {
 
@@ -273,8 +284,8 @@ void FindBestSingleActionCombinationRunningCombinedPtr(
 	}
 	all_single_actions[most_popular_single_action_index]++;
 
-	for (int i = 0; i < CONDITION_COUNT; i++) {
-		single_actions[2 * i + ((rule_code >> i) & 1)][most_popular_single_action_index]++;
+	for (const auto& c : conditions) {
+		single_actions[2 * c + ((rule_code >> c) & 1)][most_popular_single_action_index]++;
 	}
 }
 
@@ -425,6 +436,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 					FindBestSingleActionCombinationRunningCombinedPtr(
 						r.all_single_actions,
 						r.single_actions,
+						r.conditions,
 						action,
 						rule_code);
 				#else
@@ -664,34 +676,39 @@ uint GetFirstCountedAction(const LazyCountingVector& b) {
 	throw std::runtime_error("GetFirstCountedAction called with empty vector");
 }
 
-int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_set& rs, std::vector<RecursionInstance>& upcoming_recursion_instances) {
-	int amount_of_action_children = 0;
-	
-	// Case 3: Both childs are leafs, end of recursion
-	if (r.conditions.size() == 1) {
-		r.parent->data.t = conact::type::CONDITION;
-		r.parent->data.condition = rs.conditions[r.conditions[0]];
-		auto leftNode = tree.make_node();
-		auto rightNode = tree.make_node();
-		r.parent->left = leftNode;
-		r.parent->right = rightNode;
-		auto leftAction = action_bitset().set(GetFirstCountedAction(r.single_actions[r.conditions[0] * 2]));
-		leftNode->data.t = conact::type::ACTION;
-		leftNode->data.action = leftAction;
-		auto rightAction = action_bitset().set(GetFirstCountedAction(r.single_actions[r.conditions[0] * 2]));
-		rightNode->data.t = conact::type::ACTION;
-		rightNode->data.action = rightAction;
-		//std::cout << "Case 3: Both childs are leafs. Condition: " << c << " Left Action: " << leftAction.to_ulong() << " Right Action: " << rightAction.to_ulong() << std::endl;
-		return 2;
-	}
+struct Log {
+#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
+	std::ostream& os_;
+	Log(std::ofstream& os) : os_(os) { }
+#else
+	Log() {}
+#endif
 
+	Log& operator<<(const std::string s) {
+#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
+		os_ << s;
+#endif
+		return *this;
+	}
+};
+
+int HdtProcessNode(
+	RecursionInstance& r, 
+	BinaryDrag<conact>& tree, 
+	const rule_set& rs, 
+	std::vector<RecursionInstance>& upcoming_recursion_instances,
+	Log& log) {
+	int amount_of_action_children = 0;
+	log << "*********************************\nHdtProcessNode start with RecInst: " << r.to_string() << "\n";
+
+	std::vector<int> uselessConditions;
 
 	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
 	int splitCandidate = r.conditions[0];
 	double maximum_information_gain = 0;
 
 	double baseEntropy = entropy(r.all_single_actions);
-	//std::cout << "Base Entropy: " << baseEntropy << std::endl;
+	log << "Base Entropy: " << std::to_string(baseEntropy) << "\n";
 
 	bool leftIsAction = false;
 	bool rightIsAction = false;
@@ -713,16 +730,27 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 		double informationGain = LigTimesRig / std::sqrt(difference);
 #endif
 
+		if (leftEntropy == baseEntropy && rightEntropy == baseEntropy) {
+			uselessConditions.push_back(c);
+		}
+
 		if (informationGain > maximum_information_gain) {
 			maximum_information_gain = informationGain;
 			splitCandidate = c;
 			leftIsAction = (leftEntropy == 0);
 			rightIsAction = (rightEntropy == 0);
 		}
-		//std::cout << "Condition: " << c << " Max information gain: " << informationGain << " Ratio: " << difference << " LIG*RIG: " << LigTimesRig << "\tEntropy Left (0): " << leftEntropy << "\tEntropy Right (1): " << rightEntropy << std::endl;
+		log << "Condition: " << rs.conditions[c] << " Information gain: " << std::to_string(informationGain) << "\tEntropy Left (0): " << std::to_string(leftEntropy) << "\tEntropy Right (1): " << std::to_string(rightEntropy) << "\n";
 	}
-	//std::cout << "Split candidate chosen: " << rs.conditions[splitCandidate] << std::endl;
+	log << "------\nSplit candidate chosen: " << rs.conditions[splitCandidate] << "\n";
 
+	log << "Deleting " << std::to_string(uselessConditions.size()) << " useless conditions: ";
+	for (const auto& s : uselessConditions) {
+		log << rs.conditions[s] << " ";
+		r.set_conditions0 |= (1ULL << s);
+		r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), s), r.conditions.end());
+	}
+	log << "\n";
 
 	r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), splitCandidate), r.conditions.end());
 
@@ -754,7 +782,21 @@ int HdtProcessNode(RecursionInstance& r, BinaryDrag<conact>& tree, const rule_se
 	}
 
 	r.processed = true;
-	//std::cout << "Processed instance. Split Candidate: " << rs.conditions[splitCandidate] << " Action Children: " << amount_of_action_children << std::endl;
+
+	log << "Processed instance. Split Candidate: " << rs.conditions[splitCandidate] << " Action Children: " << std::to_string(amount_of_action_children) << "\n";
+	log << "Counting Table Sizes. All Single Actions:" << std::to_string(r.all_single_actions.sizeInMemory()) << "\nSingle Actions:";
+	//ostringstream oss;
+	//oss << "\nAll Single Actions\n";
+	//r.all_single_actions.print(oss);
+	int i = 0;
+	for (const auto& s : r.single_actions) {
+		//oss << "Single Actions " << rs.conditions[i / 2] << " Bit: " << i % 2 << " \n";
+		//s.print(oss);
+		log << std::to_string(s.sizeInMemory()) << ", ";
+		i++;
+	}
+	//log << oss.str();
+
 	return amount_of_action_children;
 }
 
@@ -767,6 +809,9 @@ void FindHdtIteratively(rule_set& rs,
 	int start_path_length_sum = 0,
 	ullong start_rule_accesses = 0)
 {
+#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
+	std::filesystem::create_directories(conf.GetProcessNodeLogFilePath(""));
+#endif
 	std::vector<RecursionInstance> pending_recursion_instances = std::move(initial_recursion_instances);
 	std::vector<RecursionInstance> upcoming_recursion_instances;
 	int depth = start_depth;
@@ -781,13 +826,23 @@ void FindHdtIteratively(rule_set& rs,
 			HdtReadAndApplyRulesOnePass(brs, rs, pending_recursion_instances);
 		);
 
-		TLOG3("Processing instances", 
+		TLOG3_START("Processing instances");
+		{
+			int recursion_instance_counter = 0;
 			for (auto& r : pending_recursion_instances) {
-				int amount_of_action_children = HdtProcessNode(r, tree, rs, upcoming_recursion_instances);
+				#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
+					auto log_os = std::ofstream(conf.GetProcessNodeLogFilePath("d" + std::to_string(depth) + "-recinst" + std::to_string(recursion_instance_counter++) + ".txt"));
+					int amount_of_action_children = HdtProcessNode(r, tree, rs, upcoming_recursion_instances, Log(log_os));
+					log_os.close();
+				#else
+					int amount_of_action_children = HdtProcessNode(r, tree, rs, upcoming_recursion_instances, Log());
+				#endif
 				leaves += amount_of_action_children;
 				path_length_sum += (depth + 1) * amount_of_action_children;
 			}
-		);
+		}
+		TLOG3_STOP;
+		
 		depth++;
 
 		//for (const auto& c : pending_recursion_instances) {
@@ -881,7 +936,7 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 			exit(EXIT_FAILURE);
 		}
 		for (const auto& r : r_insts) {
-			if (r.conditions.size() != CONDITION_COUNT - depth) {
+			if (r.conditions.size() != CONDITION_COUNT - (std::bitset<64>(r.set_conditions0).count() + std::bitset<64>(r.set_conditions1).count())) {
 				std::cerr << "RecursionInstance with wrongly sized condition array found. Aborting." << std::endl;
 				exit(EXIT_FAILURE);
 			}

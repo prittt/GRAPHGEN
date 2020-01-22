@@ -94,9 +94,14 @@ struct ConfigData {
 	std::string binary_rule_file_suffix_ = "_rules.zst";
 
 	std::string binary_rule_file_path_partitioned(std::string partitionId, std::string basepath_override = "") {
-		auto basepath = (global_output_path_ / algorithm_name_ / "rules");		
+		auto basepath = algorithm_output_path_ / "rules";
 		auto p = (GLOBAL_RULEFILES_BASEPATH_OVERRIDE.size() > 0 ? GLOBAL_RULEFILES_BASEPATH_OVERRIDE : (basepath_override.size() > 0 ? basepath_override : basepath.string())) / std::filesystem::path(algorithm_name_ + "_" + partitionId + binary_rule_file_suffix_);
 		return p.string();
+	}
+
+	std::string GetProcessNodeLogFilePath(std::string out_name) {
+		auto basepath = algorithm_output_path_ / "recinst";
+		return (basepath / out_name).string();
 	}
 
     // Datasets
