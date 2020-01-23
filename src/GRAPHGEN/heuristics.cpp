@@ -157,6 +157,7 @@ struct RecursionInstance {
 			single_actions[2 * c].allocateTables();
 			single_actions[2 * c + 1].allocateTables();
 		}
+		initializeRuleCodeCounting();
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
@@ -226,6 +227,33 @@ struct RecursionInstance {
 		}
 		ss << " " << std::to_string(set_conditions0) << " " << std::to_string(set_conditions1);
 		return ss.str();
+	}
+
+	ullong nextRuleCode;
+	ullong ruleCodeBitMask = 0; // length = unset_conditions;
+	ullong ruleCodeWithSetConditions = 0;
+
+	void initializeRuleCodeCounting() {
+		ruleCodeWithSetConditions = set_conditions1;
+		findNextRuleCode();
+	}
+
+	int getNextRuleCode() {
+		return nextRuleCode;
+	}
+
+	bool findNextRuleCode() {
+		if (ruleCodeBitMask >= (1 << conditions.size())) {
+			return false;
+		}
+		nextRuleCode = ruleCodeWithSetConditions;
+		int i = 0;
+		for (const auto& c : conditions) {
+			nextRuleCode |= ((ruleCodeBitMask & (1 << i)) << (c - i));
+			i++;
+		}
+		ruleCodeBitMask++;
+		return true;
 	}
 };
 
@@ -367,9 +395,16 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 				#pragma omp for schedule(dynamic, 1)
 				for (int i = 0; i < r_insts.size(); i++) {
 					auto& r = r_insts[i];
-					for (int n = 0; n < RULES_PER_PARTITION; n++) {
-						if ((((first_rule_code + n) & r.set_conditions0) == 0ULL) && (((first_rule_code + n) & r.set_conditions1) == r.set_conditions1)) {
-							FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
+					int n;
+					while (true) {
+						n = (r.getNextRuleCode() - first_rule_code);
+						if (n > RULES_PER_PARTITION) { // delegate this rule to next partition
+							break;
+						}
+						//std::cout << "Rule: " << n << std::endl;
+						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
+						if (!r.findNextRuleCode()) {
+							break;
 						}
 					}
 				}
