@@ -44,7 +44,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
 
-#define HDT_BENCHMARK_READAPPLY_ENABLED false
+#define HDT_BENCHMARK_READAPPLY_ENABLED true
 #define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED
 
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
@@ -157,7 +157,7 @@ struct RecursionInstance {
 			single_actions[2 * c].allocateTables();
 			single_actions[2 * c + 1].allocateTables();
 		}
-		initializeRuleCodeCounting();
+		findNextRuleCode();
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
@@ -230,19 +230,13 @@ struct RecursionInstance {
 	}
 
 	ullong nextRuleCode;
-	ullong ruleCodeBitMask = 0; // length = unset_conditions;
-	ullong ruleCodeWithSetConditions = 0;
-
-	void initializeRuleCodeCounting() {
-		ruleCodeWithSetConditions = set_conditions1;
-		findNextRuleCode();
-	}
+	ullong ruleCodeBitMask = 0;
 
 	bool findNextRuleCode() {
 		if (ruleCodeBitMask >= (1 << conditions.size())) {
 			return false;
 		}
-		nextRuleCode = ruleCodeWithSetConditions;
+		nextRuleCode = set_conditions1;
 		int i = 0;
 		for (const auto& c : conditions) {
 			nextRuleCode |= ((ruleCodeBitMask & (1 << i)) << (c - i));
@@ -331,7 +325,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 
 	constexpr llong begin_rule_code = benchmark_sample_point - (1ULL << 21);
 	constexpr llong benchmark_start_rule_code = benchmark_sample_point;
-	constexpr llong end_rule_code = benchmark_sample_point + (1ULL << 25);
+	constexpr llong end_rule_code = benchmark_sample_point + (1ULL << 27);
 
 	constexpr int begin_partition = begin_rule_code / RULES_PER_PARTITION;
 	constexpr int benchmark_start_partition = benchmark_start_rule_code / RULES_PER_PARTITION;
