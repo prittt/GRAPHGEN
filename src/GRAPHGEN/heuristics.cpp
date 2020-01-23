@@ -238,10 +238,6 @@ struct RecursionInstance {
 		findNextRuleCode();
 	}
 
-	int getNextRuleCode() {
-		return nextRuleCode;
-	}
-
 	bool findNextRuleCode() {
 		if (ruleCodeBitMask >= (1 << conditions.size())) {
 			return false;
@@ -397,11 +393,10 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 					auto& r = r_insts[i];
 					int n;
 					while (true) {
-						n = (r.getNextRuleCode() - first_rule_code);
-						if (n > RULES_PER_PARTITION) { // delegate this rule to next partition
+						n = (r.nextRuleCode - first_rule_code);
+						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
 							break;
 						}
-						//std::cout << "Rule: " << n << std::endl;
 						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
 						if (!r.findNextRuleCode()) {
 							break;

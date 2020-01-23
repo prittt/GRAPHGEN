@@ -10,7 +10,7 @@ enum Build {
 	BBDT3D = 1
 };
 
-#define BUILD BBDT
+#define BUILD 1
 
 #if BUILD == 0 // BBDT 2D
 	constexpr int PARTITIONS = 1; // 1, 1024, 65536
