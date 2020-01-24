@@ -239,7 +239,7 @@ struct RecursionInstance {
 		nextRuleCode = set_conditions1;
 		int i = 0;
 		for (const auto& c : conditions) {
-			nextRuleCode |= ((ruleCodeBitMask & (1 << i)) << (c - i));
+			nextRuleCode |= ((ruleCodeBitMask & (1ULL << i)) << (c - i));
 			i++;
 		}
 		ruleCodeBitMask++;
