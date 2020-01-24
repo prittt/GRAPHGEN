@@ -44,7 +44,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
 
-#define HDT_BENCHMARK_READAPPLY_ENABLED true
+#define HDT_BENCHMARK_READAPPLY_ENABLED false
 #define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED
 
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
@@ -233,7 +233,7 @@ struct RecursionInstance {
 	ullong ruleCodeBitMask = 0;
 
 	bool findNextRuleCode() {
-		if (ruleCodeBitMask >= (1 << conditions.size())) {
+		if (ruleCodeBitMask >= (1ULL << conditions.size())) {
 			return false;
 		}
 		nextRuleCode = set_conditions1;
@@ -385,7 +385,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 				#pragma omp for schedule(dynamic, 1)
 				for (int i = 0; i < r_insts.size(); i++) {
 					auto& r = r_insts[i];
-					int n;
+					size_t n;
 					while (true) {
 						n = (r.nextRuleCode - first_rule_code);
 						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
