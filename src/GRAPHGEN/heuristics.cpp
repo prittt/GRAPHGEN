@@ -26,6 +26,8 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <random>
 #include <ctime>
 #include <algorithm>
@@ -103,13 +105,13 @@ struct LazyCountingVector {
 		if (data_.size() == 0) {
 			return;
 		}
-		for (int i = 0; i < size(); i++) {
+		for (size_t i = 0; i < size(); i++) {
 			oss << i << ": " << operator[](i) << "\n";
 		}
 	}
 
 	// writable non-const return type, creates new partition.
-	int& operator[](const int t) {
+	int& operator[](const size_t t) {
 		auto& s = data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
 		if (s.size() == 0) {
 			s.resize(LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL, 0);
@@ -118,7 +120,7 @@ struct LazyCountingVector {
 	}
 
 	// read only return type, do not create new partitions, instead return 0.
-	const int operator[](const int t) const {
+	const int operator[](const size_t t) const {
 		auto& s = data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
 		if (s.size() == 0) {
 			return 0;
@@ -249,7 +251,7 @@ struct RecursionInstance {
 
 double entropy(const LazyCountingVector& vector) {
 	double s = 0, h = 0;
-	for (int i = 0; i < vector.size(); i++) {
+	for (size_t i = 0; i < vector.size(); i++) {
 		const int x = vector[i];
 		if (x == 0) {
 			continue;
@@ -308,11 +310,13 @@ void FindBestSingleActionCombinationRunningCombinedPtr(
 }
 
 void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts) {
-	bool first_match;
-#if (HDT_ACTION_SOURCE == 0)
+#if HDT_ACTION_SOURCE == 0
 	action_bitset zero_action = action_bitset(1).set(0);
 #endif
+#if HDT_PARALLEL_PARTITIONBASED_ENABLED == false
+	bool first_match;
 	action_bitset* action;
+#endif
 	auto start = std::chrono::system_clock::now();
 
 #if HDT_BENCHMARK_READAPPLY_ENABLED == true
@@ -382,20 +386,38 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 				}
 				const ullong first_rule_code = p * RULES_PER_PARTITION;
 
+				const int r_insts_count = static_cast<int>(r_insts.size());
 				#pragma omp for schedule(dynamic, 1)
-				for (int i = 0; i < r_insts.size(); i++) {
+				for (int i = 0; i < r_insts_count; i++) {
 					auto& r = r_insts[i];
 					size_t n;
+					bool first = true, second = false;
+					ullong firstRuleCode, lastRuleCode, secondRuleCode;
+					size_t firstN, lastN, secondN;
 					while (true) {
-						n = (r.nextRuleCode - first_rule_code);
+						n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
+						if (second) {
+							secondRuleCode = r.nextRuleCode;
+							secondN = n;
+							second = false;
+						}
+						if (first) {
+							firstRuleCode = r.nextRuleCode;
+							firstN = n;
+							first = false;
+							second = true;
+						}
 						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
 							break;
 						}
 						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
+						lastRuleCode = r.nextRuleCode;
+						lastN = n;
 						if (!r.findNextRuleCode()) {
 							break;
 						}
 					}
+					std::cout << "RuleCode: " << firstRuleCode << "-(" << secondRuleCode <<")-"<< lastRuleCode << " N: " << firstN << "-(" <<secondN<<")-" << lastN << std::endl;
 				}
 			}
 		}
@@ -562,8 +584,8 @@ void StringToTreeRec(
 		node->right = right;
 
 		std::string remaining = s.substr(bracket_pos + 1, s.size() - (2+bracket_pos));
-		int separator_pos, open = 0, closed = 0;
-		for (int i = 0; i < remaining.size(); i++) {
+		size_t separator_pos, open = 0, closed = 0;
+		for (size_t i = 0; i < remaining.size(); i++) {
 			if (remaining[i] == '(') {
 				open++;
 			}
@@ -690,10 +712,10 @@ void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<con
 	}	
 }
 
-uint GetFirstCountedAction(const LazyCountingVector& b) {
+ushort GetFirstCountedAction(const LazyCountingVector& b) {
 	for (size_t i = 0; i < b.size(); i++) {
 		if (b[i] > 0) {
-			return i;
+			return static_cast<ushort>(i);
 		}
 	}
 	std::cerr << "GetFirstCountedAction called with empty vector" << std::endl;
@@ -849,6 +871,7 @@ void FindHdtIteratively(rule_set& rs,
 		TLOG2("Reading rules and classifying",
 			HdtReadAndApplyRulesOnePass(brs, rs, pending_recursion_instances);
 		);
+		std::cout << "debug marker A" << std::endl;
 
 		TLOG3_START("Processing instances");
 		{
@@ -875,7 +898,9 @@ void FindHdtIteratively(rule_set& rs,
 #if HDT_PROGRESS_ENABLED == true
 		SaveProgressToFiles(upcoming_recursion_instances, tree, depth, leaves, path_length_sum, rule_accesses);
 #endif
+		std::cout << "debug marker B" << std::endl;
 		pending_recursion_instances = std::move(upcoming_recursion_instances);
+		std::cout << "debug marker C" << std::endl;
 		upcoming_recursion_instances.clear();
 		//getchar();
 	}
