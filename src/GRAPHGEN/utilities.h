@@ -75,13 +75,13 @@ public:
 
 
 	bool operator==(const action_bitset& rhs) const {
-		int my_size = size();
-		int their_size = rhs.size();
+		size_t my_size = size();
+		size_t their_size = rhs.size();
 		if (my_size != their_size) {
 			return false;
 		}
 
-		int intersection_size = operator&(rhs).size();
+		size_t intersection_size = operator&(rhs).size();
 		if (intersection_size != my_size) {
 			return false;
 		}

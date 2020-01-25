@@ -297,7 +297,7 @@ bool LineForestHandler::RemoveTrees(bool(*FunctionPtr)(const BinaryDrag<conact>:
             for (size_t j = i + 1; j < next_tree.size(); ++j) {
                 if (next_tree[j] == j) {
                     if (FunctionPtr(f.roots_[i], f.roots_[j])) {
-                        next_tree[j] = i;
+                        next_tree[j] = static_cast<int>(i);
                         found = true;
                         if (FunctionPtr == equivalent_trees) {
                             IntersectTrees(f.roots_[i], f.roots_[j]);
@@ -314,7 +314,7 @@ bool LineForestHandler::RemoveTrees(bool(*FunctionPtr)(const BinaryDrag<conact>:
     size_t new_index = 0;
     for (size_t i = 0; i < next_tree.size(); ++i) {
         if (next_tree[i] == i) {
-            next_tree[i] = new_index;
+            next_tree[i] = static_cast<int>(new_index);
             ++new_index;
         }
         else {
@@ -357,9 +357,9 @@ bool LineForestHandler::RemoveTrees(bool(*FunctionPtr)(const BinaryDrag<conact>:
 void LineForestHandler::InitNextRec(BinaryDrag<conact>::node* n) {
     if (n->isleaf()) {
         // Set the next tree to be used for each leaf
-        n->data.next = next_tree_.size();
+        n->data.next = static_cast<uint>(next_tree_.size());
         // Setup a structure for managing equal trees
-        next_tree_.push_back(next_tree_.size());
+        next_tree_.push_back(static_cast<int>(next_tree_.size()));
     }
     else {
         InitNextRec(n->left);

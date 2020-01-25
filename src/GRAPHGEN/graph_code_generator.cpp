@@ -307,9 +307,9 @@ int GenerateDragCode(std::ostream& os,
     // And then we generate and write into the output stream the C++ source code using pre-calculated data.
     gcc.SetId(start_id);
     for (size_t i = 0; i < bd.roots_.size(); ++i) {
-        os << before(i, prefix, mapping, end_group_id);
+        os << before(static_cast<int>(i), prefix, mapping, end_group_id);
         gcc.GenerateCodeRec(os, bd.roots_[i], 2);
-        os << after(i, prefix, mapping, end_group_id);
+        os << after(static_cast<int>(i), prefix, mapping, end_group_id);
     }
 
     return gcc.GetId();
@@ -331,7 +331,7 @@ int GenerateLineForestCode(std::ostream& os,
 
     // Generate the code for the end of the line forests
     for (size_t i = 0; i < lfh.end_forests_.size(); ++i) {
-        last_id = GenerateDragCode(os, lfh.end_forests_[i], false, before_end, after_end, prefix, last_id, lfh.main_end_tree_mapping_, i);
+        last_id = GenerateDragCode(os, lfh.end_forests_[i], false, before_end, after_end, prefix, last_id, lfh.main_end_tree_mapping_, static_cast<uint>(i));
     }
 
     return last_id;

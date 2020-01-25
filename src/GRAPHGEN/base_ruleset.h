@@ -360,16 +360,16 @@ public:
 
 	void ConvertPartitions(int old_partition_count = 65536, int new_partition_count = 1048576, bool reduce_actions = false) {
 	    const auto old_basepath = "D:/rules-bkp/zst-variable-data-format-65536p-2829a";
-	    const auto new_basepath = "D:/rules-bkp/zst-variable-data-format-1048576‬p-2829a";
-	    size_t old_rules_per_partition = TOTAL_RULES / old_partition_count;
-	    size_t new_rules_per_partition = TOTAL_RULES / new_partition_count;
+	    const auto new_basepath = "D:/rules-bkp/zst-variable-data-format-1048576p-2829a";
+	    uint64_t old_rules_per_partition = TOTAL_RULES / old_partition_count;
+		uint64_t new_rules_per_partition = TOTAL_RULES / new_partition_count;
 	
 	    // Assume: old partition count < new partition count
 	    // Assume: both partition counts can be divised through each other as a whole number
 
 		{
 			std::vector<action_bitset> actions;
-			actions.resize(old_rules_per_partition);
+			actions.resize(static_cast<size_t>(old_rules_per_partition));
 
 			for (int old_p = 0; old_p < old_partition_count; old_p++) {
 				const ullong old_begin_rule_code = old_p * old_rules_per_partition;
@@ -385,7 +385,7 @@ public:
 
 
 				uchar size;
-				for (int i = 0; i < old_rules_per_partition; i++) {
+				for (size_t i = 0; i < old_rules_per_partition; i++) {
 					is.read(reinterpret_cast<char*>(&size), 1);
 					actions[i].resize(size);
 					for (ushort& x : actions[i].getSingleActions()) {
@@ -393,8 +393,8 @@ public:
 					}
 				}
 
-				const int first_new_partition = old_begin_rule_code / new_rules_per_partition;
-				const int last_new_partition = old_end_rule_code / new_rules_per_partition;
+				const int first_new_partition = static_cast<int>(old_begin_rule_code / new_rules_per_partition);
+				const int last_new_partition = static_cast<int>(old_end_rule_code / new_rules_per_partition);
 
 #pragma omp parallel for
 				for (int new_p = first_new_partition; new_p < last_new_partition; new_p++) {
@@ -409,10 +409,10 @@ public:
 					}
 					std::cout << "[New Partition " << new_p << "] ";
 
-					const size_t actions_offset = new_begin_rule_code - old_begin_rule_code;
+					const ullong actions_offset = new_begin_rule_code - old_begin_rule_code;
 					ushort converted;
-					for (int i = actions_offset; i < actions_offset + new_rules_per_partition; i++) {
-						const auto& a = actions[i];
+					for (ullong i = actions_offset; i < actions_offset + new_rules_per_partition; i++) {
+						const auto& a = actions[static_cast<size_t>(i)];
 						auto s = a.size();
 						os.write(reinterpret_cast<const char*>(&s), 1);
 						for (const ushort& b : a.getSingleActions()) {
@@ -440,7 +440,7 @@ public:
 				LoadRuleFromBinaryRuleFiles(p * RULES_PER_PARTITION);    // hacky way of loading the desired partition
 			);
 
-			for (llong rule_code = p * RULES_PER_PARTITION; rule_code < (p + 1) * RULES_PER_PARTITION; rule_code++) {
+			for (ullong rule_code = p * RULES_PER_PARTITION; rule_code < (p + 1) * RULES_PER_PARTITION; rule_code++) {
 				if (rule_code % (TOTAL_RULES >> 8) == 0) {
 					std::cout << "rule " << rule_code << " out of " << TOTAL_RULES << std::endl;
 				}

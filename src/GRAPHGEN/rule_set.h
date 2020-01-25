@@ -98,7 +98,7 @@ struct rule_set {
 
     void AddCondition(const std::string& name) {
         conditions.emplace_back(name);
-        conditions_pos[name] = conditions.size() - 1;
+        conditions_pos[name] = static_cast<uint>(conditions.size() - 1);
     }
 
     void ClearConditions() {
@@ -153,7 +153,7 @@ struct rule_set {
         copy(std::rbegin(conditions), std::rend(conditions), std::ostream_iterator<std::string>(os, "\t"));
         os << "\n";
         for (size_t i = 0; i < rules.size(); ++i) {
-            os << binary(i, conditions.size(), "\t") << ": ";
+            os << binary(static_cast<uint>(i), static_cast<uint>(conditions.size()), "\t") << ": ";
             for (uint j = 0; j < actions.size(); ++j)
                 if (rules[i].actions[j])
                     os << actions[j] << "(" << actions_pos.at(actions[j]) << ")" << ", ";

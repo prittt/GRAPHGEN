@@ -41,7 +41,7 @@ namespace zstd {
 
 	inline size_t check(size_t code) {
 		if (ZSTD_isError(code)) {
-			throw exception(code);
+			throw exception(static_cast<int>(code));
 		}
 		return code;
 	}

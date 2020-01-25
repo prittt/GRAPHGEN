@@ -157,12 +157,12 @@ void Dag2OptimalDagRec(BinaryDrag<conact>& t, BinaryDrag<conact>::node* n, Binar
         BinaryDragStatistics ds(dag);
 
         if (best_nodes > ds.Nodes()) {
-            best_nodes = ds.Nodes();
-            best_leaves = ds.Leaves();
+            best_nodes = static_cast<uint>(ds.Nodes());
+            best_leaves = static_cast<uint>(ds.Leaves());
             best_tree = dag;
         }
         else if (best_nodes == ds.Nodes() && best_leaves > ds.Leaves()) {
-            best_leaves = ds.Leaves();
+            best_leaves = static_cast<uint>(ds.Leaves());
             best_tree = dag;
         }
 

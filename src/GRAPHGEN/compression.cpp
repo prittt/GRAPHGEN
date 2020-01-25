@@ -10,6 +10,8 @@
 
 // Adapted from the examples given in the zstd repository
 
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>     
 #include <stdlib.h>    
 #include <string.h>    

@@ -72,7 +72,7 @@ public:
     // Adds a root to the vector of roots and returns its index
     int AddRoot(node* r) {
         roots_.push_back(r);
-        return roots_.size() - 1;
+        return static_cast<int>(roots_.size() - 1);
     }
 
     node* GetRoot() const {

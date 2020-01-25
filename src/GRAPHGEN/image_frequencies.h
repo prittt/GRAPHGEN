@@ -42,7 +42,7 @@ struct mask {
     cv::Mat1b mask_;
     int top_ = 0, bottom_ = 0, left_ = 0, right_ = 0;
     int border_ = 0;
-    int exp_;
+    size_t exp_;
     int increment_ = 0;
 	const rule_set& rs_;
 

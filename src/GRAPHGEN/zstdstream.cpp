@@ -145,7 +145,7 @@ namespace zstd {
 
 		while (true) {
 			if (inpos_ >= inavail_) {
-				inavail_ = sbuf_->sgetn(inbuf_.data(), inhint_);
+				inavail_ = static_cast<size_t>(sbuf_->sgetn(inbuf_.data(), inhint_));
 				if (inavail_ == 0) {
 					return traits_type::eof();
 				}

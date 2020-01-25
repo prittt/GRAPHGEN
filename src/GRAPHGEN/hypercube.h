@@ -50,7 +50,7 @@ struct VIndex {
 	VIndex(int iDim = 0) : m_iDim(iDim), m_arrIndex(iDim) {
 	}
 
-	VIndex(const std::string &s) : m_iDim(s.length()), m_arrIndex(s.length()) {
+	VIndex(const std::string &s) : m_iDim(static_cast<int>(s.length())), m_arrIndex(s.length()) {
 		SetIndex(s);
 	}
 
@@ -141,7 +141,7 @@ struct VHyperCube {
         auto nrules = rs.GetNumberOfRules();
         for (size_t i = 0; i < nrules; ++i) {
             // for each rule generate the hypercube index
-			std::string s = binary(i, m_iDim);
+			std::string s = binary(static_cast<uint>(i), static_cast<uint>(m_iDim));
             std::reverse(begin(s), end(s));
             VIndex idx(s);
             // and set its values

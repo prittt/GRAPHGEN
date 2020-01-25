@@ -136,7 +136,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 							uiNEq += arrNEq[i];
 						uiMaxGain = arrGain[i];
 						uiMaxGainProb = arrProb[i];
-						uiMaxGainIndex = arrPosIndifference[i];
+						uiMaxGainIndex = static_cast<uint>(arrPosIndifference[i]);
 					}
 				}
 				m_arrIndex[idx.GetIndex()].uiGain = uiMaxGain;
@@ -171,7 +171,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 
 			// Passo alla permutazione di indifferenze successiva
 			bFine = true;
-			for (int i = iNumIndifference - 1; i >= 0; i--) {
+			for (int i = static_cast<int>(iNumIndifference - 1); i >= 0; i--) {
 				arrPosIndifference[i]++;
 				// Ho una posizione valida?
 				if (arrPosIndifference[i] < m_iDim) {
@@ -179,7 +179,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 					if (m_iDim - 1 - arrPosIndifference[i] >= iNumIndifference - 1 - i) {
 						// La posizione � valida, ci stanno le altre, allora sistemo 
 						// le indifferenze successive
-						iPos = arrPosIndifference[i] + 1;
+						iPos = static_cast<int>(arrPosIndifference[i] + 1);
 						for (size_t j = i + 1; j < iNumIndifference; j++) {
 							arrPosIndifference[j] = iPos;
 							iPos++;
