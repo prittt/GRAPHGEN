@@ -60,8 +60,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
 constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
 
-typedef int ActionCounter; // okay for BBDT3D-36, for more probably not
-typedef ushort Action;
+using ActionCounter = int; // okay for BBDT3D-36, for more probably not
 
 using namespace std;
 
@@ -108,8 +107,11 @@ struct LazyCountingVector {
 		if (data_.size() == 0) {
 			return;
 		}
+		int x;
 		for (size_t i = 0; i < size(); i++) {
-			oss << i << ": " << operator[](i) << "\n";
+			if ((x = operator[](i)) != 0) {
+				oss << i << ": " << operator[](i) << "\n";
+			}
 		}
 	}
 
@@ -280,15 +282,20 @@ void FindBestSingleActionCombinationRunningCombined(
 	const action_bitset& combined_action,
 	const ullong& rule_code) {
 
-	int most_popular_single_action_occurences = -1;
-	int most_popular_single_action_index = -1;
+	const auto& actions = combined_action.getSingleActions();
 
-	for (const auto& a : combined_action.getSingleActions()) {
-		if (all_single_actions[a] > most_popular_single_action_occurences) {
-			most_popular_single_action_index = a;
-			most_popular_single_action_occurences = all_single_actions[a];
+	Action most_popular_single_action_index = actions[0];
+	ActionCounter most_popular_single_action_occurences = all_single_actions[actions[0]];
+
+	if (actions.size() > 1) {
+		for (const auto& a : actions) { // TODO: optimize by skipping first element
+			if (all_single_actions[a] > most_popular_single_action_occurences) {
+				most_popular_single_action_index = a;
+				most_popular_single_action_occurences = all_single_actions[a];
+			}
 		}
 	}
+
 	all_single_actions[most_popular_single_action_index]++;
 
 	for (const auto& c : conditions) {
@@ -841,17 +848,17 @@ int HdtProcessNode(
 
 	log << "Processed instance. Split Candidate: " << rs.conditions[splitCandidate] << " Action Children: " << std::to_string(amount_of_action_children) << "\n";
 	log << "Counting Table Sizes. All Single Actions:" << std::to_string(r.all_single_actions.sizeInMemory()) << "\nSingle Actions:";
-	//ostringstream oss;
-	//oss << "\nAll Single Actions\n";
-	//r.all_single_actions.print(oss);
+	ostringstream oss;
+	oss << "All Single Actions\n";
+	r.all_single_actions.print(oss);
 	int i = 0;
 	for (const auto& s : r.single_actions) {
-		//oss << "Single Actions " << rs.conditions[i / 2] << " Bit: " << i % 2 << " \n";
-		//s.print(oss);
+		oss << "Single Actions " << rs.conditions[i / 2] << " Bit: " << i % 2 << " \n";
+		s.print(oss);
 		log << std::to_string(s.sizeInMemory()) << ", ";
 		i++;
 	}
-	//log << oss.str();
+	log << oss.str();
 
 	return amount_of_action_children;
 }

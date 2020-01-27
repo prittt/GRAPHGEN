@@ -47,10 +47,13 @@ using uint = uint32_t;
 using llong = int64_t;
 using ullong = uint64_t;
 
+using Action = ushort;
+
+
 class action_bitset {
 private:
 	//std::bitset<MAX_COMBINED_ACTIONS_COUNT * MAX_ACTION_BITS> data;
-	std::vector<ushort> data_;
+	std::vector<Action> data_;
 
 public:
 	// CONSTRUCTORS
@@ -61,15 +64,15 @@ public:
 	}
 
 	// OPERATORS
-	const ushort operator[] (const ushort a) const {
+	const int operator[] (const Action a) const {
 		return test(a) ? 1 : 0;
 	}
 
-	const ushort getActionByDataIndex(const ushort& index) const {
+	const Action getActionByDataIndex(const int& index) const {
 		return data_[index];
 	}
 
-	ushort& getActionByDataIndex(const ushort& index) {
+	Action& getActionByDataIndex(const int& index) {
 		return data_[index];
 	}
 
@@ -95,7 +98,7 @@ public:
 
 	// METHODS
 
-	action_bitset& set(const ushort& a) {
+	action_bitset& set(const Action& a) {
 		data_.push_back(a);
 		return *this;
 	}
@@ -108,15 +111,15 @@ public:
 		data_.resize(i);
 	}
 
-	const std::vector<ushort>& getSingleActions() const {
+	const std::vector<Action>& getSingleActions() const {
 		return data_;
 	}
 
-	std::vector<ushort>& getSingleActions() {
+	std::vector<Action>& getSingleActions() {
 		return data_;
 	}
 
-	const bool test(const ushort& action) const {
+	const bool test(const Action& action) const {
 		for (size_t i = 0; i < size(); i++) {
 			if (data_[i] == action) {
 				return true;
