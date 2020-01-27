@@ -141,6 +141,12 @@ struct LazyCountingVector {
 	}
 };
 
+struct RuleCodeShift {
+	ullong mask;
+	int shift;
+	RuleCodeShift(ullong mask, int shift) : mask(mask), shift(shift) {};
+};
+
 struct RecursionInstance {
 	// parameters
 	std::vector<int> conditions;
@@ -171,6 +177,7 @@ struct RecursionInstance {
 			single_actions[2 * c].allocateTables();
 			single_actions[2 * c + 1].allocateTables();
 		}
+		prepareRuleCodeShifts();
 		findNextRuleCode();
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
@@ -256,15 +263,33 @@ struct RecursionInstance {
 		findNextRuleCode();
 	}
 
+	std::vector<RuleCodeShift> rule_code_shifts;
+
+	void prepareRuleCodeShifts() {
+		RuleCodeShift* current_shift = nullptr;
+		int non_mask_conditions = 0;
+		for (int i = 0; i < CONDITION_COUNT; i++) {
+			if (std::find(conditions.begin(), conditions.end(), i) != conditions.end()) { // condition, add to bitmask				
+				if (current_shift == nullptr) { // new mask
+					rule_code_shifts.push_back(RuleCodeShift(1ULL << (i - non_mask_conditions), non_mask_conditions));
+					current_shift = &rule_code_shifts[rule_code_shifts.size() - 1];
+				} else {
+					current_shift->mask |= 1ULL << (i - non_mask_conditions);
+				}
+			} else {
+				current_shift = nullptr;
+				non_mask_conditions++;
+			}
+		}
+	}
+
 	bool findNextRuleCode() {
 		if (ruleCodeBitMask >= (1ULL << conditions.size())) {
 			return false;
 		}
 		nextRuleCode = set_conditions1;
-		int i = 0;
-		for (const auto& c : conditions) {
-			nextRuleCode |= ((ruleCodeBitMask & (1ULL << i)) << (c - i));
-			i++;
+		for (const auto& s : rule_code_shifts) {
+			nextRuleCode |= ((ruleCodeBitMask & s.mask) << s.shift);
 		}
 		ruleCodeBitMask++;
 		return true;
