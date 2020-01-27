@@ -5,7 +5,9 @@
 // To balance file IO and memory consumption, the rules of each partition are generated and written to file in batches. 
 // Once all rules of one batch have been generated and saved in memory, all these rules are written to the partition.
 
-#define BUILD 0
+#define BUILD 1
+
+
 
 #if BUILD == 0 // BBDT
 	constexpr int PARTITIONS = 1; // 1, 1024, 65536

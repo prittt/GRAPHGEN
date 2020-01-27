@@ -46,8 +46,11 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
 
-#define HDT_BENCHMARK_READAPPLY_ENABLED false
+#define HDT_BENCHMARK_READAPPLY_ENABLED true
+#define HDT_BENCHMARK_READAPPLY_DEPTH 12 /* 12, 14, 16 */
 #define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED
+#define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE false
+#define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED true
 
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
@@ -244,7 +247,6 @@ struct RecursionInstance {
 	ullong ruleCodeBitMask = 0;
 
 	void forwardToRuleCode(const ullong& rule_code, const rule_set& rs) {
-		//std::cout << "forwarding rule state" << std::endl;
 		ruleCodeBitMask = 0;
 		int i = 0;
 		for (const auto& c : conditions) {
@@ -266,6 +268,19 @@ struct RecursionInstance {
 		}
 		ruleCodeBitMask++;
 		return true;
+	}
+
+	const std::string printTables() const {
+		ostringstream oss;
+		oss << "RecursionInstance Tables\nAll Single Actions (Size in memory: " << all_single_actions.sizeInMemory() << ")\n";
+		all_single_actions.print(oss);
+		int i = 0;
+		for (const auto& s : single_actions) {
+			oss << "Single Actions, Condition " << (i / 2) << ", Bit: " << i % 2 << " (Size in memory: " << std::to_string(s.sizeInMemory()) << ")\n";
+			s.print(oss);
+			i++;
+		}
+		return oss.str();
 	}
 };
 
@@ -362,6 +377,23 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	constexpr int begin_partition = begin_rule_code / RULES_PER_PARTITION;
 	constexpr int benchmark_start_partition = benchmark_start_rule_code / RULES_PER_PARTITION;
 	constexpr int end_partition = std::max(static_cast<int>(end_rule_code / RULES_PER_PARTITION), benchmark_start_partition + 1);
+
+#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED
+	#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
+		std::string correctness_file_path = "benchmark-p" + std::to_string(PARTITIONS) + "-a" + std::to_string(ACTION_COUNT) + "-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + "_P" + std::to_string(begin_partition) + "-" + std::to_string(end_partition) + ".txt";
+	#else
+		std::string correctness_file_path = "benchmark-p" + std::to_string(PARTITIONS) + "-a" + std::to_string(ACTION_COUNT) + "-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + "_R" + std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code) + ".txt";
+	#endif
+	#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE == false
+		auto benchmark_correctness_file_path = conf.GetCountingTablesFilePath(correctness_file_path);
+		if (!std::filesystem::exists(benchmark_correctness_file_path)) {
+			std::cout << "\n\nBenchmark correctness file does not exist: " << benchmark_correctness_file_path << std::endl;
+			getchar();
+			exit(EXIT_FAILURE);
+		}
+	#endif
+#endif
+
 #else
 	constexpr llong begin_rule_code = 0;
 	constexpr llong end_rule_code = TOTAL_RULES;
@@ -539,10 +571,46 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
 	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << processed_rules << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes for total benchmarked depth." << std::endl;
 	
-	#if HDT_PARALLEL_PARTITIONBASED_ENABLED
-		std::cout << "begin_partition : " << begin_partition << " benchmark_start_partition : " << benchmark_start_partition << " end_partition : " << end_partition;
+	#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
+		std::cout << "begin_partition : " << begin_partition << " benchmark_start_partition : " << benchmark_start_partition << " end_partition : " << end_partition << std::endl;
 	#else
-		std::cout << "begin_rule_code : " << begin_rule_code << " benchmark_start_rule_code : " << benchmark_start_rule_code << " end_rule_code : " << end_rule_code;
+		std::cout << "begin_rule_code : " << begin_rule_code << " benchmark_start_rule_code : " << benchmark_start_rule_code << " end_rule_code : " << end_rule_code << std::endl;
+	#endif
+
+	#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE == true
+		auto path = conf.GetCountingTablesFilePath(correctness_file_path);
+		std::filesystem::create_directories(conf.GetCountingTablesFilePath(""));
+		std::ofstream os(path);
+		for (const auto& r : r_insts) {
+			os << r.printTables();
+		}
+		os.close();
+		std::cout << "\nWrote correctness benchmark file to " << path << std::endl;
+	#elif HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED == true
+		std::cout << "\nChecking correctness of counting tables..." << std::endl;
+
+		std::ifstream correct_stream(benchmark_correctness_file_path);
+		auto test_stream = stringstream();
+		for (const auto& r : r_insts) {
+			test_stream << r.printTables();
+		}
+
+		std::string correct_line, test_line;
+		int i = 0;
+		bool correct = true;
+		while (correct_stream.good()) {
+			std::getline(test_stream, test_line);
+			std::getline(correct_stream, correct_line);
+			if (test_line.compare(correct_line) != 0) {
+				correct = false;
+				std::cout << "Correctness test failed (Line " << i << ").\nLine generated from benchmark:\n" << test_line << "\nCorrect line:\n" << correct_line << std::endl;
+				break;
+			}
+			i++;
+		}
+		if (correct) {
+			std::cout << "Counting tables are correct." << std::endl;
+		}
 	#endif
 	
 	getchar();
@@ -639,7 +707,7 @@ std::string GetLatestProgressFilePath() {
 }
 
 std::string GetBenchmarkProgressFilePath() {
-	return (conf.progress_file_path_ / std::filesystem::path("progress-BBDT3D-benchmark-depth12.txt")).string();
+	return (conf.progress_file_path_ / std::filesystem::path("progress-BBDT3D-benchmark-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + ".txt")).string();
 }
 
 void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<conact>& tree, int depth, int nodes, int path_length_sum, uint64_t rule_accesses) {
@@ -843,18 +911,7 @@ int HdtProcessNode(
 	r.processed = true;
 
 	log << "Processed instance. Split Candidate: " << rs.conditions[splitCandidate] << " Action Children: " << std::to_string(amount_of_action_children) << "\n";
-	log << "Counting Table Sizes. All Single Actions:" << std::to_string(r.all_single_actions.sizeInMemory()) << "\nSingle Actions:";
-	ostringstream oss;
-	oss << "\nAll Single Actions\n";
-	r.all_single_actions.print(oss);
-	int i = 0;
-	for (const auto& s : r.single_actions) {
-		oss << "Single Actions " << rs.conditions[i / 2] << " Bit: " << i % 2 << " \n";
-		s.print(oss);
-		log << std::to_string(s.sizeInMemory()) << ", ";
-		i++;
-	}
-	log << oss.str();
+	log << r.printTables();
 
 	return amount_of_action_children;
 }
@@ -1066,6 +1123,11 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	std::cout << "\n\n***************************************************" << std::endl;
 	std::cout << "***************** Benchmark Mode ******************" << std::endl;
 	std::cout << "***************************************************" << std::endl;
+#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE == true
+	std::cout << "\nGenerating correctness test file." << std::endl;
+#elif HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED == true 
+	std::cout << "\nExecuting correctness test." << std::endl;
+#endif
 #endif
 	std::cout << "\nInformation gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
 	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;

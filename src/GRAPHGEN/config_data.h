@@ -104,6 +104,11 @@ struct ConfigData {
 		return (basepath / out_name).string();
 	}
 
+	std::string GetCountingTablesFilePath(std::string out_name) {
+		auto basepath = algorithm_output_path_ / "countingtables";
+		return (basepath / out_name).string();
+	}
+
     // Datasets
     std::vector<std::string> datasets_;
     std::vector<std::filesystem::path> datasets_path_;
