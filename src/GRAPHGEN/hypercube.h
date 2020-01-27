@@ -109,6 +109,7 @@ struct VIndex {
 	}
 };
 
+#pragma pack(push)
 #pragma pack(1)
 struct VNode {
 	action_bitset uiAction;
@@ -120,7 +121,7 @@ struct VNode {
 	VNode() : uiAction(action_bitset()), uiProb(0), uiGain(0), uiMaxGainIndex(0) {
 	}
 };
-#pragma pack(8)
+#pragma pack(pop)
 
 template <typename T>
 std::istream& rawread(std::istream& is, T& val, size_t n) {
