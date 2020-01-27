@@ -60,6 +60,8 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
 constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
 
+typedef int ActionCounter; // okay for BBDT3D-36, for more probably not
+typedef ushort Action;
 
 using namespace std;
 
@@ -75,9 +77,10 @@ constexpr int32_t ceiling(float num)
 
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL = 256;
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_COUNT = ceiling(ACTION_COUNT * 1.f / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL);
+constexpr int ZERO = 0;
 
 struct LazyCountingVector {
-	std::vector<std::vector<int>> data_;
+	std::vector<std::vector<ActionCounter>> data_;
 
 	LazyCountingVector(bool allocate = true) {
 		if (allocate) {
@@ -111,19 +114,23 @@ struct LazyCountingVector {
 	}
 
 	// writable non-const return type, creates new partition.
-	int& operator[](const size_t t) {
+	ActionCounter& operator[](const size_t t) {
 		auto& s = data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
 		if (s.size() == 0) {
-			s.resize(LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL, 0);
+			if (t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL == LAZY_COUNTING_VECTOR_PARTITIONS_COUNT - 1) {
+				s.resize(ACTION_COUNT % LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL, 0);
+			} else {
+				s.resize(LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL, 0);
+			}
 		}
 		return s[t % LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
 	}
 
 	// read only return type, do not create new partitions, instead return 0.
-	const int operator[](const size_t t) const {
+	const ActionCounter& operator[](const size_t t) const {
 		auto& s = data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
 		if (s.size() == 0) {
-			return 0;
+			return ZERO;
 		}
 		return s[t % LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
 	}
@@ -258,6 +265,9 @@ double entropy(const LazyCountingVector& vector) {
 		}
 		s += x;
 		h += x * log2(x);
+	}
+	if (s == 0) {
+		std::cerr << "VERY BAD: Entropy function passed 0-array, therefore creating NaN value!" << std::endl;
 	}
 	return log2(s) - h / s;
 }
