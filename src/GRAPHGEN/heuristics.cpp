@@ -110,7 +110,7 @@ struct LazyCountingVector {
 		int x;
 		for (size_t i = 0; i < size(); i++) {
 			if ((x = operator[](i)) != 0) {
-				oss << i << ": " << operator[](i) << "\n";
+				oss << i << ": " << x << "\n";
 			}
 		}
 	}
@@ -242,6 +242,17 @@ struct RecursionInstance {
 
 	ullong nextRuleCode;
 	ullong ruleCodeBitMask = 0;
+
+	void forwardToRuleCode(const ullong& rule_code, const rule_set& rs) {
+		//std::cout << "forwarding rule state" << std::endl;
+		ruleCodeBitMask = 0;
+		int i = 0;
+		for (const auto& c : conditions) {
+			ruleCodeBitMask |= ((rule_code >> c) & 1ULL) << i;
+			i++;
+		}
+		findNextRuleCode();
+	}
 
 	bool findNextRuleCode() {
 		if (ruleCodeBitMask >= (1ULL << conditions.size())) {
@@ -408,33 +419,19 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 				for (int i = 0; i < r_insts_count; i++) {
 					auto& r = r_insts[i];
 					size_t n;
-					bool first = true, second = false;
-					ullong firstRuleCode, lastRuleCode, secondRuleCode;
-					size_t firstN, lastN, secondN;
+					if (r.nextRuleCode < first_rule_code) {
+						r.forwardToRuleCode(first_rule_code, rs);
+					}
 					while (true) {
 						n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
-						if (second) {
-							secondRuleCode = r.nextRuleCode;
-							secondN = n;
-							second = false;
-						}
-						if (first) {
-							firstRuleCode = r.nextRuleCode;
-							firstN = n;
-							first = false;
-							second = true;
-						}
 						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
 							break;
 						}
 						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
-						lastRuleCode = r.nextRuleCode;
-						lastN = n;
 						if (!r.findNextRuleCode()) {
 							break;
 						}
 					}
-					std::cout << "RuleCode: " << firstRuleCode << "-(" << secondRuleCode <<")-"<< lastRuleCode << " N: " << firstN << "-(" <<secondN<<")-" << lastN << std::endl;
 				}
 			}
 		}
@@ -540,7 +537,6 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	#endif
 
 	double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
-	double corrected_projected_mins = projected_mins / 1.15f;
 	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << processed_rules << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes for total benchmarked depth." << std::endl;
 	
 	#if HDT_PARALLEL_PARTITIONBASED_ENABLED
@@ -793,7 +789,7 @@ int HdtProcessNode(
 		double informationGain = LigTimesRig / std::sqrt(difference);
 #endif
 
-		if (leftEntropy == baseEntropy && rightEntropy == baseEntropy) {
+		if (std::abs(baseEntropy - leftEntropy) < 0.00001 && std::abs(baseEntropy - rightEntropy) < 0.00001) {
 			uselessConditions.push_back(c);
 		}
 
@@ -849,7 +845,7 @@ int HdtProcessNode(
 	log << "Processed instance. Split Candidate: " << rs.conditions[splitCandidate] << " Action Children: " << std::to_string(amount_of_action_children) << "\n";
 	log << "Counting Table Sizes. All Single Actions:" << std::to_string(r.all_single_actions.sizeInMemory()) << "\nSingle Actions:";
 	ostringstream oss;
-	oss << "All Single Actions\n";
+	oss << "\nAll Single Actions\n";
 	r.all_single_actions.print(oss);
 	int i = 0;
 	for (const auto& s : r.single_actions) {
@@ -875,28 +871,30 @@ void FindHdtIteratively(rule_set& rs,
 #if HDT_PROCESS_NODE_LOGGING_ENABLED == true
 	std::filesystem::create_directories(conf.GetProcessNodeLogFilePath(""));
 #endif
-	std::vector<RecursionInstance> pending_recursion_instances = std::move(initial_recursion_instances);
-	std::vector<RecursionInstance> upcoming_recursion_instances;
+	std::vector<RecursionInstance> recursion_instance_data1 = std::move(initial_recursion_instances); // TODO: restructure code so this call is not necessary
+	std::vector<RecursionInstance> recursion_instance_data2;
+	std::vector<RecursionInstance>* pending_recursion_instances = &recursion_instance_data1;
+	std::vector<RecursionInstance>* upcoming_recursion_instances = &recursion_instance_data2;
 	int depth = start_depth;
 	int leaves = start_leaves;
 	int path_length_sum = start_path_length_sum;
 	rule_accesses = start_rule_accesses;
 
-	while (pending_recursion_instances.size() > 0) {
-		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances.size() << ")" << std::endl;
+	while (pending_recursion_instances->size() > 0) {
+		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances->size() << ")" << std::endl;
 
 		TLOG2("Reading rules and classifying",
-			HdtReadAndApplyRulesOnePass(brs, rs, pending_recursion_instances);
+			HdtReadAndApplyRulesOnePass(brs, rs, *pending_recursion_instances);
 		);
 		std::cout << "debug marker A" << std::endl;
 
 		TLOG3_START("Processing instances");
 		{
 			int recursion_instance_counter = 0;
-			for (auto& r : pending_recursion_instances) {
+			for (auto& r : *pending_recursion_instances) {
 				#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
 					auto log_os = std::ofstream(conf.GetProcessNodeLogFilePath("d" + std::to_string(depth) + "-recinst" + std::to_string(recursion_instance_counter++) + ".txt"));
-					int amount_of_action_children = HdtProcessNode(r, tree, rs, upcoming_recursion_instances, Log(log_os));
+					int amount_of_action_children = HdtProcessNode(r, tree, rs, *upcoming_recursion_instances, Log(log_os));
 					log_os.close();
 				#else
 					int amount_of_action_children = HdtProcessNode(r, tree, rs, upcoming_recursion_instances, Log());
@@ -913,12 +911,18 @@ void FindHdtIteratively(rule_set& rs,
 		//	std::cout << "Size: " << c.tableSizeInMemory() << std::endl;
 		//}
 #if HDT_PROGRESS_ENABLED == true
-		SaveProgressToFiles(upcoming_recursion_instances, tree, depth, leaves, path_length_sum, rule_accesses);
+		SaveProgressToFiles(*upcoming_recursion_instances, tree, depth, leaves, path_length_sum, rule_accesses);
 #endif
 		std::cout << "debug marker B" << std::endl;
-		pending_recursion_instances = std::move(upcoming_recursion_instances);
+
+		pending_recursion_instances->clear();
+		
+		// swap pointers
+		auto tmp_new_pending = upcoming_recursion_instances;
+		upcoming_recursion_instances = pending_recursion_instances;
+		pending_recursion_instances = tmp_new_pending;
+
 		std::cout << "debug marker C" << std::endl;
-		upcoming_recursion_instances.clear();
 		//getchar();
 	}
 	float average_path_length = path_length_sum / static_cast<float>(leaves);
