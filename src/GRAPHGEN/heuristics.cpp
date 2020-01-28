@@ -942,7 +942,7 @@ int HdtProcessNode(
 	std::vector<RecursionInstance>& upcoming_recursion_instances,
 	const Log& log) {
 	int amount_of_action_children = 0;
-	log << "*********************************\nHdtProcessNode start with RecInst: " << r.to_string() << "\n";
+	log << "HdtProcessNode start with RecInst: " << r.to_string() << "\n";
 
 	std::vector<int> uselessConditions;
 
@@ -1080,17 +1080,18 @@ void FindHdtIteratively(rule_set& rs,
 		TLOG3_START("Processing instances");
 		{
 			int recursion_instance_counter = 0;
+			auto log_os = std::ofstream(conf.GetProcessNodeLogFilePath("d" + std::to_string(depth) + "-all_recinsts.txt"));
 			for (auto& r : *pending_recursion_instances) {
 				#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
-					auto log_os = std::ofstream(conf.GetProcessNodeLogFilePath("d" + std::to_string(depth) + "-recinst" + std::to_string(recursion_instance_counter++) + ".txt"));
+					log_os << "*********************************\n# RecursionInstance " << recursion_instance_counter++ << std::endl;
 					int amount_of_action_children = HdtProcessNode(r, tree, rs, *upcoming_recursion_instances, Log(log_os));
-					log_os.close();
 				#else
 					int amount_of_action_children = HdtProcessNode(r, tree, rs, upcoming_recursion_instances, Log());
 				#endif
 				leaves += amount_of_action_children;
 				path_length_sum += (depth + 1) * amount_of_action_children;
 			}
+			log_os.close();
 		}
 		TLOG3_STOP;
 		
