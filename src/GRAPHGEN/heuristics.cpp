@@ -46,7 +46,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
 
-#define HDT_BENCHMARK_READAPPLY_ENABLED true
+#define HDT_BENCHMARK_READAPPLY_ENABLED false
 #define HDT_BENCHMARK_READAPPLY_DEPTH 12 /* 12, 14, 16 */
 #define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED
 #define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE false
@@ -63,7 +63,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
 constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
 
-using ActionCounter = int; // okay for BBDT3D-36, for more probably not
+using ActionCounter = ullong; // okay for BBDT3D-36, for more probably not
 
 using namespace std;
 
@@ -79,7 +79,7 @@ constexpr int32_t ceiling(float num)
 
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL = 256;
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_COUNT = ceiling(ACTION_COUNT * 1.f / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL);
-constexpr int ZERO = 0;
+constexpr static ActionCounter ZERO = 0;
 
 struct LazyCountingVector {
 	std::vector<std::vector<ActionCounter>> data_;
@@ -110,7 +110,7 @@ struct LazyCountingVector {
 		if (data_.size() == 0) {
 			return;
 		}
-		int x;
+		ActionCounter x;
 		for (size_t i = 0; i < size(); i++) {
 			if ((x = operator[](i)) != 0) {
 				oss << i << ": " << x << "\n";
@@ -312,7 +312,7 @@ struct RecursionInstance {
 double entropy(const LazyCountingVector& vector) {
 	double s = 0, h = 0;
 	for (size_t i = 0; i < vector.size(); i++) {
-		const int x = vector[i];
+		const ActionCounter x = vector[i];
 		if (x == 0) {
 			continue;
 		}
@@ -361,8 +361,8 @@ void FindBestSingleActionCombinationRunningCombinedPtr(
 	const action_bitset* combined_action,
 	const ullong& rule_code) {
 
-	int most_popular_single_action_occurences = -1;
 	int most_popular_single_action_index = -1;
+	ActionCounter most_popular_single_action_occurences = -1;
 
 	for (const auto& a : combined_action->getSingleActions()) {
 		if (all_single_actions[a] > most_popular_single_action_occurences) {
