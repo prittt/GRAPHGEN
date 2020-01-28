@@ -38,10 +38,10 @@
 
 #include "constants.h"
 
+#define HDT_DEPTH_PROGRESS_ENABLED true /* Saves Progress files after every completed depth */
+#define HDT_TABLE_PROGRESS_ENABLED true /* Saves table progress before processing */
+
 constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO ACTION = GARBAGE DATA !! ****", "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
-
-#define HDT_PROGRESS_ENABLED true
-
 #define HDT_ACTION_SOURCE 3
 #define HDT_COMBINED_CLASSIFIER true
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2
@@ -63,7 +63,8 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
 constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
 
-using ActionCounter = ullong; // okay for BBDT3D-36, for more probably not
+// BBDT3D-36: from depth ~4 INT can be used, before that ULLONG.
+using ActionCounter = ullong; // int, ullong
 
 using namespace std;
 
@@ -301,6 +302,10 @@ struct RecursionInstance {
 		all_single_actions.print(oss);
 		int i = 0;
 		for (const auto& s : single_actions) {
+			if (s.sizeInMemory() == 0) {
+				i++;
+				continue;
+			}
 			oss << "Single Actions, Condition " << (i / 2) << ", Bit: " << i % 2 << " (Size in memory: " << std::to_string(s.sizeInMemory()) << ")\n";
 			s.print(oss);
 			i++;
@@ -727,15 +732,15 @@ void StringToTreeRec(
 	}
 }
 
-std::string GetLatestProgressFilePath() {
+std::string GetLatestDepthProgressFilePath() {
 	return (conf.progress_file_path_ / std::filesystem::path("progress-latest.txt")).string();
 }
 
-std::string GetBenchmarkProgressFilePath() {
+std::string GetBenchmarkDepthProgressFilePath() {
 	return (conf.progress_file_path_ / std::filesystem::path("progress-BBDT3D-benchmark-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + ".txt")).string();
 }
 
-void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<conact>& tree, int depth, int nodes, int path_length_sum, uint64_t rule_accesses) {
+void SaveDepthProgressToFile(std::vector<RecursionInstance>& r_insts, BinaryDrag<conact>& tree, int depth, int nodes, int path_length_sum, uint64_t rule_accesses) {
 	std::stringstream ss;
 	ss << "progress-" << conf.algorithm_name_ << "-";
 	char mbstr[100];
@@ -805,8 +810,8 @@ void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<con
 		}
 	}
 
-	std::cout << "Saved progress to file: " << path << std::endl;
-	std::string latest_path = GetLatestProgressFilePath();
+	std::cout << "Saved depth progress to file: " << path << std::endl;
+	std::string latest_path = GetLatestDepthProgressFilePath();
 	try {
 		if (std::filesystem::exists(latest_path)) {
 			std::filesystem::remove(latest_path);
@@ -816,6 +821,92 @@ void SaveProgressToFiles(std::vector<RecursionInstance>& r_insts, BinaryDrag<con
 	catch (std::filesystem::filesystem_error e) {
 		std::cerr << "Could not save progress to 'latest file': " << latest_path << std::endl;
 	}	
+}
+
+std::string GetLatestTableProgressPath(int depth) {
+	std::string path = "table-progress-depth" + std::to_string(depth) + "-latest.txt";
+	return conf.GetCountingTablesFilePath(path);
+}
+
+std::string GetTableProgressPath(int depth, const ullong& rule_code) {
+	std::string path = "table-progress-depth" + std::to_string(depth) + "-NR" + std::to_string(rule_code) + ".txt";
+	return conf.GetCountingTablesFilePath(path);
+}
+
+void SaveTableProgressToFile(std::vector<RecursionInstance>& recursion_instances, int depth, const ullong& next_rule_code) {
+	std::string path = GetTableProgressPath(depth, next_rule_code);
+	std::ofstream os(path);
+	for (const auto& r : recursion_instances) {
+		os << r.printTables();
+	}
+	os.close();
+
+	try {
+		std::filesystem::remove(GetLatestTableProgressPath(depth));
+		std::filesystem::copy_file(path, GetLatestTableProgressPath(depth));
+	}
+	catch (std::filesystem::filesystem_error e) {
+		std::cerr << "Could not delete 'latest table progress file'." << std::endl;
+	}
+	std::cout << "Saved depth progress to file: " << path << std::endl;
+}
+
+bool LoadLatestTableProgressFromFile(std::vector<RecursionInstance>& recursion_instances, int depth) {
+	std::string file_path = GetLatestTableProgressPath(depth);
+	if (!std::filesystem::exists(file_path)) {
+		std::cout << "No table progress file found, starting run from rule 0." << std::endl;
+		return false;
+	}
+	std::cout << "Table progress file found, loading progress: ";
+	std::ifstream is(GetLatestTableProgressPath(depth));
+	std::string line;
+	int r_index = -1;
+	int current_condition = -1;
+	int current_bit = -1;
+	bool all_actions_table = false;
+	ullong entries = 0;
+	while (std::getline(is, line))
+	{
+		if (line.size() == 0) {
+			continue;
+		}
+
+		std::istringstream iss(line);
+		std::string keyword;
+		iss >> keyword;
+
+		if (line.compare("RecursionInstance Tables") == 0) {
+			r_index++;
+			continue;
+		}
+		if (keyword.compare("All") == 0) { // "All Single Actions (...)"
+			all_actions_table = true;
+			continue;	
+		}
+		if (keyword.compare("Single") == 0) { // "Single Actions (...)"
+			all_actions_table = false;
+			iss >> keyword; // "Actions,"
+			iss >> keyword; // "Condition"
+			iss >> current_condition;
+			iss >> keyword; // ","
+			iss >> keyword; // "Bit:"
+			iss >> current_bit;
+			continue;
+		}
+		
+		int index = std::stoi(keyword);
+		ActionCounter count;
+		iss >> count;
+		if (all_actions_table) {
+			recursion_instances[r_index].all_single_actions[index] = count;
+		} else {
+			recursion_instances[r_index].single_actions[current_condition * 2 + current_bit][index] = count;
+		}
+		entries++;
+	}
+	is.close();
+	std::cout << "Table entries: " << entries << std::endl;
+	return true;
 }
 
 ushort GetFirstCountedAction(const LazyCountingVector& b) {
@@ -962,12 +1053,28 @@ void FindHdtIteratively(rule_set& rs,
 	int path_length_sum = start_path_length_sum;
 	rule_accesses = start_rule_accesses;
 
+	bool skip_first_read_and_apply = false;
+
+	#if HDT_TABLE_PROGRESS_ENABLED == true
+		// look for counting table files and load them
+		if (LoadLatestTableProgressFromFile(*pending_recursion_instances, depth)) {
+			skip_first_read_and_apply = true;
+		}
+	#endif
+
 	while (pending_recursion_instances->size() > 0) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances->size() << ")" << std::endl;
 
-		TLOG2("Reading rules and classifying",
-			HdtReadAndApplyRulesOnePass(brs, rs, *pending_recursion_instances);
-		);
+		if (skip_first_read_and_apply) {
+			skip_first_read_and_apply = false;
+		} else {
+			TLOG2("Reading rules and classifying",
+				HdtReadAndApplyRulesOnePass(brs, rs, *pending_recursion_instances);
+			);
+			#if HDT_TABLE_PROGRESS_ENABLED == true
+				SaveTableProgressToFile(*pending_recursion_instances, depth, TOTAL_RULES);
+			#endif
+		}
 		std::cout << "debug marker A" << std::endl;
 
 		TLOG3_START("Processing instances");
@@ -992,8 +1099,8 @@ void FindHdtIteratively(rule_set& rs,
 		//for (const auto& c : pending_recursion_instances) {
 		//	std::cout << "Size: " << c.tableSizeInMemory() << std::endl;
 		//}
-#if HDT_PROGRESS_ENABLED == true
-		SaveProgressToFiles(*upcoming_recursion_instances, tree, depth, leaves, path_length_sum, rule_accesses);
+#if HDT_DEPTH_PROGRESS_ENABLED == true
+		SaveDepthProgressToFile(*upcoming_recursion_instances, tree, depth, leaves, path_length_sum, rule_accesses);
 #endif
 		std::cout << "debug marker B" << std::endl;
 
@@ -1009,12 +1116,12 @@ void FindHdtIteratively(rule_set& rs,
 	}
 	float average_path_length = path_length_sum / static_cast<float>(leaves);
 	std::cout << "HDT construction done. Nodes: " << leaves << " Average path length: " << average_path_length << std::endl;
-#if HDT_PROGRESS_ENABLED == true
+#if HDT_DEPTH_PROGRESS_ENABLED == true
 	try {
-		std::filesystem::remove(GetLatestProgressFilePath());
+		std::filesystem::remove(GetLatestDepthProgressFilePath());
 	} 
 	catch (std::filesystem::filesystem_error e) {
-		std::cerr << "Could not delete 'latest progress file'." << std::endl;
+		std::cerr << "Could not delete 'latest depth progress file'." << std::endl;
 	}
 #endif
 }
@@ -1032,8 +1139,8 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 	getchar();
 #endif
 #else
-	#if HDT_PROGRESS_ENABLED == true
-		std::string path = GetLatestProgressFilePath();
+	#if HDT_DEPTH_PROGRESS_ENABLED == true
+		std::string path = GetLatestDepthProgressFilePath();
 		bool load = std::filesystem::exists(path);
 	#else
 		bool load = false;
@@ -1041,7 +1148,7 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 #endif
 	if (load) {
 		// continue existing run
-		std::cout << "Progress file found, loading progress: ";
+		std::cout << "Depth progress file found, loading progress: ";
 		std::ifstream is(path, ios::binary);
 		std::string line;
 		std::vector<RecursionInstance> r_insts;
@@ -1101,7 +1208,7 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 		FindHdtIteratively(rs, brs, tree, r_insts, depth, leaves, path_length_sum, rule_accesses);
 	} else {
 		// start new run
-		#if HDT_PROGRESS_ENABLED
+		#if HDT_DEPTH_PROGRESS_ENABLED
 			std::cout << "No progress file found, starting new run from depth 0." << std::endl;
 		#endif
 		std::vector<int> conditions;
