@@ -1007,13 +1007,13 @@ int HdtProcessNode(
 	}
 	log << "------\nSplit candidate chosen: " << rs.conditions[splitCandidate] << "\n";
 
-	log << "Deleting " << std::to_string(uselessConditions.size()) << " useless conditions: ";
-	for (const auto& s : uselessConditions) {
-		log << rs.conditions[s] << " ";
-		r.set_conditions0 |= (1ULL << s);
-		r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), s), r.conditions.end());
-	}
-	log << "\n";
+	//log << "Deleting " << std::to_string(uselessConditions.size()) << " useless conditions: ";
+	//for (const auto& s : uselessConditions) {
+	//	log << rs.conditions[s] << " ";
+	//	r.set_conditions0 |= (1ULL << s);
+	//	r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), s), r.conditions.end());
+	//}
+	//log << "\n";
 
 	r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), splitCandidate), r.conditions.end());
 
