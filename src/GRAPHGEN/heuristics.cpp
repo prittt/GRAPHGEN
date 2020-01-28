@@ -1129,7 +1129,7 @@ void FindHdtIteratively(rule_set& rs,
 
 void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, BinaryDrag<conact>& tree) {
 #if HDT_BENCHMARK_READAPPLY_ENABLED == true
-	std::string path = GetBenchmarkProgressFilePath();
+	std::string path = GetBenchmarkDepthProgressFilePath();
 	if (!std::filesystem::exists(path)) {
 		std::cerr << "Benchmark progress file not found at " << path << std::endl;
 		throw std::runtime_error("Benchmark progress file not found at " + path);
