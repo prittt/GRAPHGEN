@@ -52,6 +52,8 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE false
 #define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED true
 
+#define HDT_READAPPLY_VERBOSE_TIMINGS false
+
 #define HDT_PARALLEL_INNERLOOP_ENABLED false
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
 
@@ -471,30 +473,48 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 						}
 					}
 	#endif
+#if HDT_READAPPLY_VERBOSE_TIMINGS
+					TLOG("Load Partition",
+#endif
 					brs.LoadPartition(p, seen_actions);
+#if HDT_READAPPLY_VERBOSE_TIMINGS
+					);
+#endif
 					rule_accesses += RULES_PER_PARTITION;
 				}
 				const ullong first_rule_code = p * RULES_PER_PARTITION;
 
 				const int r_insts_count = static_cast<int>(r_insts.size());
-				#pragma omp for schedule(dynamic, 1)
-				for (int i = 0; i < r_insts_count; i++) {
-					auto& r = r_insts[i];
-					size_t n;
-					if (r.nextRuleCode < first_rule_code) {
-						r.forwardToRuleCode(first_rule_code, rs);
-					}
-					while (true) {
-						n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
-						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
-							break;
-						}
-						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
-						if (!r.findNextRuleCode()) {
-							break;
-						}
-					}
+
+#if HDT_READAPPLY_VERBOSE_TIMINGS
+				TLOG4_DEF;
+				if (omp_get_thread_num() == 0) {
+					TLOG4_START("Processing");
 				}
+#endif
+				#pragma omp for schedule(dynamic, 1)
+					for (int i = 0; i < r_insts_count; i++) {
+						auto& r = r_insts[i];
+						size_t n;
+						if (r.nextRuleCode < first_rule_code) {
+							r.forwardToRuleCode(first_rule_code, rs);
+						}
+						while (true) {
+							n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
+							if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
+								break;
+							}
+							FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
+							if (!r.findNextRuleCode()) {
+								break;
+							}
+						}
+					}	
+#if HDT_READAPPLY_VERBOSE_TIMINGS
+				if (omp_get_thread_num() == 0) {
+					TLOG4_STOP;
+				}
+#endif
 			}
 		}
 
