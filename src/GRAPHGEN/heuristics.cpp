@@ -66,8 +66,8 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
 constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
 
-// BBDT3D-36: from depth ~4 INT can be used, before that ULLONG.
-using ActionCounter = ullong; // int, ullong
+// BBDT3D-36: from depth ~4 INT can be used, before that ULLONG needs to be used to prevent overflow.
+using ActionCounter = int; // int, ullong
 
 using namespace std;
 
@@ -413,7 +413,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	constexpr int benchmark_start_partition = benchmark_start_rule_code / RULES_PER_PARTITION;
 	constexpr int end_partition = std::max(static_cast<int>(end_rule_code / RULES_PER_PARTITION), benchmark_start_partition + 1);
 
-#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED
+#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED == true
 	#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
 		std::string correctness_file_path = "benchmark-p" + std::to_string(PARTITIONS) + "-a" + std::to_string(ACTION_COUNT) + "-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + "_P" + std::to_string(begin_partition) + "-" + std::to_string(end_partition) + ".txt";
 	#else
@@ -477,11 +477,11 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 					}
 	#endif
 #if HDT_READAPPLY_VERBOSE_TIMINGS
-					TLOG("Load Partition",
+					TLOG3_START("Load Partition");
 #endif
 					brs.LoadPartition(p, seen_actions);
 #if HDT_READAPPLY_VERBOSE_TIMINGS
-					);
+					TLOG3_STOP;
 #endif
 					rule_accesses += RULES_PER_PARTITION;
 				}
