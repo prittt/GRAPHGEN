@@ -38,29 +38,30 @@
 
 #include "constants.h"
 
-#define HDT_DEPTH_PROGRESS_ENABLED true /* Saves Progress files after every completed depth */
-#define HDT_TABLE_PROGRESS_ENABLED true /* Saves table progress before processing */
 
 constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO ACTION = GARBAGE DATA !! ****", "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
-#define HDT_ACTION_SOURCE 3
-#define HDT_COMBINED_CLASSIFIER true
-#define HDT_INFORMATION_GAIN_METHOD_VERSION 2
+#define HDT_ACTION_SOURCE 3 /* Source of the actions. 3/Binary Rule Files is the most common option. */
+#define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
+#define HDT_INFORMATION_GAIN_METHOD_VERSION 2 /* Select a different formula on how information gain is calculated */
 
-#define HDT_BENCHMARK_READAPPLY_ENABLED false
-#define HDT_BENCHMARK_READAPPLY_DEPTH 12 /* 12, 14, 16 */
-#define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED
-#define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE false
-#define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED true
+#define HDT_BENCHMARK_READAPPLY_ENABLED true /* Benchmark the performance of the ReadApply function */
+#define HDT_BENCHMARK_READAPPLY_DEPTH 12 /* Choose from: 12, 14, 16. Higher depth means more but smaller recursion instances */
+#define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED /* Pause the program at different points to allow for measuring memory usage manually */
+#define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE false /* Generate the ground truth files for the current configuration */
+#define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED true /* Whether a correctness test should be executed after the benchmark */
 
-#define HDT_READAPPLY_VERBOSE_TIMINGS false
+#define HDT_DEPTH_PROGRESS_ENABLED true /* Saves and loads depth progress files after every completed depth */
+#define HDT_TABLE_PROGRESS_ENABLED true && !HDT_BENCHMARK_READAPPLY_ENABLED /* Saves and loads table progress files before processing, requires benchmark to be turned off */
 
-#define HDT_PARALLEL_INNERLOOP_ENABLED false
+#define HDT_READAPPLY_VERBOSE_TIMINGS false /* Display separate timings of loading the partitions and processing the rules in memory */
+
+#define HDT_PARALLEL_INNERLOOP_ENABLED false /* Old solution for parallelization. If partition-based is off, this can be used to scale up without increasing memory. */
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
 
-#define HDT_PARALLEL_PARTITIONBASED_ENABLED true
+#define HDT_PARALLEL_PARTITIONBASED_ENABLED true /* Best approach at the moment. Allows for great parallelization and is generally faster for BBDT3D-36. For smaller problems like BBDT2D, turning this off may be faster (rule-based approach). */
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS 8
 
-#define HDT_PROCESS_NODE_LOGGING_ENABLED true
+#define HDT_PROCESS_NODE_LOGGING_ENABLED true /* Write log files for all the recursion instances as they are processed. Very helpful for debugging. */
 
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
 constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
@@ -166,6 +167,8 @@ struct RecursionInstance {
 #endif
 	// state
 	bool processed = false;
+	bool loaded_from_file = false;
+	int counted_partitions = 0;
 
 	void initialize(std::vector<int> c,
 		ullong sc0,
@@ -493,23 +496,27 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 				}
 #endif
 				#pragma omp for schedule(dynamic, 1)
-					for (int i = 0; i < r_insts_count; i++) {
-						auto& r = r_insts[i];
-						size_t n;
-						if (r.nextRuleCode < first_rule_code) {
-							r.forwardToRuleCode(first_rule_code, rs);
+				for (int i = 0; i < r_insts_count; i++) {
+					auto& r = r_insts[i];
+					if (r.counted_partitions == PARTITIONS) {
+						continue;
+					}
+					size_t n;
+					if (r.nextRuleCode < first_rule_code) {
+						r.forwardToRuleCode(first_rule_code, rs);
+					}
+					while (true) {
+						n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
+						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
+							break;
 						}
-						while (true) {
-							n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
-							if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
-								break;
-							}
-							FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
-							if (!r.findNextRuleCode()) {
-								break;
-							}
+						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
+						if (!r.findNextRuleCode()) {
+							break;
 						}
-					}	
+					}
+					r.counted_partitions++;
+				}	
 #if HDT_READAPPLY_VERBOSE_TIMINGS
 				if (omp_get_thread_num() == 0) {
 					TLOG4_STOP;
@@ -843,90 +850,83 @@ void SaveDepthProgressToFile(std::vector<RecursionInstance>& r_insts, BinaryDrag
 	}	
 }
 
-std::string GetLatestTableProgressPath(int depth) {
-	std::string path = "table-progress-depth" + std::to_string(depth) + "-latest.txt";
-	return conf.GetCountingTablesFilePath(path);
-}
-
-std::string GetTableProgressPath(int depth, const ullong& rule_code) {
-	std::string path = "table-progress-depth" + std::to_string(depth) + "-NR" + std::to_string(rule_code) + ".txt";
+std::string GetTableProgressPath(std::string table_hash) {
+	std::string path = "table-" + table_hash + ".txt";
 	return conf.GetCountingTablesFilePath(path);
 }
 
 void SaveTableProgressToFile(std::vector<RecursionInstance>& recursion_instances, int depth, const ullong& next_rule_code) {
-	std::string path = GetTableProgressPath(depth, next_rule_code);
-	std::ofstream os(path);
+	int counter = 0;
 	for (const auto& r : recursion_instances) {
+		if (r.loaded_from_file) {
+			continue;
+		}
+		std::string path = GetTableProgressPath(r.to_string());
+		std::ofstream os(path);
 		os << r.printTables();
+		os.close();
+		counter++;
 	}
-	os.close();
-
-	try {
-		std::filesystem::remove(GetLatestTableProgressPath(depth));
-		std::filesystem::copy_file(path, GetLatestTableProgressPath(depth));
-	}
-	catch (std::filesystem::filesystem_error e) {
-		std::cerr << "Could not delete 'latest table progress file'." << std::endl;
-	}
-	std::cout << "Saved depth progress to file: " << path << std::endl;
+	std::cout << "Saved " << counter << " tables to file. " << std::endl;
 }
 
-bool LoadLatestTableProgressFromFile(std::vector<RecursionInstance>& recursion_instances, int depth) {
-	std::string file_path = GetLatestTableProgressPath(depth);
-	if (!std::filesystem::exists(file_path)) {
-		std::cout << "No table progress file found, starting run from rule 0." << std::endl;
-		return false;
-	}
-	std::cout << "Table progress file found, loading progress: ";
-	std::ifstream is(GetLatestTableProgressPath(depth));
-	std::string line;
-	int r_index = -1;
-	int current_condition = -1;
-	int current_bit = -1;
-	bool all_actions_table = false;
-	ullong entries = 0;
-	while (std::getline(is, line))
-	{
-		if (line.size() == 0) {
+void LoadTableProgressFromFile(std::vector<RecursionInstance>& recursion_instances) {
+	int not_found_tables = 0, loaded_tables = 0;
+	for (auto& r : recursion_instances) {
+		std::string file_path = GetTableProgressPath(r.to_string());
+		if (!std::filesystem::exists(file_path)) {
+			not_found_tables++;
 			continue;
 		}
+		std::ifstream is(file_path);
+		std::string line;
+		int current_condition = -1;
+		int current_bit = -1;
+		bool all_actions_table = false;
+		while (std::getline(is, line))
+		{
+			if (line.size() == 0) {
+				continue;
+			}
 
-		std::istringstream iss(line);
-		std::string keyword;
-		iss >> keyword;
+			std::istringstream iss(line);
+			std::string keyword;
+			iss >> keyword;
 
-		if (line.compare("RecursionInstance Tables") == 0) {
-			r_index++;
-			continue;
+			if (line.compare("RecursionInstance Tables") == 0) {
+				continue;
+			}
+			if (keyword.compare("All") == 0) { // "All Single Actions (...)"
+				all_actions_table = true;
+				continue;
+			}
+			if (keyword.compare("Single") == 0) { // "Single Actions (...)"
+				all_actions_table = false;
+				iss >> keyword; // "Actions,"
+				iss >> keyword; // "Condition"
+				iss >> current_condition;
+				iss >> keyword; // ","
+				iss >> keyword; // "Bit:"
+				iss >> current_bit;
+				continue;
+			}
+
+			int index = std::stoi(keyword);
+			ActionCounter count;
+			iss >> count;
+			if (all_actions_table) {
+				r.all_single_actions[index] = count;
+			}
+			else {
+				r.single_actions[current_condition * 2 + current_bit][index] = count;
+			}
 		}
-		if (keyword.compare("All") == 0) { // "All Single Actions (...)"
-			all_actions_table = true;
-			continue;	
-		}
-		if (keyword.compare("Single") == 0) { // "Single Actions (...)"
-			all_actions_table = false;
-			iss >> keyword; // "Actions,"
-			iss >> keyword; // "Condition"
-			iss >> current_condition;
-			iss >> keyword; // ","
-			iss >> keyword; // "Bit:"
-			iss >> current_bit;
-			continue;
-		}
-		
-		int index = std::stoi(keyword);
-		ActionCounter count;
-		iss >> count;
-		if (all_actions_table) {
-			recursion_instances[r_index].all_single_actions[index] = count;
-		} else {
-			recursion_instances[r_index].single_actions[current_condition * 2 + current_bit][index] = count;
-		}
-		entries++;
+		is.close();
+		loaded_tables++;
+		r.counted_partitions = PARTITIONS;
+		r.loaded_from_file = true;
 	}
-	is.close();
-	std::cout << "Table entries: " << entries << std::endl;
-	return true;
+	std::cout << "Loaded " << loaded_tables << " tables from files, " << not_found_tables << " not found." << std::endl;
 }
 
 ushort GetFirstCountedAction(const LazyCountingVector& b) {
@@ -1073,28 +1073,23 @@ void FindHdtIteratively(rule_set& rs,
 	int path_length_sum = start_path_length_sum;
 	rule_accesses = start_rule_accesses;
 
-	bool skip_first_read_and_apply = false;
 
-	#if HDT_TABLE_PROGRESS_ENABLED == true
-		// look for counting table files and load them
-		if (LoadLatestTableProgressFromFile(*pending_recursion_instances, depth)) {
-			skip_first_read_and_apply = true;
-		}
-	#endif
 
 	while (pending_recursion_instances->size() > 0) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances->size() << ")" << std::endl;
+		#if HDT_TABLE_PROGRESS_ENABLED == true
+			// look for counting table files and load them
+			LoadTableProgressFromFile(*pending_recursion_instances);
+		#endif
 
-		if (skip_first_read_and_apply) {
-			skip_first_read_and_apply = false;
-		} else {
-			TLOG2("Reading rules and classifying",
-				HdtReadAndApplyRulesOnePass(brs, rs, *pending_recursion_instances);
-			);
-			#if HDT_TABLE_PROGRESS_ENABLED == true
-				SaveTableProgressToFile(*pending_recursion_instances, depth, TOTAL_RULES);
-			#endif
-		}
+		TLOG2("Reading rules and classifying",
+			HdtReadAndApplyRulesOnePass(brs, rs, *pending_recursion_instances);
+		);
+
+		#if HDT_TABLE_PROGRESS_ENABLED == true
+			SaveTableProgressToFile(*pending_recursion_instances, depth, TOTAL_RULES);
+		#endif
+
 		std::cout << "debug marker A" << std::endl;
 
 		TLOG3_START("Processing instances");
