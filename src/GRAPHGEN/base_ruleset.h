@@ -339,9 +339,10 @@ public:
 			zstd::ifstream is(path, std::ios::binary);
 			uchar size;
 			for (int i = 0; i < RULES_PER_PARTITION; i++) {
+				auto& a = actions[i];
 				is.read(reinterpret_cast<char*>(&size), 1);
-				actions[i].resize(size);
-				for (ushort& x : actions[i].getSingleActions()) {
+				a.resize(size);
+				for (ushort& x : a.getSingleActions()) {
 					is.read(reinterpret_cast<char*>(&x), 2);
 				}
 			}

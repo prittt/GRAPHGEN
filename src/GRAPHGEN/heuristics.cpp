@@ -444,7 +444,19 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 		getchar();
 #endif
 
-		std::vector<action_bitset> seen_actions(RULES_PER_PARTITION);
+		std::vector<action_bitset> action_data1(RULES_PER_PARTITION);
+		std::vector<action_bitset> action_data2(RULES_PER_PARTITION);
+
+		std::vector<action_bitset>* actions = &action_data1;
+		std::vector<action_bitset>* preloaded_actions = &action_data2;
+
+		// preload first partition
+		std::cout << "\nPreloading first partition." << std::endl;
+		brs.LoadPartition(begin_partition, *preloaded_actions);
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true 
+		brs.LoadPartition(begin_partition, *actions); // warm-up also this data vector for better measurements.
+#endif
+		rule_accesses += RULES_PER_PARTITION;
 
 		#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS)
 		{
@@ -476,27 +488,29 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 						}
 					}
 	#endif
-#if HDT_READAPPLY_VERBOSE_TIMINGS
-					TLOG3_START("Load Partition");
-#endif
-					brs.LoadPartition(p, seen_actions);
-#if HDT_READAPPLY_VERBOSE_TIMINGS
-					TLOG3_STOP;
-#endif
-					rule_accesses += RULES_PER_PARTITION;
+					std::swap(preloaded_actions, actions);
 				}
 				const ullong first_rule_code = p * RULES_PER_PARTITION;
-
 				const int r_insts_count = static_cast<int>(r_insts.size());
 
-#if HDT_READAPPLY_VERBOSE_TIMINGS
+#if HDT_READAPPLY_VERBOSE_TIMINGS == true
 				TLOG4_DEF;
 				if (omp_get_thread_num() == 0) {
 					TLOG4_START("Processing");
 				}
 #endif
 				#pragma omp for schedule(dynamic, 1)
-				for (int i = 0; i < r_insts_count; i++) {
+				for (int i = -1; i < r_insts_count; i++) {
+					if (i == -1) { 
+						// Distribute the Preload Partition "Task" to a random thread
+						int next_partition = p + 1;
+						if (next_partition >= end_partition) {
+							continue;
+						}
+						brs.LoadPartition(next_partition, *preloaded_actions);
+						rule_accesses += RULES_PER_PARTITION;
+						continue;
+					}
 					auto& r = r_insts[i];
 					if (r.counted_partitions == PARTITIONS) {
 						continue;
@@ -510,14 +524,14 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
 							break;
 						}
-						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, seen_actions[n], first_rule_code + n);
+						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, (*actions)[n], first_rule_code + n);
 						if (!r.findNextRuleCode()) {
 							break;
 						}
 					}
 					r.counted_partitions++;
 				}	
-#if HDT_READAPPLY_VERBOSE_TIMINGS
+#if HDT_READAPPLY_VERBOSE_TIMINGS == true
 				if (omp_get_thread_num() == 0) {
 					TLOG4_STOP;
 				}
@@ -1075,17 +1089,14 @@ void FindHdtIteratively(rule_set& rs,
 
 
 	bool detected_counting_data_format_is_ullong = (sizeof(ullong) == sizeof(ActionCounter));
-	std::cout << "!! Counting Data Format Check - ";
 	if (depth < (CONDITION_COUNT - 31) && !detected_counting_data_format_is_ullong) {
-		std::cout << "\n\n####### Critical depth and NOT selected ullong - aborting. #######" << std::endl;
+		std::cout << "\n####### Critical depth and NOT selected ullong - aborting. #######\n" << std::endl;
 		getchar();
 		exit(EXIT_FAILURE);
 	} else if (depth >= (CONDITION_COUNT - 31) && detected_counting_data_format_is_ullong) {
-		std::cout << "\n\nNot in critical depth but still selected ullong - recommended to restart program with int datatype." << std::endl;
-		std::cout << "Press any key to continue executing." << std::endl;
-		getchar();
+		std::cout << "\nNot in critical depth but still selected ullong - recommended to restart program with int datatype.\n" << std::endl;
 	} else {
-		std::cout << "Recommended data type (" << (detected_counting_data_format_is_ullong ? "ullong" : "int") << ") detected." << std::endl;
+		std::cout << "\nRecommended data type (" << (detected_counting_data_format_is_ullong ? "ullong" : "int") << ") detected.\n" << std::endl;
 	}
 
 	while (pending_recursion_instances->size() > 0) {

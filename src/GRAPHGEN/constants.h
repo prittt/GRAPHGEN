@@ -20,7 +20,7 @@
 #endif
 
 #if BUILD == 1 // BBDT3D
-	constexpr int PARTITIONS = 1024; // 1, 1024, 65536
+	constexpr int PARTITIONS = 65536; // 1, 1024, 65536
 	constexpr int BATCHES = 32;
 
 	constexpr int CONDITION_COUNT = 36; // 8, 14, 16, 36
