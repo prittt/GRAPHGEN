@@ -44,7 +44,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2 /* Select a different formula on how information gain is calculated */
 
-#define HDT_BENCHMARK_READAPPLY_ENABLED true /* Benchmark the performance of the ReadApply function */
+#define HDT_BENCHMARK_READAPPLY_ENABLED false /* Benchmark the performance of the ReadApply function */
 #define HDT_BENCHMARK_READAPPLY_DEPTH 12 /* Choose from: 12, 14, 16. Higher depth means more but smaller recursion instances */
 #define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED /* Pause the program at different points to allow for measuring memory usage manually */
 #define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE false /* Generate the ground truth files for the current configuration */
@@ -66,8 +66,8 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
 constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
 
-// BBDT3D-36: from depth ~4 INT can be used, before that ULLONG needs to be used to prevent overflow.
-using ActionCounter = int; // int, ullong
+// BBDT3D-36: from depth 5 on INT can be used, before that ULLONG needs to be used to prevent overflow.
+using ActionCounter = ullong; // int, ullong
 
 using namespace std;
 
@@ -1074,6 +1074,19 @@ void FindHdtIteratively(rule_set& rs,
 	rule_accesses = start_rule_accesses;
 
 
+	bool detected_counting_data_format_is_ullong = (sizeof(ullong) == sizeof(ActionCounter));
+	std::cout << "!! Counting Data Format Check - ";
+	if (depth < (CONDITION_COUNT - 31) && !detected_counting_data_format_is_ullong) {
+		std::cout << "\n\n####### Critical depth and NOT selected ullong - aborting. #######" << std::endl;
+		getchar();
+		exit(EXIT_FAILURE);
+	} else if (depth >= (CONDITION_COUNT - 31) && detected_counting_data_format_is_ullong) {
+		std::cout << "\n\nNot in critical depth but still selected ullong - recommended to restart program with int datatype." << std::endl;
+		std::cout << "Press any key to continue executing." << std::endl;
+		getchar();
+	} else {
+		std::cout << "Recommended data type (" << (detected_counting_data_format_is_ullong ? "ullong" : "int") << ") detected." << std::endl;
+	}
 
 	while (pending_recursion_instances->size() > 0) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances->size() << ")" << std::endl;
