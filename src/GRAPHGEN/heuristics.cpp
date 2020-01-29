@@ -570,6 +570,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 						}
 						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, (actions)[n], first_rule_code + n);
 						if (!r.findNextRuleCode()) {
+							r.counted_partitions = PARTITIONS;
 							break;
 						}
 					}
