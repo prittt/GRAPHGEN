@@ -31,6 +31,7 @@
 #include <random>
 #include <ctime>
 #include <algorithm>
+#include <thread>
 
 #include "heuristics.h"
 #include "utilities.h"
@@ -44,7 +45,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2 /* Select a different formula on how information gain is calculated */
 
-#define HDT_BENCHMARK_READAPPLY_ENABLED false /* Benchmark the performance of the ReadApply function */
+#define HDT_BENCHMARK_READAPPLY_ENABLED true /* Benchmark the performance of the ReadApply function */
 #define HDT_BENCHMARK_READAPPLY_DEPTH 12 /* Choose from: 12, 14, 16. Higher depth means more but smaller recursion instances */
 #define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED /* Pause the program at different points to allow for measuring memory usage manually */
 #define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE false /* Generate the ground truth files for the current configuration */
@@ -59,7 +60,10 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
 
 #define HDT_PARALLEL_PARTITIONBASED_ENABLED true /* Best approach at the moment. Allows for great parallelization and is generally faster for BBDT3D-36. For smaller problems like BBDT2D, turning this off may be faster (rule-based approach). */
-#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS 8
+constexpr auto HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS = 64;
+constexpr auto HDT_PARALLEL_PARTITIONBASED_IDLE_MS = 1;
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING 3
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING 21
 
 #define HDT_PROCESS_NODE_LOGGING_ENABLED true /* Write log files for all the recursion instances as they are processed. Very helpful for debugging. */
 
@@ -67,7 +71,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
 
 // BBDT3D-36: from depth 5 on INT can be used, before that ULLONG needs to be used to prevent overflow.
-using ActionCounter = ullong; // int, ullong
+using ActionCounter = int; // int, ullong
 
 using namespace std;
 
@@ -387,6 +391,10 @@ void FindBestSingleActionCombinationRunningCombinedPtr(
 	}
 }
 
+struct PartitionState {
+	bool processed = true;
+};
+
 void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts) {
 #if HDT_ACTION_SOURCE == 0
 	action_bitset zero_action = action_bitset(1).set(0);
@@ -405,9 +413,9 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	
 	constexpr llong benchmark_sample_point = TOTAL_RULES / 2;
 
-	constexpr llong begin_rule_code = benchmark_sample_point - (1ULL << 21);
+	constexpr llong begin_rule_code = benchmark_sample_point - (1ULL << 26);
 	constexpr llong benchmark_start_rule_code = benchmark_sample_point;
-	constexpr llong end_rule_code = benchmark_sample_point + (1ULL << 27);
+	constexpr llong end_rule_code = benchmark_sample_point + (1ULL << 28);
 
 	constexpr int begin_partition = begin_rule_code / RULES_PER_PARTITION;
 	constexpr int benchmark_start_partition = benchmark_start_rule_code / RULES_PER_PARTITION;
@@ -438,38 +446,85 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 #endif
 
 #if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
-	{
 #if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
-		std::cout << "Pre-partition memory - press enter to continue" << std::endl;
-		getchar();
+	std::cout << "Pre-partition memory - press enter to continue" << std::endl;
+	getchar();
 #endif
 
-		std::vector<action_bitset> action_data1(RULES_PER_PARTITION);
-		std::vector<action_bitset> action_data2(RULES_PER_PARTITION);
+	std::vector<std::vector<action_bitset>> action_data(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, std::vector<action_bitset>(RULES_PER_PARTITION));
+	std::vector<PartitionState> action_data_state(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, PartitionState());
 
-		std::vector<action_bitset>* actions = &action_data1;
-		std::vector<action_bitset>* preloaded_actions = &action_data2;
+	int partition_reader_idle = 0;
+	int partition_processor_idle = 0;
 
-		// preload first partition
-		std::cout << "\nPreloading first partition." << std::endl;
-		brs.LoadPartition(begin_partition, *preloaded_actions);
-#if HDT_BENCHMARK_READAPPLY_ENABLED == true 
-		brs.LoadPartition(begin_partition, *actions); // warm-up also this data vector for better measurements.
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+	int partition_reader_idle_benchmark = 0;
+	int partition_processor_idle_benchmark = 0;
 #endif
-		rule_accesses += RULES_PER_PARTITION;
 
-		#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS)
+	#pragma omp parallel num_threads(2)
+	{
+		// Task: Read Partitions
+		if (omp_get_thread_num() == 0)
 		{
+			#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING)
+			{
+				#pragma omp for schedule(dynamic, 1)
+				for (int next_loaded_partition = begin_partition; next_loaded_partition < end_partition; next_loaded_partition++) {
+					int index = next_loaded_partition % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
+					while (action_data_state[index].processed == false) {
+						//std::cout << "partition reader idle\n";
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+						if (benchmark_started) {
+							#pragma omp atomic
+							partition_reader_idle_benchmark++;
+						} else 
+#endif
+						{
+							#pragma omp atomic
+							partition_reader_idle++;
+						}
+						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
+					}
+					brs.LoadPartition(next_loaded_partition, action_data[index]);
+					action_data_state[index].processed = false;
+					rule_accesses += RULES_PER_PARTITION;
+					//std::cout << ("loaded p" + std::to_string(next_loaded_partition) + " into " + std::to_string(index) + "\n");
+				}
+			}
+		}
+
+		// Task: Process Partitions
+		if (omp_get_thread_num() == 1)
+		{
+			#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING)
 			for (int p = begin_partition; p < end_partition; p++) {
+				int index = p % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
 				#pragma omp single
 				{
-	#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+					while (action_data_state[index].processed == true) {
+						//std::cout << "processing thread team idle\n";
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+						if (benchmark_started) {
+							#pragma omp atomic
+							partition_processor_idle_benchmark++;
+						} else
+#endif
+						{
+							#pragma omp atomic
+							partition_processor_idle++;
+						}							
+						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
+					}
+					//std::cout << ("now processing p" + std::to_string(p) + " from " + std::to_string(index) + "\n");
+
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
 					if (!benchmark_started && p >= benchmark_start_partition) {
 						benchmark_started = true;
 						benchmark_start_point = std::chrono::system_clock::now();
 						std::cout << "start - ";
 					}
-	#else
+#else
 					if (p % (PARTITIONS / HDT_GENERATION_LOG_FREQUENCY) == 0) {
 						auto end = std::chrono::system_clock::now();
 						std::chrono::duration<double> elapsed_seconds = end - start;
@@ -487,12 +542,11 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 							std::cout << "[" << std::ctime(&end_time) << "] Rule " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
 						}
 					}
-	#endif
-					std::swap(preloaded_actions, actions);
+#endif
 				}
 				const ullong first_rule_code = p * RULES_PER_PARTITION;
 				const int r_insts_count = static_cast<int>(r_insts.size());
-
+				std::vector<action_bitset>& actions = action_data[index];
 #if HDT_READAPPLY_VERBOSE_TIMINGS == true
 				TLOG4_DEF;
 				if (omp_get_thread_num() == 0) {
@@ -500,17 +554,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 				}
 #endif
 				#pragma omp for schedule(dynamic, 1)
-				for (int i = -1; i < r_insts_count; i++) {
-					if (i == -1) { 
-						// Distribute the Preload Partition "Task" to a random thread
-						int next_partition = p + 1;
-						if (next_partition >= end_partition) {
-							continue;
-						}
-						brs.LoadPartition(next_partition, *preloaded_actions);
-						rule_accesses += RULES_PER_PARTITION;
-						continue;
-					}
+				for (int i = 0; i < r_insts_count; i++) {
 					auto& r = r_insts[i];
 					if (r.counted_partitions == PARTITIONS) {
 						continue;
@@ -524,13 +568,19 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
 							break;
 						}
-						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, (*actions)[n], first_rule_code + n);
+						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, (actions)[n], first_rule_code + n);
 						if (!r.findNextRuleCode()) {
 							break;
 						}
 					}
 					r.counted_partitions++;
-				}	
+				}
+
+				#pragma omp single
+				{
+					action_data_state[index].processed = true;
+					//std::cout << ("processed p" + std::to_string(p) + "\n");
+				}
 #if HDT_READAPPLY_VERBOSE_TIMINGS == true
 				if (omp_get_thread_num() == 0) {
 					TLOG4_STOP;
@@ -538,12 +588,15 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 #endif
 			}
 		}
-
-#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
-		std::cout << "Pre-finish memory - press enter to continue" << std::endl;
-		getchar();
-#endif
 	}
+#if HDT_BENCHMARK_READAPPLY_ENABLED == false
+	std::cout << "\n\nPartition Reader Idle: " << (partition_reader_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds. Partition Processor Idle: " << (partition_processor_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds." << std::endl;
+#endif
+#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
+	std::cout << "Pre-finish memory - press enter to continue" << std::endl;
+	getchar();
+#endif
+	
 #else
 	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
 	#if HDT_BENCHMARK_READAPPLY == false
@@ -628,6 +681,9 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	std::cout << "Before finish memory - press enter to continue" << std::endl;
 	getchar();
 #endif
+	std::cout << "\n\n[Before Benchmark Period] Partition Reader Idle: " << (partition_reader_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds. Partition Processor Idle: " << (partition_processor_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds." << std::endl;
+	std::cout << "[During Benchmark Period] Partition Reader Idle: " << (partition_reader_idle_benchmark * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds. Partition Processor Idle: " << (partition_processor_idle_benchmark * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds." << std::endl;
+
 	auto end = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - benchmark_start_point;
 
@@ -1087,16 +1143,17 @@ void FindHdtIteratively(rule_set& rs,
 	int path_length_sum = start_path_length_sum;
 	rule_accesses = start_rule_accesses;
 
+	omp_set_nested(1);
 
 	bool detected_counting_data_format_is_ullong = (sizeof(ullong) == sizeof(ActionCounter));
 	if (depth < (CONDITION_COUNT - 31) && !detected_counting_data_format_is_ullong) {
-		std::cout << "\n####### Critical depth and NOT selected ullong - aborting. #######\n" << std::endl;
+		std::cout << "\n####### [ActionCounter Data Format] Critical depth and NOT selected ullong - aborting. #######\n" << std::endl;
 		getchar();
 		exit(EXIT_FAILURE);
 	} else if (depth >= (CONDITION_COUNT - 31) && detected_counting_data_format_is_ullong) {
-		std::cout << "\nNot in critical depth but still selected ullong - recommended to restart program with int datatype.\n" << std::endl;
+		std::cout << "\n- [ActionCounter Data Format] Not in critical depth but still selected ullong - recommended to restart program with int datatype.\n" << std::endl;
 	} else {
-		std::cout << "\nRecommended data type (" << (detected_counting_data_format_is_ullong ? "ullong" : "int") << ") detected.\n" << std::endl;
+		std::cout << "\n+ [ActionCounter Data Format] Recommended data type (" << (detected_counting_data_format_is_ullong ? "ullong" : "int") << ") detected.\n" << std::endl;
 	}
 
 	while (pending_recursion_instances->size() > 0) {
