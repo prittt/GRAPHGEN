@@ -1250,7 +1250,7 @@ void FindHdt(BinaryDrag<conact>::node* root, rule_set& rs, BaseRuleSet& brs, Bin
 #endif
 	if (load) {
 		// continue existing run
-		std::cout << "Depth progress file found, loading progress: ";
+		std::cout << "Depth progress file found, loading progress: " << std::flush;
 		std::ifstream is(path, ios::binary);
 		std::string line;
 		std::vector<RecursionInstance> r_insts;
