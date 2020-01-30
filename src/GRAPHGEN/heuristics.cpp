@@ -545,6 +545,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 #endif
 				}
 				const ullong first_rule_code = p * RULES_PER_PARTITION;
+				const ullong last_rule_code = (p + 1) * RULES_PER_PARTITION;
 				const int r_insts_count = static_cast<int>(r_insts.size());
 				std::vector<action_bitset>& actions = action_data[index];
 #if HDT_READAPPLY_VERBOSE_TIMINGS == true
@@ -560,7 +561,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 						continue;
 					}
 					size_t n;
-					if (r.nextRuleCode < first_rule_code) {
+					if (r.nextRuleCode < first_rule_code || r.nextRuleCode >= last_rule_code) {
 						r.forwardToRuleCode(first_rule_code, rs);
 					}
 					while (true) {
