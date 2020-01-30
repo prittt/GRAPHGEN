@@ -243,12 +243,12 @@ void StringSplit(const std::string& str, T& cont, char delim = '+')
 #define LOG(message, instructions) std::cout << (message) << "... "; instructions std::cout << "done.\n"
 
 //static PerformanceEvaluator tlog_pe;
-#define TLOG(message, instructions) std::cout << (message) << "... "; PerformanceEvaluator my_tlog; my_tlog.start(); instructions; std::cout << "done. " << my_tlog.stop() << " ms.\n";
-#define TLOG2(message, instructions) std::cout << (message) << "... "; PerformanceEvaluator my_tlog2; my_tlog2.start(); instructions; std::cout << "done. " << my_tlog2.stop() << " ms.\n";
-#define TLOG3_START(message) std::cout << (message) << "... "; PerformanceEvaluator my_tlog3; my_tlog3.start();
+#define TLOG(message, instructions) std::cout << (message) << "... " << std::flush; PerformanceEvaluator my_tlog; my_tlog.start(); instructions; std::cout << "done. " << my_tlog.stop() << " ms.\n";
+#define TLOG2(message, instructions) std::cout << (message) << "... " << std::flush; PerformanceEvaluator my_tlog2; my_tlog2.start(); instructions; std::cout << "done. " << my_tlog2.stop() << " ms.\n";
+#define TLOG3_START(message) std::cout << (message) << "... " << std::flush; PerformanceEvaluator my_tlog3; my_tlog3.start();
 #define TLOG3_STOP std::cout << "done. " << my_tlog3.stop() << " ms.\n";
 #define TLOG4_DEF PerformanceEvaluator my_tlog4;
-#define TLOG4_START(message) std::cout << (message) << "... "; my_tlog4.start();
+#define TLOG4_START(message) std::cout << (message) << "... " << std::flush; my_tlog4.start();
 #define TLOG4_STOP std::cout << "done. " << my_tlog4.stop() << " ms.\n";
 
 #endif // !GRAPHGEN_UTILITIES_H_

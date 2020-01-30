@@ -45,7 +45,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2 /* Select a different formula on how information gain is calculated */
 
-#define HDT_BENCHMARK_READAPPLY_ENABLED true /* Benchmark the performance of the ReadApply function */
+#define HDT_BENCHMARK_READAPPLY_ENABLED false /* Benchmark the performance of the ReadApply function */
 #define HDT_BENCHMARK_READAPPLY_DEPTH 12 /* Choose from: 12, 14, 16. Higher depth means more but smaller recursion instances */
 #define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED /* Pause the program at different points to allow for measuring memory usage manually */
 #define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE false /* Generate the ground truth files for the current configuration */
@@ -409,7 +409,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 	int indicated_progress = -1;
 	bool benchmark_started = false;
 	std::chrono::system_clock::time_point benchmark_start_point;
-	std::cout << "warm up for benchmark - ";
+	std::cout << "warm up for benchmark - " << std::flush;
 	
 	constexpr llong benchmark_sample_point = TOTAL_RULES / 2;
 
@@ -624,7 +624,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 		if (!benchmark_started && rule_code > benchmark_start_rule_code) {
 			benchmark_started = true;
 			benchmark_start_point = std::chrono::system_clock::now();
-			std::cout << "start - ";
+			std::cout << "start - " << std::flush;
 		}
 	#endif
 	first_match = true;
@@ -929,7 +929,9 @@ std::string GetTableProgressPath(std::string table_hash) {
 
 void SaveTableProgressToFile(std::vector<RecursionInstance>& recursion_instances, int depth, const ullong& next_rule_code) {
 	int counter = 0;
-	for (const auto& r : recursion_instances) {
+	#pragma omp parallel for
+	for (int i = 0; i < recursion_instances.size(); i++) {
+		const auto& r = recursion_instances[i];
 		if (r.loaded_from_file) {
 			continue;
 		}
@@ -937,6 +939,7 @@ void SaveTableProgressToFile(std::vector<RecursionInstance>& recursion_instances
 		std::ofstream os(path);
 		os << r.printTables();
 		os.close();
+		#pragma omp atomic
 		counter++;
 	}
 	std::cout << "Saved " << counter << " tables to file. " << std::endl;
