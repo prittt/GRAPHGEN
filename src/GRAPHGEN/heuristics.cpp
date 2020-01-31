@@ -1318,7 +1318,7 @@ void FindHdtIteratively(rule_set& rs,
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances->size() << ")" << std::endl;
 
 		{
-			int groups = std::max(static_cast<int>(pending_recursion_instances->size() / HDT_RECURSION_INSTANCE_GROUP_SIZE), 1);
+			int groups = std::max(static_cast<int>(std::ceil(pending_recursion_instances->size() * 1./ HDT_RECURSION_INSTANCE_GROUP_SIZE)), 1);
 			int previous_end = 0;
 			for (int i = 0; i < groups; i++) {
 				size_t group_size = (i == groups - 1) ? (pending_recursion_instances->size() - previous_end) : HDT_RECURSION_INSTANCE_GROUP_SIZE;
