@@ -182,17 +182,20 @@ struct RecursionInstance {
 		set_conditions0 = sc0;
 		set_conditions1 = sc1;
 		parent = p;
-		single_actions.resize(CONDITION_COUNT * 2, LazyCountingVector(false));
-		for (const auto& c : conditions) {
-			single_actions[2 * c].allocateTables();
-			single_actions[2 * c + 1].allocateTables();
-		}
 		prepareRuleCodeShifts();
 		findNextRuleCode();
 #if HDT_COMBINED_CLASSIFIER == false
 		most_probable_action_index_.resize(CONDITION_COUNT, std::array<int, 2>());
 		most_probable_action_occurences_.resize(CONDITION_COUNT, std::array<int, 2>());
 #endif
+	}
+
+	void allocateTables() {
+		single_actions.resize(CONDITION_COUNT * 2, LazyCountingVector(false));
+		for (const auto& c : conditions) {
+			single_actions[2 * c].allocateTables();
+			single_actions[2 * c + 1].allocateTables();
+		}
 	}
 
 	RecursionInstance(std::vector<int> conditions,
@@ -1163,6 +1166,13 @@ void FindHdtIteratively(rule_set& rs,
 
 	while (pending_recursion_instances->size() > 0) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances->size() << ")" << std::endl;
+
+		TLOG("Allocating tables", 
+			for (auto& r : *pending_recursion_instances) {
+				r.allocateTables();
+			}			
+		);
+		
 		#if HDT_TABLE_PROGRESS_ENABLED == true
 			// look for counting table files and load them
 			LoadTableProgressFromFile(*pending_recursion_instances);
@@ -1209,9 +1219,7 @@ void FindHdtIteratively(rule_set& rs,
 		pending_recursion_instances->clear();
 		
 		// swap pointers
-		auto tmp_new_pending = upcoming_recursion_instances;
-		upcoming_recursion_instances = pending_recursion_instances;
-		pending_recursion_instances = tmp_new_pending;
+		std::swap(upcoming_recursion_instances, pending_recursion_instances);
 
 		std::cout << "debug marker C" << std::endl;
 		//getchar();
