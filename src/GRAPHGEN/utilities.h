@@ -250,6 +250,7 @@ void StringSplit(const std::string& str, T& cont, char delim = '+')
 #define TLOG4_DEF PerformanceEvaluator my_tlog4;
 #define TLOG4_START(message) std::cout << (message) << "... " << std::flush; my_tlog4.start();
 #define TLOG4_STOP std::cout << "done. " << my_tlog4.stop() << " ms.\n";
+#define TLOG5(message, instructions) std::cout << (message) << "... " << std::flush; PerformanceEvaluator my_tlog5; my_tlog5.start(); instructions; std::cout << "done. " << my_tlog5.stop() << " ms.\n";
 
 #endif // !GRAPHGEN_UTILITIES_H_
 

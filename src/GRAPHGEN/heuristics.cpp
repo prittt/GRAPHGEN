@@ -60,10 +60,12 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
 
 #define HDT_PARALLEL_PARTITIONBASED_ENABLED true /* Best approach at the moment. Allows for great parallelization and is generally faster for BBDT3D-36. For smaller problems like BBDT2D, turning this off may be faster (rule-based approach). */
-constexpr auto HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS = 64;
+constexpr auto HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS = std::min(PARTITIONS, 64);
 constexpr auto HDT_PARALLEL_PARTITIONBASED_IDLE_MS = 1;
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING 3
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING 21
+
+constexpr auto HDT_RECURSION_INSTANCE_GROUP_SIZE = 1000000;
 
 #define HDT_PROCESS_NODE_LOGGING_ENABLED true /* Write log files for all the recursion instances as they are processed. Very helpful for debugging. */
 
@@ -73,7 +75,6 @@ constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS);
 // BBDT3D-36: from depth 5 on INT can be used, before that ULLONG needs to be used to prevent overflow.
 using ActionCounter = int; // int, ullong
 
-using namespace std;
 
 uint64_t rule_accesses = 0;
 uint64_t necessary_rule_accesses = 0;
@@ -89,6 +90,8 @@ constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL = 256;
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_COUNT = ceiling(ACTION_COUNT * 1.f / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL);
 constexpr static ActionCounter ZERO = 0;
 
+#pragma region Data Structures
+
 struct LazyCountingVector {
 	std::vector<std::vector<ActionCounter>> data_;
 
@@ -100,6 +103,10 @@ struct LazyCountingVector {
 
 	void allocateTables() {
 		data_.resize(LAZY_COUNTING_VECTOR_PARTITIONS_COUNT);
+	}
+
+	void deallocateTables() {
+		data_.clear();
 	}
 
 	const size_t size() const {
@@ -114,7 +121,7 @@ struct LazyCountingVector {
 		return result;
 	}
 
-	const void print(ostringstream& oss) const {
+	const void print(std::ostringstream& oss) const {
 		if (data_.size() == 0) {
 			return;
 		}
@@ -164,7 +171,7 @@ struct RecursionInstance {
 
 	// local vars
 	std::vector<LazyCountingVector> single_actions;
-	LazyCountingVector all_single_actions;
+	LazyCountingVector all_single_actions = LazyCountingVector(false);
 #if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
 	std::vector<std::array<int, 2>> most_probable_action_occurences_;
@@ -191,11 +198,17 @@ struct RecursionInstance {
 	}
 
 	void allocateTables() {
+		all_single_actions.allocateTables();
 		single_actions.resize(CONDITION_COUNT * 2, LazyCountingVector(false));
 		for (const auto& c : conditions) {
 			single_actions[2 * c].allocateTables();
 			single_actions[2 * c + 1].allocateTables();
 		}
+	}
+
+	void deallocateTables() {
+		all_single_actions.deallocateTables();
+		single_actions.clear();
 	}
 
 	RecursionInstance(std::vector<int> conditions,
@@ -206,7 +219,7 @@ struct RecursionInstance {
 		initialize(conditions, set_conditions0, set_conditions1, parent);
 	}
 
-	RecursionInstance(istringstream& iss) {
+	RecursionInstance(std::istringstream& iss) {
 		// source: "RecursionInstance 1,2,3,4,5,6,7,8,9, 2048 0"
 		std::vector<int> conditions;
 		ullong set_conditions0;
@@ -215,15 +228,15 @@ struct RecursionInstance {
 		int counter = 1;
 		do
 		{
-			string subs;
+			std::string subs;
 			iss >> subs;
 			if (counter == 1) {
 				// parse conditions
-				istringstream iss(subs);
+				std::istringstream iss(subs);
 				std::string delimiter = ",";
 				size_t last = 0;
 				size_t next = 0;
-				while ((next = subs.find(delimiter, last)) != string::npos) {
+				while ((next = subs.find(delimiter, last)) != std::string::npos) {
 					conditions.push_back(std::stoi(subs.substr(last, next - last)));
 					last = next + 1;
 				}
@@ -254,7 +267,7 @@ struct RecursionInstance {
 	}
 
 	std::string to_string() const {
-		stringstream ss;
+		std::stringstream ss;
 		ss << "RecursionInstance ";
 		for (const auto& c : conditions) {
 			ss << c << ",";
@@ -309,7 +322,7 @@ struct RecursionInstance {
 	}
 
 	const std::string printTables() const {
-		ostringstream oss;
+		std::ostringstream oss;
 		oss << "RecursionInstance Tables\nAll Single Actions (Size in memory: " << all_single_actions.sizeInMemory() << ")\n";
 		all_single_actions.print(oss);
 		int i = 0;
@@ -326,429 +339,44 @@ struct RecursionInstance {
 	}
 };
 
-double entropy(const LazyCountingVector& vector) {
-	double s = 0, h = 0;
-	for (size_t i = 0; i < vector.size(); i++) {
-		const ActionCounter x = vector[i];
-		if (x == 0) {
-			continue;
-		}
-		s += x;
-		h += x * log2(x);
-	}
-	if (s == 0) {
-		std::cerr << "VERY BAD: Entropy function passed 0-array, therefore creating NaN value!" << std::endl;
-	}
-	return log2(s) - h / s;
-}
-
-
-void FindBestSingleActionCombinationRunningCombined(
-	LazyCountingVector& all_single_actions,
-	std::vector<LazyCountingVector>& single_actions,
-	const std::vector<int>& conditions,
-	const action_bitset& combined_action,
-	const ullong& rule_code) {
-
-	const auto& actions = combined_action.getSingleActions();
-
-	Action most_popular_single_action_index = actions[0];
-	ActionCounter most_popular_single_action_occurences = all_single_actions[actions[0]];
-
-	if (actions.size() > 1) {
-		for (const auto& a : actions) { // TODO: optimize by skipping first element
-			if (all_single_actions[a] > most_popular_single_action_occurences) {
-				most_popular_single_action_index = a;
-				most_popular_single_action_occurences = all_single_actions[a];
-			}
-		}
-	}
-
-	all_single_actions[most_popular_single_action_index]++;
-
-	for (const auto& c : conditions) {
-		single_actions[2 * c + ((rule_code >> c) & 1)][most_popular_single_action_index]++;
-	}
-}
-
-void FindBestSingleActionCombinationRunningCombinedPtr(
-	LazyCountingVector& all_single_actions,
-	std::vector<LazyCountingVector>& single_actions,
-	const std::vector<int>& conditions,
-	const action_bitset* combined_action,
-	const ullong& rule_code) {
-
-	int most_popular_single_action_index = -1;
-	ActionCounter most_popular_single_action_occurences = -1;
-
-	for (const auto& a : combined_action->getSingleActions()) {
-		if (all_single_actions[a] > most_popular_single_action_occurences) {
-			most_popular_single_action_index = a;
-			most_popular_single_action_occurences = all_single_actions[a];
-		}
-	}
-	all_single_actions[most_popular_single_action_index]++;
-
-	for (const auto& c : conditions) {
-		single_actions[2 * c + ((rule_code >> c) & 1)][most_popular_single_action_index]++;
-	}
-}
+struct RecursionInstanceGroup {
+	size_t begin_index;
+	size_t end_index;
+	RecursionInstanceGroup(size_t begin_index, size_t end_index) : begin_index(begin_index), end_index(end_index) {}
+};
 
 struct PartitionState {
 	bool processed = true;
 };
 
-void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts) {
-#if HDT_ACTION_SOURCE == 0
-	action_bitset zero_action = action_bitset(1).set(0);
-#endif
-#if HDT_PARALLEL_PARTITIONBASED_ENABLED == false
-	bool first_match;
-	action_bitset* action;
-#endif
-	auto start = std::chrono::system_clock::now();
 
-#if HDT_BENCHMARK_READAPPLY_ENABLED == true
-	int indicated_progress = -1;
-	bool benchmark_started = false;
-	std::chrono::system_clock::time_point benchmark_start_point;
-	std::cout << "warm up for benchmark - " << std::flush;
-	
-	constexpr llong benchmark_sample_point = TOTAL_RULES / 2;
+struct ProgressMetaData {
+	int start_depth = 0;
+	int start_leaves = 0;
+	int start_path_length_sum = 0;
+	ullong start_rule_accesses = 0;
 
-	constexpr llong begin_rule_code = benchmark_sample_point - (1ULL << 26);
-	constexpr llong benchmark_start_rule_code = benchmark_sample_point;
-	constexpr llong end_rule_code = benchmark_sample_point + (1ULL << 28);
+	ProgressMetaData(int start_depth = 0, int start_leaves = 0, int start_path_length_sum = 0, ullong start_rule_accesses = 0) : start_depth(start_depth), start_leaves(start_leaves), start_path_length_sum(start_path_length_sum), start_rule_accesses(start_rule_accesses) {}
+};
 
-	constexpr int begin_partition = begin_rule_code / RULES_PER_PARTITION;
-	constexpr int benchmark_start_partition = benchmark_start_rule_code / RULES_PER_PARTITION;
-	constexpr int end_partition = std::max(static_cast<int>(end_rule_code / RULES_PER_PARTITION), benchmark_start_partition + 1);
-
-#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED == true
-	#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
-		std::string correctness_file_path = "benchmark-p" + std::to_string(PARTITIONS) + "-a" + std::to_string(ACTION_COUNT) + "-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + "_P" + std::to_string(begin_partition) + "-" + std::to_string(end_partition) + ".txt";
-	#else
-		std::string correctness_file_path = "benchmark-p" + std::to_string(PARTITIONS) + "-a" + std::to_string(ACTION_COUNT) + "-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + "_R" + std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code) + ".txt";
-	#endif
-	#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE == false
-		auto benchmark_correctness_file_path = conf.GetCountingTablesFilePath(correctness_file_path);
-		if (!std::filesystem::exists(benchmark_correctness_file_path)) {
-			std::cout << "\n\nBenchmark correctness file does not exist: " << benchmark_correctness_file_path << std::endl;
-			getchar();
-			exit(EXIT_FAILURE);
-		}
-	#endif
-#endif
-
+struct Log {
+#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
+	std::ostream& os_;
+	Log(std::ofstream& os) : os_(os) { }
 #else
-	constexpr llong begin_rule_code = 0;
-	constexpr llong end_rule_code = TOTAL_RULES;
-
-	constexpr int begin_partition = 0;
-	constexpr int end_partition = PARTITIONS;
+	Log() {}
 #endif
 
-#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
-#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
-	std::cout << "Pre-partition memory - press enter to continue" << std::endl;
-	getchar();
+	const Log& operator<<(const std::string s) const {
+#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
+		os_ << s;
 #endif
-
-	std::vector<std::vector<action_bitset>> action_data(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, std::vector<action_bitset>(RULES_PER_PARTITION));
-	std::vector<PartitionState> action_data_state(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, PartitionState());
-
-	int partition_reader_idle = 0;
-	int partition_processor_idle = 0;
-
-#if HDT_BENCHMARK_READAPPLY_ENABLED == true
-	int partition_reader_idle_benchmark = 0;
-	int partition_processor_idle_benchmark = 0;
-#endif
-
-	#pragma omp parallel num_threads(2)
-	{
-		// Task: Read Partitions
-		if (omp_get_thread_num() == 0)
-		{
-			#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING)
-			{
-				#pragma omp for schedule(dynamic, 1)
-				for (int next_loaded_partition = begin_partition; next_loaded_partition < end_partition; next_loaded_partition++) {
-					int index = next_loaded_partition % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
-					while (action_data_state[index].processed == false) {
-						//std::cout << "partition reader idle\n";
-#if HDT_BENCHMARK_READAPPLY_ENABLED == true
-						if (benchmark_started) {
-							#pragma omp atomic
-							partition_reader_idle_benchmark++;
-						} else 
-#endif
-						{
-							#pragma omp atomic
-							partition_reader_idle++;
-						}
-						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
-					}
-					brs.LoadPartition(next_loaded_partition, action_data[index]);
-					action_data_state[index].processed = false;
-					rule_accesses += RULES_PER_PARTITION;
-					//std::cout << ("loaded p" + std::to_string(next_loaded_partition) + " into " + std::to_string(index) + "\n");
-				}
-			}
-		}
-
-		// Task: Process Partitions
-		if (omp_get_thread_num() == 1)
-		{
-			#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING)
-			for (int p = begin_partition; p < end_partition; p++) {
-				int index = p % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
-				#pragma omp single
-				{
-					while (action_data_state[index].processed == true) {
-						//std::cout << "processing thread team idle\n";
-#if HDT_BENCHMARK_READAPPLY_ENABLED == true
-						if (benchmark_started) {
-							#pragma omp atomic
-							partition_processor_idle_benchmark++;
-						} else
-#endif
-						{
-							#pragma omp atomic
-							partition_processor_idle++;
-						}							
-						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
-					}
-					//std::cout << ("now processing p" + std::to_string(p) + " from " + std::to_string(index) + "\n");
-
-#if HDT_BENCHMARK_READAPPLY_ENABLED == true
-					if (!benchmark_started && p >= benchmark_start_partition) {
-						benchmark_started = true;
-						benchmark_start_point = std::chrono::system_clock::now();
-						std::cout << "start - ";
-					}
-#else
-					if (p % (PARTITIONS / HDT_GENERATION_LOG_FREQUENCY) == 0) {
-						auto end = std::chrono::system_clock::now();
-						std::chrono::duration<double> elapsed_seconds = end - start;
-						std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-						double progress = p * 1.f / PARTITIONS;
-						double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
-						char mbstr[100];
-						if (p == 0) {
-							std::cout << std::endl;
-						}
-						if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
-							std::cout << "[" << mbstr << "] Partition " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
-						}
-						else {
-							std::cout << "[" << std::ctime(&end_time) << "] Rule " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
-						}
-					}
-#endif
-				}
-				const ullong first_rule_code = p * RULES_PER_PARTITION;
-				const ullong last_rule_code = (p + 1) * RULES_PER_PARTITION;
-				const int r_insts_count = static_cast<int>(r_insts.size());
-				std::vector<action_bitset>& actions = action_data[index];
-#if HDT_READAPPLY_VERBOSE_TIMINGS == true
-				TLOG4_DEF;
-				if (omp_get_thread_num() == 0) {
-					TLOG4_START("Processing");
-				}
-#endif
-				#pragma omp for schedule(dynamic, 1)
-				for (int i = 0; i < r_insts_count; i++) {
-					auto& r = r_insts[i];
-					if (r.counted_partitions == PARTITIONS) {
-						continue;
-					}
-					size_t n;
-					if (r.nextRuleCode < first_rule_code || r.nextRuleCode >= last_rule_code) {
-						r.forwardToRuleCode(first_rule_code, rs);
-					}
-					while (true) {
-						n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
-						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
-							break;
-						}
-						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, (actions)[n], first_rule_code + n);
-						if (!r.findNextRuleCode()) {
-							r.counted_partitions = PARTITIONS;
-							break;
-						}
-					}
-					r.counted_partitions++;
-				}
-
-				#pragma omp single
-				{
-					action_data_state[index].processed = true;
-					//std::cout << ("processed p" + std::to_string(p) + "\n");
-				}
-#if HDT_READAPPLY_VERBOSE_TIMINGS == true
-				if (omp_get_thread_num() == 0) {
-					TLOG4_STOP;
-				}
-#endif
-			}
-		}
+		return *this;
 	}
-#if HDT_BENCHMARK_READAPPLY_ENABLED == false
-	std::cout << "\n\nPartition Reader Idle: " << (partition_reader_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds. Partition Processor Idle: " << (partition_processor_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds." << std::endl;
-#endif
-#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
-	std::cout << "Pre-finish memory - press enter to continue" << std::endl;
-	getchar();
-#endif
-	
-#else
-	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
-	#if HDT_BENCHMARK_READAPPLY == false
-		if (rule_code % (TOTAL_RULES / 64) == 0) { // TODO: optimize this?
-			auto end = std::chrono::system_clock::now();
-			std::chrono::duration<double> elapsed_seconds = end - start;
-			std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-			double progress = rule_code * 1.f / TOTAL_RULES;
-			double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
-			char mbstr[100];
-			if (rule_code == 0) {
-				std::cout << std::endl;
-			}
-			if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
-				std::cout << "[" << mbstr << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" <<  progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
-			}
-			else {
-				std::cout << "[" << std::ctime(&end_time) << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
-			}
-		}
-	#endif
-	#if HDT_BENCHMARK_READAPPLY == true
-		if (!benchmark_started && rule_code > benchmark_start_rule_code) {
-			benchmark_started = true;
-			benchmark_start_point = std::chrono::system_clock::now();
-			std::cout << "start - " << std::flush;
-		}
-	#endif
-	first_match = true;
+};
+#pragma endregion
 
-	#if HDT_PARALLEL_INNERLOOP_ENABLED == true
-		#pragma omp parallel for num_threads(HDT_PARALLEL_INNERLOOP_NUMTHREADS)
-		for (int i = 0; i < r_insts.size(); i++) {
-			auto& r = r_insts[i];
-	#else
-		for (auto& r : r_insts) {
-	#endif
-			if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
-				if (first_match) {
-					#if (HDT_ACTION_SOURCE == 0)
-						action = &zero_action;									// 0) Zero action
-					#elif (HDT_ACTION_SOURCE == 1)
-						action = &rs.rules[rule_code].actions;					// 1) load from rule table
-					#elif (HDT_ACTION_SOURCE == 2)
-						action = &brs.GetActionFromRuleIndex(rs, rule_code);	// 2) generate during run-time
-					#elif (HDT_ACTION_SOURCE == 3)
-						action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 3) read from file
-					#endif
-					rule_accesses++;
-					first_match = false;
-				}
-				#if HDT_COMBINED_CLASSIFIER == true
-					FindBestSingleActionCombinationRunningCombinedPtr(
-						r.all_single_actions,
-						r.single_actions,
-						r.conditions,
-						action,
-						rule_code);
-				#else
-					FindBestSingleActionCombinationRunning(r.all_single_actions, action);
-
-					for (auto& c : r.conditions) {
-						int bit_value = (rule_code >> c) & 1;
-
-						int return_code = FindBestSingleActionCombinationRunning(r.single_actions[c][bit_value], action, r.most_probable_action_occurences_[c][bit_value]);
-
-						if (return_code >= 0) {
-							{
-								r.most_probable_action_index_[c][bit_value] = return_code;
-								r.most_probable_action_occurences_[c][bit_value] = r.single_actions[c][bit_value][return_code];
-							}
-						}
-					}
-				#endif
-			}
-		}
-	}
-#endif
-
-#if HDT_BENCHMARK_READAPPLY_ENABLED == true
-#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
-	std::cout << "Before finish memory - press enter to continue" << std::endl;
-	getchar();
-#endif
-	std::cout << "\n\n[Before Benchmark Period] Partition Reader Idle: " << (partition_reader_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds. Partition Processor Idle: " << (partition_processor_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds." << std::endl;
-	std::cout << "[During Benchmark Period] Partition Reader Idle: " << (partition_reader_idle_benchmark * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds. Partition Processor Idle: " << (partition_processor_idle_benchmark * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds." << std::endl;
-
-	auto end = std::chrono::system_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end - benchmark_start_point;
-
-	#if HDT_PARALLEL_PARTITIONBASED_ENABLED
-		ullong processed_rules = (end_partition - benchmark_start_partition) * RULES_PER_PARTITION;
-		double progress = processed_rules * 1. / TOTAL_RULES;
-	#else
-		ullong processed_rules = (end_rule_code - benchmark_start_rule_code);
-		double progress = (end_rule_code - benchmark_start_rule_code) * 1. / TOTAL_RULES;
-	#endif
-
-	double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
-	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << processed_rules << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes for total benchmarked depth." << std::endl;
-	
-	#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
-		std::cout << "begin_partition : " << begin_partition << " benchmark_start_partition : " << benchmark_start_partition << " end_partition : " << end_partition << std::endl;
-	#else
-		std::cout << "begin_rule_code : " << begin_rule_code << " benchmark_start_rule_code : " << benchmark_start_rule_code << " end_rule_code : " << end_rule_code << std::endl;
-	#endif
-
-	#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE == true
-		auto path = conf.GetCountingTablesFilePath(correctness_file_path);
-		std::filesystem::create_directories(conf.GetCountingTablesFilePath(""));
-		std::ofstream os(path);
-		for (const auto& r : r_insts) {
-			os << r.printTables();
-		}
-		os.close();
-		std::cout << "\nWrote correctness benchmark file to " << path << std::endl;
-	#elif HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED == true
-		std::cout << "\nChecking correctness of counting tables..." << std::endl;
-
-		std::ifstream correct_stream(benchmark_correctness_file_path);
-		auto test_stream = stringstream();
-		for (const auto& r : r_insts) {
-			test_stream << r.printTables();
-		}
-
-		std::string correct_line, test_line;
-		int i = 0;
-		bool correct = true;
-		while (correct_stream.good()) {
-			std::getline(test_stream, test_line);
-			std::getline(correct_stream, correct_line);
-			if (test_line.compare(correct_line) != 0) {
-				correct = false;
-				std::cout << "Correctness test failed (Line " << i << ").\nLine generated from benchmark:\n" << test_line << "\nCorrect line:\n" << correct_line << std::endl;
-				break;
-			}
-			i++;
-		}
-		if (correct) {
-			std::cout << "Counting tables are correct." << std::endl;
-		}
-	#endif
-	
-	getchar();
-	exit(EXIT_SUCCESS);
-#endif
-}
+#pragma region Progress Management
 
 void NodeToStringRec(BinaryDrag<conact>::node* n, std::stringstream& ss) {
 	if (n == nullptr || (n->data.action.size() == 0 && n->data.condition.size() == 0)) {
@@ -771,16 +399,16 @@ void NodeToStringRec(BinaryDrag<conact>::node* n, std::stringstream& ss) {
 }
 
 std::string TreeToString(BinaryDrag<conact>& tree) {
-	stringstream ss;
+	std::stringstream ss;
 	ss << "Tree ";
 	NodeToStringRec(tree.roots_[0], ss);
 	return ss.str();
 }
 
 void StringToTreeRec(
-	std::string s, 
-	BinaryDrag<conact>& tree, 
-	BinaryDrag<conact>::node* node, 
+	std::string s,
+	BinaryDrag<conact>& tree,
+	BinaryDrag<conact>::node* node,
 	std::vector<RecursionInstance>& r_insts,
 	int& next_recursion_index) {
 	auto bracket_pos = s.find('(');
@@ -796,7 +424,7 @@ void StringToTreeRec(
 		node->left = left;
 		node->right = right;
 
-		std::string remaining = s.substr(bracket_pos + 1, s.size() - (2+bracket_pos));
+		std::string remaining = s.substr(bracket_pos + 1, s.size() - (2 + bracket_pos));
 		size_t separator_pos, open = 0, closed = 0;
 		for (size_t i = 0; i < remaining.size(); i++) {
 			if (remaining[i] == '(') {
@@ -822,7 +450,7 @@ void StringToTreeRec(
 		}
 		else if (s[0] == '[' && s[s.size() - 1] == ']') {
 			// no brackets and no wild card = action node
-			istringstream iss(s.substr(1, s.size() - 2));
+			std::istringstream iss(s.substr(1, s.size() - 2));
 			std::string str;
 			node->data.t = conact::type::ACTION;
 			action_bitset action;
@@ -862,7 +490,7 @@ void SaveDepthProgressToFile(std::vector<RecursionInstance>& r_insts, BinaryDrag
 	std::stringstream oss;
 	bool retry = false;
 	try {
-		std::ofstream os(path, ios::binary);
+		std::ofstream os(path, std::ios::binary);
 		if (!os) {
 			std::cout << "Could not save progress to file: " << path << std::endl;
 			return;
@@ -922,7 +550,7 @@ void SaveDepthProgressToFile(std::vector<RecursionInstance>& r_insts, BinaryDrag
 	}
 	catch (std::filesystem::filesystem_error e) {
 		std::cerr << "Could not save progress to 'latest file': " << latest_path << std::endl;
-	}	
+	}
 }
 
 std::string GetTableProgressPath(std::string table_hash) {
@@ -932,7 +560,7 @@ std::string GetTableProgressPath(std::string table_hash) {
 
 void SaveTableProgressToFile(std::vector<RecursionInstance>& recursion_instances, int depth, const ullong& next_rule_code) {
 	int counter = 0;
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (int i = 0; i < recursion_instances.size(); i++) {
 		const auto& r = recursion_instances[i];
 		if (r.loaded_from_file) {
@@ -942,7 +570,7 @@ void SaveTableProgressToFile(std::vector<RecursionInstance>& recursion_instances
 		std::ofstream os(path);
 		os << r.printTables();
 		os.close();
-		#pragma omp atomic
+#pragma omp atomic
 		counter++;
 	}
 	std::cout << "Saved " << counter << " tables to file. " << std::endl;
@@ -1007,137 +635,6 @@ void LoadTableProgressFromFile(std::vector<RecursionInstance>& recursion_instanc
 	std::cout << "Loaded " << loaded_tables << " tables from files, " << not_found_tables << " not found." << std::endl;
 }
 
-ushort GetFirstCountedAction(const LazyCountingVector& b) {
-	for (size_t i = 0; i < b.size(); i++) {
-		if (b[i] > 0) {
-			return static_cast<ushort>(i);
-		}
-	}
-	std::cerr << "GetFirstCountedAction called with empty vector" << std::endl;
-	throw std::runtime_error("GetFirstCountedAction called with empty vector");
-}
-
-struct Log {
-#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
-	std::ostream& os_;
-	Log(std::ofstream& os) : os_(os) { }
-#else
-	Log() {}
-#endif
-
-	const Log& operator<<(const std::string s) const {
-#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
-		os_ << s;
-#endif
-		return *this;
-	}
-};
-
-int HdtProcessNode(
-	RecursionInstance& r, 
-	BinaryDrag<conact>& tree, 
-	const rule_set& rs, 
-	std::vector<RecursionInstance>& upcoming_recursion_instances,
-	const Log& log) {
-	int amount_of_action_children = 0;
-	log << "HdtProcessNode start with RecInst: " << r.to_string() << "\n";
-
-	std::vector<int> uselessConditions;
-
-	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
-	int splitCandidate = r.conditions[0];
-	double maximum_information_gain = 0;
-
-	double baseEntropy = entropy(r.all_single_actions);
-	log << "Base Entropy: " << std::to_string(baseEntropy) << "\n";
-
-	bool leftIsAction = false;
-	bool rightIsAction = false;
-
-	for (auto& c : r.conditions) {
-		double leftEntropy = entropy(r.single_actions[c * 2]);
-		double rightEntropy = entropy(r.single_actions[c * 2 + 1]);
-
-#if HDT_INFORMATION_GAIN_METHOD_VERSION == 1
-		// 1) Simple Information Gain
-		double informationGain = std::max((baseEntropy - leftEntropy), (baseEntropy - rightEntropy));
-#elif HDT_INFORMATION_GAIN_METHOD_VERSION == 2
-		// 2) Information Gain Sum
-		double informationGain = (baseEntropy - leftEntropy) + (baseEntropy - rightEntropy);
-#elif HDT_INFORMATION_GAIN_METHOD_VERSION == 3
-		// 3) Weighted Information Gain Sum
-		double LigTimesRig = (baseEntropy - leftEntropy) + (baseEntropy - rightEntropy); 
-		double difference = (std::max(leftEntropy, rightEntropy) - std::min(leftEntropy, rightEntropy)) + 0.001;
-		double informationGain = LigTimesRig / std::sqrt(difference);
-#endif
-
-		if (std::abs(baseEntropy - leftEntropy) < 0.00001 && std::abs(baseEntropy - rightEntropy) < 0.00001) {
-			uselessConditions.push_back(c);
-		}
-
-		if (informationGain > maximum_information_gain) {
-			maximum_information_gain = informationGain;
-			splitCandidate = c;
-			leftIsAction = (leftEntropy == 0);
-			rightIsAction = (rightEntropy == 0);
-		}
-		log << "Condition: " << rs.conditions[c] << " Information gain: " << std::to_string(informationGain) << "\tEntropy Left (0): " << std::to_string(leftEntropy) << "\tEntropy Right (1): " << std::to_string(rightEntropy) << "\n";
-	}
-	log << "------\nSplit candidate chosen: " << rs.conditions[splitCandidate] << "\n";
-
-	//log << "Deleting " << std::to_string(uselessConditions.size()) << " useless conditions: ";
-	//for (const auto& s : uselessConditions) {
-	//	log << rs.conditions[s] << " ";
-	//	r.set_conditions0 |= (1ULL << s);
-	//	r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), s), r.conditions.end());
-	//}
-	//log << "\n";
-
-	r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), splitCandidate), r.conditions.end());
-
-	r.parent->data.t = conact::type::CONDITION;
-	r.parent->data.condition = rs.conditions[splitCandidate];
-
-	if (leftIsAction) {
-		r.parent->left = tree.make_node();
-		r.parent->left->data.t = conact::type::ACTION;
-		r.parent->left->data.action = action_bitset().set(GetFirstCountedAction(r.single_actions[splitCandidate * 2]));
-		amount_of_action_children++;
-	}
-	else {
-		r.parent->left = tree.make_node();
-		auto newConditions0 = r.set_conditions0 | (1ULL << splitCandidate);
-		upcoming_recursion_instances.push_back(RecursionInstance(r.conditions, newConditions0, r.set_conditions1, r.parent->left));
-	}
-
-	if (rightIsAction) {
-		r.parent->right = tree.make_node();
-		r.parent->right->data.t = conact::type::ACTION;
-		r.parent->right->data.action = action_bitset().set(GetFirstCountedAction(r.single_actions[splitCandidate * 2 + 1]));
-		amount_of_action_children++;
-	}
-	else {
-		r.parent->right = tree.make_node();
-		auto newConditions1 = r.set_conditions1 | (1ULL << splitCandidate);
-		upcoming_recursion_instances.push_back(RecursionInstance(r.conditions, r.set_conditions0, newConditions1, r.parent->right));
-	}
-
-	r.processed = true;
-
-	log << "Processed instance. Split Candidate: " << rs.conditions[splitCandidate] << " Action Children: " << std::to_string(amount_of_action_children) << "\n";
-	log << r.printTables();
-
-	return amount_of_action_children;
-}
-
-struct ProgressMetaData {
-	int start_depth = 0;
-	int start_leaves = 0;
-	int start_path_length_sum = 0;
-	ullong start_rule_accesses = 0;
-
-	ProgressMetaData(int start_depth = 0, int start_leaves = 0, int start_path_length_sum = 0, ullong start_rule_accesses = 0) : start_depth(start_depth), start_leaves (start_leaves), start_path_length_sum(start_path_length_sum), start_rule_accesses(start_rule_accesses) {}
-};
 
 uint64_t GetFileLineCount(std::string path) {
 	std::ifstream file(path);
@@ -1172,7 +669,7 @@ ProgressMetaData GetInitialProgress(std::vector<RecursionInstance>& recursion_in
 
 		recursion_instances.reserve(GetFileLineCount(path));
 
-		std::ifstream is(path, ios::binary);
+		std::ifstream is(path, std::ios::binary);
 		std::string line;
 		int depth, leaves, path_length_sum;
 		uint64_t rule_accesses;
@@ -1244,8 +741,545 @@ ProgressMetaData GetInitialProgress(std::vector<RecursionInstance>& recursion_in
 		return ProgressMetaData();
 	}
 }
+#pragma endregion
 
-void FindHdtIteratively(rule_set& rs, 
+#pragma region Read and Classify Rules
+void FindBestSingleActionCombinationRunningCombined(
+	LazyCountingVector& all_single_actions,
+	std::vector<LazyCountingVector>& single_actions,
+	const std::vector<int>& conditions,
+	const action_bitset& combined_action,
+	const ullong& rule_code) {
+
+	const auto& actions = combined_action.getSingleActions();
+
+	Action most_popular_single_action_index = actions[0];
+	ActionCounter most_popular_single_action_occurences = all_single_actions[actions[0]];
+
+	if (actions.size() > 1) {
+		for (const auto& a : actions) { // TODO: optimize by skipping first element
+			if (all_single_actions[a] > most_popular_single_action_occurences) {
+				most_popular_single_action_index = a;
+				most_popular_single_action_occurences = all_single_actions[a];
+			}
+		}
+	}
+
+	all_single_actions[most_popular_single_action_index]++;
+
+	for (const auto& c : conditions) {
+		single_actions[2 * c + ((rule_code >> c) & 1)][most_popular_single_action_index]++;
+	}
+}
+
+void FindBestSingleActionCombinationRunningCombinedPtr(
+	LazyCountingVector& all_single_actions,
+	std::vector<LazyCountingVector>& single_actions,
+	const std::vector<int>& conditions,
+	const action_bitset* combined_action,
+	const ullong& rule_code) {
+
+	int most_popular_single_action_index = -1;
+	ActionCounter most_popular_single_action_occurences = -1;
+
+	for (const auto& a : combined_action->getSingleActions()) {
+		if (all_single_actions[a] > most_popular_single_action_occurences) {
+			most_popular_single_action_index = a;
+			most_popular_single_action_occurences = all_single_actions[a];
+		}
+	}
+	all_single_actions[most_popular_single_action_index]++;
+
+	for (const auto& c : conditions) {
+		single_actions[2 * c + ((rule_code >> c) & 1)][most_popular_single_action_index]++;
+	}
+}
+
+void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts, const RecursionInstanceGroup& rig) {
+#if HDT_ACTION_SOURCE == 0
+	action_bitset zero_action = action_bitset(1).set(0);
+#endif
+#if HDT_PARALLEL_PARTITIONBASED_ENABLED == false
+	bool first_match;
+	action_bitset* action;
+#endif
+	auto start = std::chrono::system_clock::now();
+
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+	int indicated_progress = -1;
+	bool benchmark_started = false;
+	std::chrono::system_clock::time_point benchmark_start_point;
+	std::cout << "warm up for benchmark - " << std::flush;
+
+	constexpr llong benchmark_sample_point = TOTAL_RULES / 2;
+
+	constexpr llong begin_rule_code = benchmark_sample_point - (1ULL << 21);
+	constexpr llong benchmark_start_rule_code = benchmark_sample_point;
+	constexpr llong end_rule_code = benchmark_sample_point + (1ULL << 27);
+
+	constexpr int begin_partition = begin_rule_code / RULES_PER_PARTITION;
+	constexpr int benchmark_start_partition = benchmark_start_rule_code / RULES_PER_PARTITION;
+	constexpr int end_partition = std::max(static_cast<int>(end_rule_code / RULES_PER_PARTITION), benchmark_start_partition + 1);
+
+#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED == true
+#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
+	std::string correctness_file_path = "benchmark-p" + std::to_string(PARTITIONS) + "-a" + std::to_string(ACTION_COUNT) + "-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + "_P" + std::to_string(begin_partition) + "-" + std::to_string(end_partition) + ".txt";
+#else
+	std::string correctness_file_path = "benchmark-p" + std::to_string(PARTITIONS) + "-a" + std::to_string(ACTION_COUNT) + "-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + "_R" + std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code) + ".txt";
+#endif
+#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE == false
+	auto benchmark_correctness_file_path = conf.GetCountingTablesFilePath(correctness_file_path);
+	if (!std::filesystem::exists(benchmark_correctness_file_path)) {
+		std::cout << "\n\nBenchmark correctness file does not exist: " << benchmark_correctness_file_path << std::endl;
+		getchar();
+		exit(EXIT_FAILURE);
+	}
+#endif
+#endif
+
+#else
+	constexpr llong begin_rule_code = 0;
+	constexpr llong end_rule_code = TOTAL_RULES;
+
+	constexpr int begin_partition = 0;
+	constexpr int end_partition = PARTITIONS;
+#endif
+
+#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
+#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
+	std::cout << "Pre-partition memory - press enter to continue" << std::endl;
+	getchar();
+#endif
+
+	std::vector<std::vector<action_bitset>> action_data(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, std::vector<action_bitset>(RULES_PER_PARTITION));
+	std::vector<PartitionState> action_data_state(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, PartitionState());
+
+	int partition_reader_idle = 0;
+	int partition_processor_idle = 0;
+
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+	int partition_reader_idle_benchmark = 0;
+	int partition_processor_idle_benchmark = 0;
+#endif
+
+#pragma omp parallel num_threads(2)
+	{
+		// Task: Read Partitions
+		if (omp_get_thread_num() == 0)
+		{
+#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING)
+			{
+#pragma omp for schedule(dynamic, 1)
+				for (int next_loaded_partition = begin_partition; next_loaded_partition < end_partition; next_loaded_partition++) {
+					int index = next_loaded_partition % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
+					while (action_data_state[index].processed == false) {
+						//std::cout << "partition reader idle\n";
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+						if (benchmark_started) {
+#pragma omp atomic
+							partition_reader_idle_benchmark++;
+				}
+						else
+#endif
+						{
+#pragma omp atomic
+							partition_reader_idle++;
+						}
+						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
+			}
+					brs.LoadPartition(next_loaded_partition, action_data[index]);
+					action_data_state[index].processed = false;
+					rule_accesses += RULES_PER_PARTITION;
+					//std::cout << ("loaded p" + std::to_string(next_loaded_partition) + " into " + std::to_string(index) + "\n");
+		}
+	}
+		}
+
+		// Task: Process Partitions
+		if (omp_get_thread_num() == 1)
+		{
+#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING)
+			for (int p = begin_partition; p < end_partition; p++) {
+				int index = p % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
+#pragma omp single
+				{
+					while (action_data_state[index].processed == true) {
+						//std::cout << "processing thread team idle\n";
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+						if (benchmark_started) {
+#pragma omp atomic
+							partition_processor_idle_benchmark++;
+				}
+						else
+#endif
+						{
+#pragma omp atomic
+							partition_processor_idle++;
+						}
+						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
+			}
+					//std::cout << ("now processing p" + std::to_string(p) + " from " + std::to_string(index) + "\n");
+
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+					if (!benchmark_started && p >= benchmark_start_partition) {
+						benchmark_started = true;
+						benchmark_start_point = std::chrono::system_clock::now();
+						std::cout << "start - ";
+		}
+#else
+					if (p % (PARTITIONS / HDT_GENERATION_LOG_FREQUENCY) == 0) {
+						auto end = std::chrono::system_clock::now();
+						std::chrono::duration<double> elapsed_seconds = end - start;
+						std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+						double progress = p * 1.f / PARTITIONS;
+						double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+						char mbstr[100];
+						if (p == 0) {
+							std::cout << std::endl;
+						}
+						if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
+							std::cout << "[" << mbstr << "] Partition " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+						}
+						else {
+							std::cout << "[" << std::ctime(&end_time) << "] Rule " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+						}
+					}
+#endif
+				}
+				const ullong first_rule_code = p * RULES_PER_PARTITION;
+				const ullong last_rule_code = (p + 1) * RULES_PER_PARTITION;
+				std::vector<action_bitset>& actions = action_data[index];
+#if HDT_READAPPLY_VERBOSE_TIMINGS == true
+				TLOG4_DEF;
+				if (omp_get_thread_num() == 0) {
+					TLOG4_START("Processing");
+				}
+#endif
+				const int begin_r_inst = static_cast<int>(rig.begin_index);
+				const int end_r_inst = static_cast<int>(rig.end_index);
+				#pragma omp for schedule(dynamic, 1)
+				for (int i = begin_r_inst; i < end_r_inst; i++) {
+					auto& r = r_insts[i];
+					if (r.counted_partitions == PARTITIONS) {
+						continue;
+					}
+					size_t n;
+					if (r.nextRuleCode < first_rule_code || r.nextRuleCode >= last_rule_code) {
+						r.forwardToRuleCode(first_rule_code, rs);
+					}
+					while (true) {
+						n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
+						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
+							break;
+						}
+						FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, (actions)[n], first_rule_code + n);
+						if (!r.findNextRuleCode()) {
+							r.counted_partitions = PARTITIONS;
+							break;
+						}
+					}
+					r.counted_partitions++;
+				}
+
+#pragma omp single
+				{
+					action_data_state[index].processed = true;
+					//std::cout << ("processed p" + std::to_string(p) + "\n");
+				}
+#if HDT_READAPPLY_VERBOSE_TIMINGS == true
+				if (omp_get_thread_num() == 0) {
+					TLOG4_STOP;
+				}
+#endif
+			}
+		}
+	}
+#if HDT_BENCHMARK_READAPPLY_ENABLED == false
+	std::cout << "\n\nPartition Reader Idle: " << (partition_reader_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds. Partition Processor Idle: " << (partition_processor_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds." << std::endl;
+#endif
+#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
+	std::cout << "Pre-finish memory - press enter to continue" << std::endl;
+	getchar();
+#endif
+
+#else
+	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
+#if HDT_BENCHMARK_READAPPLY == false
+		if (rule_code % (TOTAL_RULES / 64) == 0) { // TODO: optimize this?
+			auto end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed_seconds = end - start;
+			std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+			double progress = rule_code * 1.f / TOTAL_RULES;
+			double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+			char mbstr[100];
+			if (rule_code == 0) {
+				std::cout << std::endl;
+			}
+			if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
+				std::cout << "[" << mbstr << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+			}
+			else {
+				std::cout << "[" << std::ctime(&end_time) << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+			}
+		}
+#endif
+#if HDT_BENCHMARK_READAPPLY == true
+		if (!benchmark_started && rule_code > benchmark_start_rule_code) {
+			benchmark_started = true;
+			benchmark_start_point = std::chrono::system_clock::now();
+			std::cout << "start - " << std::flush;
+		}
+#endif
+		first_match = true;
+
+#if HDT_PARALLEL_INNERLOOP_ENABLED == true
+#pragma omp parallel for num_threads(HDT_PARALLEL_INNERLOOP_NUMTHREADS)
+		for (int i = 0; i < r_insts.size(); i++) {
+			auto& r = r_insts[i];
+#else
+		for (auto& r : r_insts) {
+#endif
+			if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
+				if (first_match) {
+#if (HDT_ACTION_SOURCE == 0)
+					action = &zero_action;									// 0) Zero action
+#elif (HDT_ACTION_SOURCE == 1)
+					action = &rs.rules[rule_code].actions;					// 1) load from rule table
+#elif (HDT_ACTION_SOURCE == 2)
+					action = &brs.GetActionFromRuleIndex(rs, rule_code);	// 2) generate during run-time
+#elif (HDT_ACTION_SOURCE == 3)
+					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 3) read from file
+#endif
+					rule_accesses++;
+					first_match = false;
+				}
+#if HDT_COMBINED_CLASSIFIER == true
+				FindBestSingleActionCombinationRunningCombinedPtr(
+					r.all_single_actions,
+					r.single_actions,
+					r.conditions,
+					action,
+					rule_code);
+#else
+				FindBestSingleActionCombinationRunning(r.all_single_actions, action);
+
+				for (auto& c : r.conditions) {
+					int bit_value = (rule_code >> c) & 1;
+
+					int return_code = FindBestSingleActionCombinationRunning(r.single_actions[c][bit_value], action, r.most_probable_action_occurences_[c][bit_value]);
+
+					if (return_code >= 0) {
+						{
+							r.most_probable_action_index_[c][bit_value] = return_code;
+							r.most_probable_action_occurences_[c][bit_value] = r.single_actions[c][bit_value][return_code];
+						}
+					}
+				}
+#endif
+			}
+		}
+	}
+#endif
+
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
+	std::cout << "Before finish memory - press enter to continue" << std::endl;
+	getchar();
+#endif
+	std::cout << "\n\n[Before Benchmark Period] Partition Reader Idle: " << (partition_reader_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds. Partition Processor Idle: " << (partition_processor_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds." << std::endl;
+	std::cout << "[During Benchmark Period] Partition Reader Idle: " << (partition_reader_idle_benchmark * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds. Partition Processor Idle: " << (partition_processor_idle_benchmark * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds." << std::endl;
+
+	auto end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end - benchmark_start_point;
+
+#if HDT_PARALLEL_PARTITIONBASED_ENABLED
+	ullong processed_rules = (end_partition - benchmark_start_partition) * RULES_PER_PARTITION;
+	double progress = processed_rules * 1. / TOTAL_RULES;
+#else
+	ullong processed_rules = (end_rule_code - benchmark_start_rule_code);
+	double progress = (end_rule_code - benchmark_start_rule_code) * 1. / TOTAL_RULES;
+#endif
+
+	double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << processed_rules << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes for total benchmarked depth." << std::endl;
+
+#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
+	std::cout << "begin_partition : " << begin_partition << " benchmark_start_partition : " << benchmark_start_partition << " end_partition : " << end_partition << std::endl;
+#else
+	std::cout << "begin_rule_code : " << begin_rule_code << " benchmark_start_rule_code : " << benchmark_start_rule_code << " end_rule_code : " << end_rule_code << std::endl;
+#endif
+
+#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE == true
+	auto path = conf.GetCountingTablesFilePath(correctness_file_path);
+	std::filesystem::create_directories(conf.GetCountingTablesFilePath(""));
+	std::ofstream os(path);
+	for (const auto& r : r_insts) {
+		os << r.printTables();
+	}
+	os.close();
+	std::cout << "\nWrote correctness benchmark file to " << path << std::endl;
+#elif HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED == true
+	std::cout << "\nChecking correctness of counting tables..." << std::endl;
+
+	std::ifstream correct_stream(benchmark_correctness_file_path);
+	auto test_stream = stringstream();
+	for (const auto& r : r_insts) {
+		test_stream << r.printTables();
+	}
+
+	std::string correct_line, test_line;
+	int i = 0;
+	bool correct = true;
+	while (correct_stream.good()) {
+		std::getline(test_stream, test_line);
+		std::getline(correct_stream, correct_line);
+		if (test_line.compare(correct_line) != 0) {
+			correct = false;
+			std::cout << "Correctness test failed (Line " << i << ").\nLine generated from benchmark:\n" << test_line << "\nCorrect line:\n" << correct_line << std::endl;
+			break;
+		}
+		i++;
+	}
+	if (correct) {
+		std::cout << "Counting tables are correct." << std::endl;
+	}
+#endif
+
+	getchar();
+	exit(EXIT_SUCCESS);
+#endif
+}
+#pragma endregion
+
+#pragma region Process Nodes
+
+ushort GetFirstCountedAction(const LazyCountingVector& b) {
+	for (size_t i = 0; i < b.size(); i++) {
+		if (b[i] > 0) {
+			return static_cast<ushort>(i);
+		}
+	}
+	std::cerr << "GetFirstCountedAction called with empty vector" << std::endl;
+	throw std::runtime_error("GetFirstCountedAction called with empty vector");
+}
+
+double entropy(const LazyCountingVector& vector) {
+	double s = 0, h = 0;
+	for (size_t i = 0; i < vector.size(); i++) {
+		const ActionCounter x = vector[i];
+		if (x == 0) {
+			continue;
+		}
+		s += x;
+		h += x * log2(x);
+	}
+	if (s == 0) {
+		std::cerr << "VERY BAD: Entropy function passed 0-array, therefore creating NaN value!" << std::endl;
+	}
+	return log2(s) - h / s;
+}
+
+int HdtProcessNode(
+	RecursionInstance& r,
+	BinaryDrag<conact>& tree,
+	const rule_set& rs,
+	std::vector<RecursionInstance>& upcoming_recursion_instances,
+	const Log& log) {
+	int amount_of_action_children = 0;
+	log << "HdtProcessNode start with RecInst: " << r.to_string() << "\n";
+
+	std::vector<int> uselessConditions;
+
+	// Case 2: Take best guess (highest p/total occurences), both children are conditions/nodes 
+	int splitCandidate = r.conditions[0];
+	double maximum_information_gain = 0;
+
+	double baseEntropy = entropy(r.all_single_actions);
+	log << "Base Entropy: " << std::to_string(baseEntropy) << "\n";
+
+	bool leftIsAction = false;
+	bool rightIsAction = false;
+
+	for (auto& c : r.conditions) {
+		double leftEntropy = entropy(r.single_actions[c * 2]);
+		double rightEntropy = entropy(r.single_actions[c * 2 + 1]);
+
+#if HDT_INFORMATION_GAIN_METHOD_VERSION == 1
+		// 1) Simple Information Gain
+		double informationGain = std::max((baseEntropy - leftEntropy), (baseEntropy - rightEntropy));
+#elif HDT_INFORMATION_GAIN_METHOD_VERSION == 2
+		// 2) Information Gain Sum
+		double informationGain = (baseEntropy - leftEntropy) + (baseEntropy - rightEntropy);
+#elif HDT_INFORMATION_GAIN_METHOD_VERSION == 3
+		// 3) Weighted Information Gain Sum
+		double LigTimesRig = (baseEntropy - leftEntropy) + (baseEntropy - rightEntropy);
+		double difference = (std::max(leftEntropy, rightEntropy) - std::min(leftEntropy, rightEntropy)) + 0.001;
+		double informationGain = LigTimesRig / std::sqrt(difference);
+#endif
+
+		if (std::abs(baseEntropy - leftEntropy) < 0.00001 && std::abs(baseEntropy - rightEntropy) < 0.00001) {
+			uselessConditions.push_back(c);
+		}
+
+		if (informationGain > maximum_information_gain) {
+			maximum_information_gain = informationGain;
+			splitCandidate = c;
+			leftIsAction = (leftEntropy == 0);
+			rightIsAction = (rightEntropy == 0);
+		}
+		log << "Condition: " << rs.conditions[c] << " Information gain: " << std::to_string(informationGain) << "\tEntropy Left (0): " << std::to_string(leftEntropy) << "\tEntropy Right (1): " << std::to_string(rightEntropy) << "\n";
+	}
+	log << "------\nSplit candidate chosen: " << rs.conditions[splitCandidate] << "\n";
+
+	//log << "Deleting " << std::to_string(uselessConditions.size()) << " useless conditions: ";
+	//for (const auto& s : uselessConditions) {
+	//	log << rs.conditions[s] << " ";
+	//	r.set_conditions0 |= (1ULL << s);
+	//	r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), s), r.conditions.end());
+	//}
+	//log << "\n";
+
+	r.conditions.erase(std::remove(r.conditions.begin(), r.conditions.end(), splitCandidate), r.conditions.end());
+
+	r.parent->data.t = conact::type::CONDITION;
+	r.parent->data.condition = rs.conditions[splitCandidate];
+
+	if (leftIsAction) {
+		r.parent->left = tree.make_node();
+		r.parent->left->data.t = conact::type::ACTION;
+		r.parent->left->data.action = action_bitset().set(GetFirstCountedAction(r.single_actions[splitCandidate * 2]));
+		amount_of_action_children++;
+	}
+	else {
+		r.parent->left = tree.make_node();
+		auto newConditions0 = r.set_conditions0 | (1ULL << splitCandidate);
+		upcoming_recursion_instances.push_back(RecursionInstance(r.conditions, newConditions0, r.set_conditions1, r.parent->left));
+	}
+
+	if (rightIsAction) {
+		r.parent->right = tree.make_node();
+		r.parent->right->data.t = conact::type::ACTION;
+		r.parent->right->data.action = action_bitset().set(GetFirstCountedAction(r.single_actions[splitCandidate * 2 + 1]));
+		amount_of_action_children++;
+	}
+	else {
+		r.parent->right = tree.make_node();
+		auto newConditions1 = r.set_conditions1 | (1ULL << splitCandidate);
+		upcoming_recursion_instances.push_back(RecursionInstance(r.conditions, r.set_conditions0, newConditions1, r.parent->right));
+	}
+
+	r.processed = true;
+
+	log << "Processed instance. Split Candidate: " << rs.conditions[splitCandidate] << " Action Children: " << std::to_string(amount_of_action_children) << "\n";
+	log << r.printTables();
+
+	return amount_of_action_children;
+}
+#pragma endregion
+
+#pragma region Interface/High-Level Functions
+
+void FindHdtIteratively(rule_set& rs,
 	BaseRuleSet& brs,
 	BinaryDrag<conact>& tree)
 {
@@ -1257,6 +1291,8 @@ void FindHdtIteratively(rule_set& rs,
 
 	std::vector<RecursionInstance>* pending_recursion_instances = &recursion_instance_data1;
 	std::vector<RecursionInstance>* upcoming_recursion_instances = &recursion_instance_data2;
+
+	std::vector<RecursionInstanceGroup> recursion_instance_groups;
 
 	ProgressMetaData pmd = GetInitialProgress(*pending_recursion_instances, tree.GetRoot(), rs, brs, tree);
 
@@ -1270,66 +1306,90 @@ void FindHdtIteratively(rule_set& rs,
 		std::cout << "\n####### [ActionCounter Data Format] Critical depth and NOT selected ullong - aborting. #######\n" << std::endl;
 		getchar();
 		exit(EXIT_FAILURE);
-	} else if (depth >= (CONDITION_COUNT - 31) && detected_counting_data_format_is_ullong) {
+	}
+	else if (depth >= (CONDITION_COUNT - 31) && detected_counting_data_format_is_ullong) {
 		std::cout << "\n- [ActionCounter Data Format] Not in critical depth but still selected ullong - recommended to restart program with int datatype.\n" << std::endl;
-	} else {
+	}
+	else {
 		std::cout << "\n+ [ActionCounter Data Format] Recommended data type (" << (detected_counting_data_format_is_ullong ? "ullong" : "int") << ") detected.\n" << std::endl;
 	}
 
 	while (pending_recursion_instances->size() > 0) {
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances->size() << ")" << std::endl;
 
-		TLOG("Allocating tables", 
-			for (auto& r : *pending_recursion_instances) {
-				r.allocateTables();
-			}			
-		);
-		
-		#if HDT_TABLE_PROGRESS_ENABLED == true
+		{
+			int groups = std::max(static_cast<int>(pending_recursion_instances->size() / HDT_RECURSION_INSTANCE_GROUP_SIZE), 1);
+			int previous_end = 0;
+			for (int i = 0; i < groups; i++) {
+				size_t group_size = (i == groups - 1) ? (pending_recursion_instances->size() - previous_end) : HDT_RECURSION_INSTANCE_GROUP_SIZE;
+				size_t start_index = i * HDT_RECURSION_INSTANCE_GROUP_SIZE;
+				size_t end_index = start_index + group_size;
+				recursion_instance_groups.push_back(RecursionInstanceGroup(start_index, end_index));
+				previous_end = (i + 1) * HDT_RECURSION_INSTANCE_GROUP_SIZE;
+			}
+		}
+
+		auto process_node_log_os = std::ofstream(conf.GetProcessNodeLogFilePath("d" + std::to_string(depth) + "-all_recinsts.txt"));
+		int recursion_instance_counter = 0;
+
+		for (const auto& rig : recursion_instance_groups) {
+			std::cout << "Begin processing of RecursionInstanceGroup from RecInst " << rig.begin_index << " to RecInst " << (rig.end_index - 1) << std::endl;
+			TLOG("Allocating tables",
+				for (size_t i = rig.begin_index; i < rig.end_index; i++) {
+					(*pending_recursion_instances)[i].allocateTables();
+				}
+			);
+
+#if HDT_TABLE_PROGRESS_ENABLED == true
 			// look for counting table files and load them
 			LoadTableProgressFromFile(*pending_recursion_instances);
-		#endif
+#endif
 
-		TLOG2("Reading rules and classifying",
-			HdtReadAndApplyRulesOnePass(brs, rs, *pending_recursion_instances);
-		);
+			TLOG2("Reading rules and classifying",
+				HdtReadAndApplyRulesOnePass(brs, rs, *pending_recursion_instances, rig);
+			);
 
-		#if HDT_TABLE_PROGRESS_ENABLED == true
+#if HDT_TABLE_PROGRESS_ENABLED == true
 			SaveTableProgressToFile(*pending_recursion_instances, depth, TOTAL_RULES);
-		#endif
+#endif
 
-		std::cout << "debug marker A" << std::endl;
 
-		TLOG3_START("Processing instances");
-		{
-			int recursion_instance_counter = 0;
-			auto log_os = std::ofstream(conf.GetProcessNodeLogFilePath("d" + std::to_string(depth) + "-all_recinsts.txt"));
-			for (auto& r : *pending_recursion_instances) {
-				#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
-					log_os << "*********************************\n# RecursionInstance " << recursion_instance_counter++ << std::endl;
-					int amount_of_action_children = HdtProcessNode(r, tree, rs, *upcoming_recursion_instances, Log(log_os));
-				#else
-					int amount_of_action_children = HdtProcessNode(r, tree, rs, upcoming_recursion_instances, Log());
-				#endif
-				leaves += amount_of_action_children;
-				path_length_sum += (depth + 1) * amount_of_action_children;
+			std::cout << "debug marker A" << std::endl;
+
+			TLOG3_START("Processing instances");
+			{
+				for (size_t i = rig.begin_index; i < rig.end_index; i++) {
+#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
+					process_node_log_os << "*********************************\n# RecursionInstance " << recursion_instance_counter++ << std::endl;
+					int amount_of_action_children = HdtProcessNode((*pending_recursion_instances)[i], tree, rs, *upcoming_recursion_instances, Log(process_node_log_os));
+#else
+					int amount_of_action_children = HdtProcessNode((*pending_recursion_instances)[i], tree, rs, *upcoming_recursion_instances, Log());
+#endif
+					leaves += amount_of_action_children;
+					path_length_sum += (depth + 1) * amount_of_action_children;
+				}
 			}
-			log_os.close();
+			TLOG3_STOP;
+
+			TLOG5("Dellocating tables",
+				for (size_t i = rig.begin_index; i < rig.end_index; i++) {
+					(*pending_recursion_instances)[i].deallocateTables();
+				}
+			);
 		}
-		TLOG3_STOP;
-		
+
+		process_node_log_os.close();
 		depth++;
 
-		//for (const auto& c : pending_recursion_instances) {
-		//	std::cout << "Size: " << c.tableSizeInMemory() << std::endl;
-		//}
+
 #if HDT_DEPTH_PROGRESS_ENABLED == true
 		SaveDepthProgressToFile(*upcoming_recursion_instances, tree, depth, leaves, path_length_sum, rule_accesses);
 #endif
 		std::cout << "debug marker B" << std::endl;
 
 		pending_recursion_instances->clear();
-		
+		recursion_instance_groups.clear();
+
 		// swap pointers
 		std::swap(upcoming_recursion_instances, pending_recursion_instances);
 
@@ -1341,7 +1401,7 @@ void FindHdtIteratively(rule_set& rs,
 #if HDT_DEPTH_PROGRESS_ENABLED == true
 	try {
 		std::filesystem::remove(GetLatestDepthProgressFilePath());
-	} 
+	}
 	catch (std::filesystem::filesystem_error e) {
 		std::cerr << "Could not delete 'latest depth progress file'." << std::endl;
 	}
@@ -1365,7 +1425,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 
 	bool b3 = (HDT_INFORMATION_GAIN_METHOD_VERSION >= 1 && HDT_INFORMATION_GAIN_METHOD_VERSION <= 3);
 	bool b4 = (HDT_ACTION_SOURCE >= 0 && HDT_ACTION_SOURCE <= 3);
-	
+
 	if (!(b3 && b4)) {
 		std::cerr << "Assert failed: check HDT_ACTION_SOURCE and HDT_INFORMATION_GAIN_METHOD_VERSION." << std::endl;
 		throw std::runtime_error("Assert failed: check HDT_ACTION_SOURCE and HDT_INFORMATION_GAIN_METHOD_VERSION.");
@@ -1392,7 +1452,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;
 	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
 
-	
+
 #if HDT_PARALLEL_PARTITIONBASED_ENABLED == false
 	brs.OpenRuleFiles();
 #endif
@@ -1413,7 +1473,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	return tree;
 }
 
-BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs, const string& filename)
+BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs, const std::string& filename)
 {
 	TLOG("Generating HDT",
 		auto t = GenerateHdt(rs, const_cast<BaseRuleSet&>(brs));
@@ -1424,10 +1484,11 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs, const
 }
 
 BinaryDrag<conact> GetHdt(const rule_set& rs, const BaseRuleSet& brs, bool force_generation) {
-	string hdt_filename = conf.hdt_path_.string();
+	std::string hdt_filename = conf.hdt_path_.string();
 	BinaryDrag<conact> t;
 	if (conf.force_odt_generation_ || force_generation || !LoadConactTree(t, hdt_filename)) {
 		t = GenerateHdt(rs, brs, hdt_filename);
 	}
 	return t;
 }
+#pragma endregion
