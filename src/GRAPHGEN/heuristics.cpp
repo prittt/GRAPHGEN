@@ -1296,6 +1296,8 @@ void FindHdtIteratively(rule_set& rs,
 
 	ProgressMetaData pmd = GetInitialProgress(*pending_recursion_instances, tree.GetRoot(), rs, brs, tree);
 
+	omp_set_nested(1);
+
 	int depth = pmd.start_depth;
 	int leaves = pmd.start_leaves;
 	int path_length_sum = pmd.start_path_length_sum;
