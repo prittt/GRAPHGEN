@@ -63,9 +63,9 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 constexpr auto HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS = std::min(PARTITIONS, 64);
 constexpr auto HDT_PARALLEL_PARTITIONBASED_IDLE_MS = 1;
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING 3
-#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING 21
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING 3
 
-constexpr auto HDT_RECURSION_INSTANCE_GROUP_SIZE = 1000000;
+constexpr auto HDT_RECURSION_INSTANCE_GROUP_SIZE = 600000;
 
 #define HDT_PROCESS_NODE_LOGGING_ENABLED true /* Write log files for all the recursion instances as they are processed. Very helpful for debugging. */
 
@@ -1197,6 +1197,19 @@ int HdtProcessNode(
 	double baseEntropy = entropy(r.all_single_actions);
 	log << "Base Entropy: " << std::to_string(baseEntropy) << "\n";
 
+	if (baseEntropy == 0.) {
+		log << "Base Entropy is zero, therefore this node is a leaf.\n";
+		r.parent->data.t = conact::type::ACTION;
+		r.parent->data.action = GetFirstCountedAction(r.all_single_actions);
+		amount_of_action_children++;
+		r.processed = true;
+
+		log << "Processed instance. (Action Children = 1; due to Zero Entropy case) \n";
+		log << r.printTables();
+
+		return amount_of_action_children;
+	}
+
 	bool leftIsAction = false;
 	bool rightIsAction = false;
 
@@ -1331,7 +1344,9 @@ void FindHdtIteratively(rule_set& rs,
 			}
 		}
 
+#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
 		auto process_node_log_os = std::ofstream(conf.GetProcessNodeLogFilePath("d" + std::to_string(depth) + "-all_recinsts.txt"));
+#endif
 		int recursion_instance_counter = 0;
 
 		for (const auto& rig : recursion_instance_groups) {
@@ -1379,8 +1394,9 @@ void FindHdtIteratively(rule_set& rs,
 				}
 			);
 		}
-
+#if HDT_PROCESS_NODE_LOGGING_ENABLED == true
 		process_node_log_os.close();
+#endif
 		depth++;
 
 
