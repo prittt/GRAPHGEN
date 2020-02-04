@@ -39,6 +39,7 @@
 
 #include "constants.h"
 
+#define HDT_USE_FINISHED_TREE_ONLY false && HDT_DEPTH_PROGRESS_ENABLED
 
 constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO ACTION = GARBAGE DATA !! ****", "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
 #define HDT_ACTION_SOURCE 3 /* Source of the actions. 3/Binary Rule Files is the most common option. */
@@ -466,6 +467,11 @@ std::string GetLatestDepthProgressFilePath() {
 	return (conf.progress_file_path_ / std::filesystem::path("progress-latest.txt")).string();
 }
 
+std::string GetFinishedDepthProgressFilePath() {
+	return (conf.progress_file_path_ / std::filesystem::path("progress-finished.txt")).string();
+}
+
+
 std::string GetBenchmarkDepthProgressFilePath() {
 	return (conf.progress_file_path_ / std::filesystem::path("progress-BBDT3D-benchmark-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + ".txt")).string();
 }
@@ -657,7 +663,11 @@ ProgressMetaData GetInitialProgress(std::vector<RecursionInstance>& recursion_in
 #endif
 #else
 #if HDT_DEPTH_PROGRESS_ENABLED == true
+#if HDT_USE_FINISHED_TREE_ONLY == true
+	std::string path = GetFinishedDepthProgressFilePath();
+#else
 	std::string path = GetLatestDepthProgressFilePath();
+#endif
 	bool load = std::filesystem::exists(path);
 #else
 	bool load = false;
@@ -728,6 +738,11 @@ ProgressMetaData GetInitialProgress(std::vector<RecursionInstance>& recursion_in
 	}
 	else {
 		// start new run
+#if HDT_USE_FINISHED_TREE_ONLY == true
+		std::cout << "No finished tree found. Will abort because of the HDT_USE_FINISHED_TREE_ONLY parameter being true." << std::endl;
+		getchar();
+		exit(EXIT_FAILURE);
+#endif
 #if HDT_DEPTH_PROGRESS_ENABLED
 		std::cout << "No progress file found, starting new run from depth 0." << std::endl;
 #endif
@@ -1418,7 +1433,10 @@ void FindHdtIteratively(rule_set& rs,
 	std::cout << "HDT construction done. Nodes: " << leaves << " Average path length: " << average_path_length << std::endl;
 #if HDT_DEPTH_PROGRESS_ENABLED == true
 	try {
-		std::filesystem::remove(GetLatestDepthProgressFilePath());
+		if (std::filesystem::exists(GetFinishedDepthProgressFilePath())) {
+			std::filesystem::remove(GetFinishedDepthProgressFilePath());
+		}
+		std::filesystem::rename(GetLatestDepthProgressFilePath(), GetFinishedDepthProgressFilePath());
 	}
 	catch (std::filesystem::filesystem_error e) {
 		std::cerr << "Could not delete 'latest depth progress file'." << std::endl;
@@ -1475,6 +1493,19 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	brs.OpenRuleFiles();
 #endif
 	//brs.VerifyRuleFiles();
+#if HDT_USE_FINISHED_TREE_ONLY == true
+	if (std::filesystem::exists(GetFinishedDepthProgressFilePath())) {
+		std::vector<RecursionInstance> dummy;
+		GetInitialProgress(dummy, tree.GetRoot(), const_cast<rule_set&>(rs), brs, tree);
+		std::cout << "Successfully retrieved tree from finished progress file." << std::endl;
+		return tree;
+	}
+	else {
+		std::cout << "Finish depth progress file does not exist. Aborting due to HDT_USE_FINISHED_TREE_ONLY parameter set to true." << std::endl;
+		getchar();
+		exit(EXIT_FAILURE);
+	}
+#endif
 
 	FindHdtIteratively(const_cast<rule_set&>(rs), brs, tree);
 
