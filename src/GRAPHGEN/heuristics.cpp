@@ -1215,7 +1215,8 @@ int HdtProcessNode(
 	if (baseEntropy == 0.) {
 		log << "Base Entropy is zero, therefore this node is a leaf.\n";
 		r.parent->data.t = conact::type::ACTION;
-		r.parent->data.action = GetFirstCountedAction(r.all_single_actions);
+		r.parent->data.action = action_bitset().set(GetFirstCountedAction(r.all_single_actions));
+
 		amount_of_action_children++;
 		r.processed = true;
 
