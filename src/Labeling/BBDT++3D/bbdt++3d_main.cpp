@@ -34,15 +34,15 @@ using namespace std;
 
 int main()
 {
-    string algorithm_name = "BBDT3D";
-    conf = ConfigData(algorithm_name, "Grana3D");
+	string algorithm_name = "BBDT++3D";
+	conf = ConfigData(algorithm_name, "Grana3D");
 
-    Grana3dRS g_rs(true);
-    auto rs = g_rs.GetRuleSet();
+	Grana3dRS g_rs(true);
+	auto rs = g_rs.GetRuleSet();
 
-    // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Grana mask
-    BinaryDrag<conact> bd = GetHdt(rs, g_rs);
+	// Call GRAPHGEN:
+	// 1) Load or generate Optimal Decision Tree based on Grana mask
+	BinaryDrag<conact> bd = GetHdt(rs, g_rs);
 
 	//std::cout << " --> DrawDagOnFile()" << std::endl;
 
@@ -52,25 +52,31 @@ int main()
 
 	std::cout << " --> GenerateDragCode()" << std::endl;
 
-    // 3) Generate the tree C/C++ code taking care of the names used
-    //    in the Grana's rule set GranaRS
-    GenerateDragCode(bd);
+	// 3) Compress the tree
+	RemoveEqualSubtrees{ bd };
+	//DragCompressor{ bd, 1 };
 
+	// 4) Generate the tree C/C++ code taking care of the names used
+	//    in the Grana's rule set GranaRS
+	GenerateDragCode(bd);
+
+	// 5) Generate the C++ source code for pointers,
+	// conditions to check and actions to perform
 	std::cout << " --> GeneratePointersConditionsActionsCode()" << std::endl;
 
-    pixel_set block_positions{
+	pixel_set block_positions{
 			   {"K", {-2,-2,-2}},{"L", {+0,-2,-2}},{"M", {+2,-2,-2}},
 				{"N", {-2,+0,-2}},{"O", {+0,+0,-2}},{"P", {+2,+0,-2}},
 				{"Q", {-2,+2,-2}},{"R", {+0,+2,-2}},{"S", {+2,+2,-2}},
 
 				{"T", {-2,-2,+0}},{"U", {+0,-2,+0}},{"V", {+2,-2,+0}},
-				{"W", {-2,+0,+0}},{"X", {+0,+0,+0}} 
-    };
-    GeneratePointersConditionsActionsCode(rs, 
-                                          GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE, 
-                                          GenerateActionCodeTypes::LABELING,
-                                          block_positions);
+				{"W", {-2,+0,+0}},{"X", {+0,+0,+0}}
+	};
+	GeneratePointersConditionsActionsCode(rs,
+		GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE,
+		GenerateActionCodeTypes::LABELING,
+		block_positions);
 
 	std::cout << " ** DONE" << std::endl;
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }

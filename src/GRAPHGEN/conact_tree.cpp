@@ -50,7 +50,7 @@ static BinaryDrag<conact>::node* LoadConactTreeRec(BinaryDrag<conact>& t, ifstre
 		do {
 			int action;
 			is >> action >> ws;
-			n->data.action.set(action - 1);
+			n->data.action.set(action);
 		} while (is.peek() == ',' && is.get());
 	}
 	else {
