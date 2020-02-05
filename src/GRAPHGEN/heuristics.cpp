@@ -406,6 +406,8 @@ std::string TreeToString(BinaryDrag<conact>& tree) {
 	return ss.str();
 }
 
+int found_wildcards = 0;
+
 void StringToTreeRec(
 	std::string s,
 	BinaryDrag<conact>& tree,
@@ -447,6 +449,7 @@ void StringToTreeRec(
 	else {
 		if (s[0] == '*' && s.size() == 1) {
 			// wildcard for pending recursion instances
+			found_wildcards++;
 			r_insts[next_recursion_index++].setParent(node);
 		}
 		else if (s[0] == '[' && s[s.size() - 1] == ']') {
@@ -711,16 +714,22 @@ ProgressMetaData GetInitialProgress(std::vector<RecursionInstance>& recursion_in
 		is.close();
 
 		// checks
+#if HDT_USE_FINISHED_TREE_ONLY == false
 		if (recursion_instances.size() == 0) {
 			std::cerr << "No RecursionInstances found in loaded progress file. Aborting." << std::endl;
 			exit(EXIT_FAILURE);
 		}
+#endif
 		if (!meta_found) {
 			std::cerr << "No Meta section found in loaded progress file. Aborting." << std::endl;
 			exit(EXIT_FAILURE);
 		}
 		if (!tree_found) {
 			std::cerr << "No Tree found in loaded progress file. Aborting." << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		if (found_wildcards != recursion_instances.size()) {
+			std::cout << "Found " << found_wildcards << " wildcards ('*' nodes), but have " << recursion_instances.size() << " RecursionInstances." << std::endl;
 			exit(EXIT_FAILURE);
 		}
 		for (const auto& r : recursion_instances) {
@@ -1497,6 +1506,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 #if HDT_USE_FINISHED_TREE_ONLY == true
 	if (std::filesystem::exists(GetFinishedDepthProgressFilePath())) {
 		std::vector<RecursionInstance> dummy;
+		std::cout << "Loading finished depth progress from file..." << std::endl;
 		GetInitialProgress(dummy, tree.GetRoot(), const_cast<rule_set&>(rs), brs, tree);
 		std::cout << "Successfully retrieved tree from finished progress file." << std::endl;
 		return tree;
