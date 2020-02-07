@@ -32,5 +32,5 @@
 
 void PrintStats(const BinaryDrag<conact>& bd, std::ostream& os) {
     BinaryDragStatistics bds(bd);
-    os << "nodes:" << bds.Nodes() << "; leaves = " << bds.Leaves() << "\n";
+    os << "Nodes: " << bds.Nodes() << "; Leaves: " << bds.Leaves() << "; Average Path Length: " << bds.AveragePathLength() << "\n";
 }

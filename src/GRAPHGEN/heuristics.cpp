@@ -1253,6 +1253,17 @@ int HdtProcessNode(
 		double LigTimesRig = (baseEntropy - leftEntropy) + (baseEntropy - rightEntropy);
 		double difference = (std::max(leftEntropy, rightEntropy) - std::min(leftEntropy, rightEntropy)) + 0.001;
 		double informationGain = LigTimesRig / std::sqrt(difference);
+#elif HDT_INFORMATION_GAIN_METHOD_VERSION == 4
+		// 4) Information Gain Sum; Punish Negative
+		double leftGain = (baseEntropy - leftEntropy);
+		double rightGain = (baseEntropy - rightEntropy);
+		if (leftGain < 0) {
+			leftGain *= 0;
+		} 
+		if (rightGain < 0) {
+			rightGain *= 0;
+		}
+		double informationGain = rightGain + leftGain;
 #endif
 
 		if (std::abs(baseEntropy - leftEntropy) < 0.00001 && std::abs(baseEntropy - rightEntropy) < 0.00001) {
@@ -1469,7 +1480,7 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 		throw std::runtime_error("Assert failed: check ACTION_COUNT and CONDITION_COUNT.");
 	}
 
-	bool b3 = (HDT_INFORMATION_GAIN_METHOD_VERSION >= 1 && HDT_INFORMATION_GAIN_METHOD_VERSION <= 3);
+	bool b3 = (HDT_INFORMATION_GAIN_METHOD_VERSION >= 1 && HDT_INFORMATION_GAIN_METHOD_VERSION <= 4);
 	bool b4 = (HDT_ACTION_SOURCE >= 0 && HDT_ACTION_SOURCE <= 3);
 
 	if (!(b3 && b4)) {

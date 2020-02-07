@@ -44,9 +44,6 @@ int main()
     // 1) Load or generate Optimal Decision Tree based on Grana mask
 	BinaryDrag<conact> bd = GetHdt(rs, g_rs, true);
 
-	//BinaryDragStatistics stats(bd);
-	//std::cout << "Generated Tree has " << stats.Leaves() << " leaves and an average path length of " << stats.AveragePathLength() << "." << std::endl;
-
     // 2) Draw the generated tree
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);

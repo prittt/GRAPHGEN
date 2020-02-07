@@ -49,15 +49,18 @@ int main()
  //   // 2) Draw the generated tree
  //   string tree_filename = algorithm_name + "_tree";
  //   DrawDagOnFile(tree_filename, bd);
-
-	std::cout << " --> GenerateDragCode()" << std::endl;
+	PrintStats(bd);
 
 	// 3) Compress the tree
-	RemoveEqualSubtrees{ bd };
-	//DragCompressor{ bd, 1 };
+	std::cout << " --> DragCompressor" << std::endl;
+	//RemoveEqualSubtrees{ bd };
+	DragCompressor{ bd, 1 };
+
+	PrintStats(bd);
 
 	// 4) Generate the tree C/C++ code taking care of the names used
 	//    in the Grana's rule set GranaRS
+	std::cout << " --> GenerateDragCode()" << std::endl;
 	GenerateDragCode(bd);
 
 	// 5) Generate the C++ source code for pointers,
