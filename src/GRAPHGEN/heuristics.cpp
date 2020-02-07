@@ -63,8 +63,8 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_PARALLEL_PARTITIONBASED_ENABLED true /* Best approach at the moment. Allows for great parallelization and is generally faster for BBDT3D-36. For smaller problems like BBDT2D, turning this off may be faster (rule-based approach). */
 constexpr auto HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS = std::min(PARTITIONS, 64);
 constexpr auto HDT_PARALLEL_PARTITIONBASED_IDLE_MS = 1;
-#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING 3
-#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING 3
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING 5
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING 1
 
 constexpr auto HDT_RECURSION_INSTANCE_GROUP_SIZE = 600000;
 
@@ -90,6 +90,8 @@ constexpr int32_t ceiling(float num)
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL = 256;
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_COUNT = ceiling(ACTION_COUNT * 1.f / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL);
 constexpr static ActionCounter ZERO = 0;
+
+
 
 #pragma region Data Structures
 
@@ -122,7 +124,7 @@ struct LazyCountingVector {
 		return result;
 	}
 
-	const void print(std::ostringstream& oss) const {
+	const void print(std::ostream& oss) const {
 		if (data_.size() == 0) {
 			return;
 		}
@@ -1328,6 +1330,7 @@ int HdtProcessNode(
 
 #pragma region Interface/High-Level Functions
 
+
 void FindHdtIteratively(rule_set& rs,
 	BaseRuleSet& brs,
 	BinaryDrag<conact>& tree)
@@ -1466,7 +1469,216 @@ void FindHdtIteratively(rule_set& rs,
 }
 
 
-BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
+struct LeafInfo {
+	BinaryDrag<conact>::node* ptr;
+	LazyCountingVector counts;
+	ullong set_conditions0 = 0;
+	ullong set_conditions1 = 0;
+	std::vector<int> conditions;
+
+	LeafInfo(BinaryDrag<conact>::node* ptr, ullong& set_conditions0, ullong& set_conditions1, std::vector<int>& conditions) : ptr(ptr), set_conditions0(set_conditions0), set_conditions1(set_conditions1), conditions(conditions) 
+	{
+		prepareRuleCodeShifts();
+	}
+
+	ullong nextRuleCode;
+	ullong ruleCodeBitMask = 0;
+
+	void forwardToRuleCode(const ullong& rule_code, const rule_set& rs) {
+		ruleCodeBitMask = 0;
+		int i = 0;
+		for (const auto& c : conditions) {
+			ruleCodeBitMask |= ((rule_code >> c) & 1ULL) << i;
+			i++;
+		}
+		findNextRuleCode();
+	}
+
+	std::vector<RuleCodeShift> rule_code_shifts;
+
+	void prepareRuleCodeShifts() {
+		RuleCodeShift* current_shift = nullptr;
+		int non_mask_conditions = 0;
+		for (int i = 0; i < CONDITION_COUNT; i++) {
+			if (std::find(conditions.begin(), conditions.end(), i) != conditions.end()) { // condition, add to bitmask				
+				if (current_shift == nullptr) { // new mask
+					rule_code_shifts.push_back(RuleCodeShift(1ULL << (i - non_mask_conditions), non_mask_conditions));
+					current_shift = &rule_code_shifts[rule_code_shifts.size() - 1];
+				}
+				else {
+					current_shift->mask |= 1ULL << (i - non_mask_conditions);
+				}
+			}
+			else {
+				current_shift = nullptr;
+				non_mask_conditions++;
+			}
+		}
+	}
+
+	bool findNextRuleCode() {
+		if (ruleCodeBitMask >= (1ULL << conditions.size())) {
+			return false;
+		}
+		nextRuleCode = set_conditions1;
+		for (const auto& s : rule_code_shifts) {
+			nextRuleCode |= ((ruleCodeBitMask & s.mask) << s.shift);
+		}
+		ruleCodeBitMask++;
+		return true;
+	}
+};
+
+void AddLeavesToVectorRec(BinaryDrag<conact>::node* node, ullong set_conditions0, ullong set_conditions1, rule_set& rs, std::vector<LeafInfo>& leaves) {
+	if (node->isleaf()) {
+		std::vector<int> conditions;
+		ullong set_conditions = set_conditions0 | set_conditions1;
+		for (int i = 0; i < CONDITION_COUNT; i++) {
+			if (((set_conditions >> i) & 1) == 0) {
+				conditions.push_back(i);
+			}
+		}
+		leaves.push_back(LeafInfo(node, set_conditions0, set_conditions1, conditions));
+	}
+	else {
+		ullong added_bit = (1ULL << rs.conditions_pos[node->data.condition]);
+		AddLeavesToVectorRec(node->left, set_conditions0 | added_bit, set_conditions1, rs, leaves);
+		AddLeavesToVectorRec(node->right, set_conditions0, set_conditions1 | added_bit, rs, leaves);
+	}
+}
+
+void RegenerateEquivalentActionsInLeaves(rule_set& rs, BaseRuleSet& brs, BinaryDrag<conact>& tree) {
+	std::vector<LeafInfo> leaves;
+	leaves.reserve(1683079);
+	AddLeavesToVectorRec(tree.GetRoot(), 0, 0, rs, leaves);
+
+	auto start = std::chrono::system_clock::now();
+	constexpr llong begin_rule_code = 0;
+	constexpr llong end_rule_code = TOTAL_RULES;
+	constexpr int begin_partition = 0;
+	constexpr int end_partition = PARTITIONS;
+	std::vector<std::vector<action_bitset>> action_data(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, std::vector<action_bitset>(RULES_PER_PARTITION));
+	std::vector<PartitionState> action_data_state(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, PartitionState());
+	int partition_reader_idle = 0;
+	int partition_processor_idle = 0;
+
+#pragma omp parallel num_threads(2)
+	{
+		// Task: Read Partitions
+		if (omp_get_thread_num() == 0)
+		{
+#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING)
+			{
+#pragma omp for schedule(dynamic, 1)
+				for (int next_loaded_partition = begin_partition; next_loaded_partition < end_partition; next_loaded_partition++) {
+					int index = next_loaded_partition % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
+					while (action_data_state[index].processed == false) {
+						//std::cout << "partition reader idle\n
+#pragma omp atomic
+						partition_reader_idle++;
+						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
+					}
+					brs.LoadPartition(next_loaded_partition, action_data[index]);
+					action_data_state[index].processed = false;
+					rule_accesses += RULES_PER_PARTITION;
+					//std::cout << ("loaded p" + std::to_string(next_loaded_partition) + " into " + std::to_string(index) + "\n");
+				}
+			}
+		}
+
+		// Task: Process Partitions
+		if (omp_get_thread_num() == 1)
+		{
+#pragma omp parallel num_threads(HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING)
+			for (int p = begin_partition; p < end_partition; p++) {
+				int index = p % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
+#pragma omp single
+				{
+					while (action_data_state[index].processed == true) {
+						//std::cout << "processing thread team idle\n";
+#pragma omp atomic
+						partition_processor_idle++;
+						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
+					}
+					//std::cout << ("now processing p" + std::to_string(p) + " from " + std::to_string(index) + "\n");
+
+					if (p % (PARTITIONS / HDT_GENERATION_LOG_FREQUENCY) == 0) {
+						auto end = std::chrono::system_clock::now();
+						std::chrono::duration<double> elapsed_seconds = end - start;
+						std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+						double progress = p * 1.f / PARTITIONS;
+						double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+						char mbstr[100];
+						if (p == 0) {
+							std::cout << std::endl;
+						}
+						if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
+							std::cout << "[" << mbstr << "] Partition " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+						}
+						else {
+							std::cout << "[" << std::ctime(&end_time) << "] Rule " << p << " of " << PARTITIONS << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+						}
+					}
+				}
+				const ullong first_rule_code = p * RULES_PER_PARTITION;
+				const ullong last_rule_code = (p + 1) * RULES_PER_PARTITION;
+				std::vector<action_bitset>& actions = action_data[index];
+#pragma omp for schedule(dynamic, 1)
+				for (int i = 0; i < leaves.size(); i++) {
+					auto& leaf = leaves[i];
+					size_t n;
+					if (leaf.nextRuleCode < first_rule_code || leaf.nextRuleCode >= last_rule_code) {
+						leaf.forwardToRuleCode(first_rule_code, rs);
+					}
+					while (true) {
+						n = static_cast<size_t>(leaf.nextRuleCode - first_rule_code);
+						if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
+							break;
+						}
+						for (const auto& a : actions[n].getSingleActions()) {
+							leaf.counts[a]++;
+						}
+						if (!leaf.findNextRuleCode()) {
+							break;
+						}
+					}
+				}
+
+#pragma omp single
+				{
+					action_data_state[index].processed = true;
+					//std::cout << ("processed p" + std::to_string(p) + "\n");
+				}
+			}
+		}
+	}
+
+	
+#pragma omp parallel for
+	for (int i = 0; i < leaves.size(); i++) {
+		//std::cout << "**** Leaf: " << i << std::endl;
+		auto& leaf = leaves[i];
+		action_bitset& action = leaf.ptr->data.action;
+		const LazyCountingVector counts = const_cast<const LazyCountingVector&>(leaf.counts); // force read-only access on counting vector
+		auto previous_single_action = action.getSingleActions()[0];
+		ActionCounter expected_count = 1 << leaf.conditions.size();
+
+		for (int a = 0; a < ACTION_COUNT; a++) {
+			if (counts[a] == expected_count) {
+				/*if (previous_single_action == a) {
+					std::cout << "sanity check success, the already set action in this leaf has the expected count" << std::endl;
+				}*/
+				if (previous_single_action != a) {
+					//std::cout << "New equivalent action discovered!" << std::endl;
+					action.set(a);
+				}
+			}
+		}
+		//leaf.counts.print(std::cout);
+	}
+}
+
+BinaryDrag<conact> GenerateHdt(rule_set& rs, BaseRuleSet& brs) {
 	BinaryDrag<conact> tree;
 	auto parent = tree.make_root();
 
@@ -1520,6 +1732,9 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 		std::cout << "Loading finished depth progress from file..." << std::endl;
 		GetInitialProgress(dummy, tree.GetRoot(), const_cast<rule_set&>(rs), brs, tree);
 		std::cout << "Successfully retrieved tree from finished progress file." << std::endl;
+		TLOG("Regenerate equivalent actions in leafs",
+			RegenerateEquivalentActionsInLeaves(const_cast<rule_set&>(rs), brs, tree);
+		);
 		return tree;
 	}
 	else {
@@ -1528,8 +1743,8 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 		exit(EXIT_FAILURE);
 	}
 #endif
+	FindHdtIteratively(rs, brs, tree);
 
-	FindHdtIteratively(const_cast<rule_set&>(rs), brs, tree);
 
 	std::cout << "Total rule accesses: " << rule_accesses << "\n";
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
@@ -1544,10 +1759,14 @@ BinaryDrag<conact> GenerateHdt(const rule_set& rs, BaseRuleSet& brs) {
 	return tree;
 }
 
-BinaryDrag<conact> GenerateHdt(const rule_set& rs, const BaseRuleSet& brs, const std::string& filename)
+BinaryDrag<conact> GenerateHdt(rule_set& rs, BaseRuleSet& brs, const std::string& filename)
 {
 	TLOG("Generating HDT",
-		auto t = GenerateHdt(rs, const_cast<BaseRuleSet&>(brs));
+		auto t = GenerateHdt(rs, brs);
+	);
+
+	TLOG2("Regenerate equivalent actions in leaves",
+		RegenerateEquivalentActionsInLeaves(rs, brs, t);
 	);
 
 	WriteConactTree(t, filename);
@@ -1558,7 +1777,7 @@ BinaryDrag<conact> GetHdt(const rule_set& rs, const BaseRuleSet& brs, bool force
 	std::string hdt_filename = conf.hdt_path_.string();
 	BinaryDrag<conact> t;
 	if (conf.force_odt_generation_ || force_generation || !LoadConactTree(t, hdt_filename)) {
-		t = GenerateHdt(rs, brs, hdt_filename);
+		t = GenerateHdt(const_cast<rule_set&>(rs), const_cast<BaseRuleSet&>(brs), hdt_filename);
 	}
 	return t;
 }
