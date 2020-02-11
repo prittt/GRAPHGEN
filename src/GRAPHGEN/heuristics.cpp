@@ -42,7 +42,7 @@
 #define HDT_USE_FINISHED_TREE_ONLY false && HDT_DEPTH_PROGRESS_ENABLED
 
 constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO ACTION = GARBAGE DATA !! ****", "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
-#define HDT_ACTION_SOURCE 3 /* Source of the actions. 3/Binary Rule Files is the most common option. */
+#define HDT_ACTION_SOURCE 3 /* Source of the actions. 4/Binary Rule Files is the most common option. */
 #define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2 /* Select a different formula on how information gain is calculated */
 
@@ -139,7 +139,7 @@ struct LazyCountingVector {
 	// writable non-const return type, creates new partition.
 	ActionCounter& operator[](const size_t t) {
 		auto& s = data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
-		if (s.size() == 0) {
+		if (s.empty()) {
 			if (t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL == LAZY_COUNTING_VECTOR_PARTITIONS_COUNT - 1) {
 				s.resize(ACTION_COUNT % LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL, 0);
 			} else {
@@ -152,7 +152,7 @@ struct LazyCountingVector {
 	// read only return type, do not create new partitions, instead return 0.
 	const ActionCounter& operator[](const size_t t) const {
 		auto& s = data_[t / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];
-		if (s.size() == 0) {
+		if (s.empty()) {
 			return ZERO;
 		}
 		return s[t % LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL];

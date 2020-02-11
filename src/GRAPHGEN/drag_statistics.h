@@ -45,9 +45,11 @@ class BinaryDragStatistics {
     std::set<const BinaryDrag<conact>::node*> visited_nodes;
     std::set<const BinaryDrag<conact>::node*> visited_leaves;
 	uint64_t path_length_sum = 0;
+	uint64_t seen_leaves = 0;
 
     void PerformStatistics(const BinaryDrag<conact>::node *n, const int depth) {
         if (n->isleaf()) {
+			seen_leaves++;
             visited_leaves.insert(n);
 			path_length_sum += depth;
             return;
@@ -80,13 +82,13 @@ public:
 
     @return number of unique leaves
     */
-    auto Leaves() const { return visited_leaves.size(); }
+    auto UniqueLeaves() const { return visited_leaves.size(); }
 
 	/** @brief Returns the average path length from the root to the leaves in the DRAG.
 
 	@return average path length
 	*/
-	auto AveragePathLength() const { return path_length_sum / static_cast<float>(visited_leaves.size()); }
+	auto AveragePathLength() const { return path_length_sum / static_cast<float>(seen_leaves); }
 
     /** @brief Reverse into the specified output stream the unique leaves of a BinaryDrag.
 

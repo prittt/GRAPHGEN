@@ -494,7 +494,7 @@ private:
                 // ... and finally update class attributes accordingly
                 BinaryDragStatistics bds(bd);
                 best_nodes_  = bds.Nodes();
-                best_leaves_ = bds.Leaves();
+                best_leaves_ = bds.UniqueLeaves();
                 best_bd_ = bd;
 
                 // ... save the current tree if needed
@@ -504,7 +504,7 @@ private:
 
                 // ... print status if needed
                 if (print_status_bar) {
-                    std::cout << "\r" << progress_counter_ << " - nodes: " << bds.Nodes() << "; leaves: " << bds.Leaves() << "\n";
+                    std::cout << "\r" << progress_counter_ << " - nodes: " << bds.Nodes() << "; leaves: " << bds.UniqueLeaves() << "\n";
                 }
 
             }
