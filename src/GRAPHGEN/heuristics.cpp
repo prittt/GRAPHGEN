@@ -46,6 +46,8 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 2 /* Select a different formula on how information gain is calculated */
 
+#define HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS false /* Count equivalent actions globally in a separate pass. May improve accuracy? */
+
 #define HDT_BENCHMARK_READAPPLY_ENABLED false /* Benchmark the performance of the ReadApply function */
 #define HDT_BENCHMARK_READAPPLY_DEPTH 12 /* Choose from: 12, 14, 16. Higher depth means more but smaller recursion instances */
 #define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED /* Pause the program at different points to allow for measuring memory usage manually */
@@ -176,6 +178,9 @@ struct RecursionInstance {
 	// local vars
 	std::vector<LazyCountingVector> single_actions;
 	LazyCountingVector all_single_actions = LazyCountingVector(false);
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+	LazyCountingVector all_single_equivalent_actions = LazyCountingVector(false);
+#endif
 #if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
 	std::vector<std::array<int, 2>> most_probable_action_occurences_;
@@ -202,6 +207,9 @@ struct RecursionInstance {
 	}
 
 	void allocateTables() {
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+		all_single_equivalent_actions.allocateTables();
+#endif
 		all_single_actions.allocateTables();
 		single_actions.resize(CONDITION_COUNT * 2, LazyCountingVector(false));
 		for (const auto& c : conditions) {
@@ -211,6 +219,9 @@ struct RecursionInstance {
 	}
 
 	void deallocateTables() {
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+		all_single_equivalent_actions.deallocateTables();
+#endif
 		all_single_actions.deallocateTables();
 		single_actions.clear();
 	}
@@ -1023,7 +1034,11 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 							if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
 								break;
 							}
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+							FindBestSingleActionCombinationRunningCombined(r.all_single_equivalent_actions, r.all_single_actions, r.single_actions, r.conditions, (actions)[n], first_rule_code + n);
+#else
 							FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, (actions)[n], first_rule_code + n);
+#endif
 							if (!r.findNextRuleCode()) {
 								r.counted_partitions = PARTITIONS;
 								break;
@@ -1034,7 +1049,7 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 				}
 				else if (task == PartitionProcessingTaskType::RegenerateEquivalentActions) {
 					auto& leaves = *data.leaves;
-#pragma omp for schedule(dynamic, 1)
+					#pragma omp for schedule(dynamic, 1)
 					for (int i = 0; i < leaves.size(); i++) {
 						auto& leaf = leaves[i];
 						size_t n;
@@ -1056,7 +1071,38 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 					}
 				}
 				else if (task == PartitionProcessingTaskType::EquivalentCountingPass) {
-					// TODO: not yet implemented
+					const int begin_r_inst = static_cast<int>(data.rig->begin_index);
+					const int end_r_inst = static_cast<int>(data.rig->end_index);
+					auto& r_insts = *data.r_insts;
+
+					#pragma omp critical 
+					{
+						for (int i = begin_r_inst; i < end_r_inst; i++) {
+							auto& r = r_insts[i];
+
+							size_t n;
+							if (r.nextRuleCode < first_rule_code || r.nextRuleCode >= last_rule_code) {
+								r.forwardToRuleCode(first_rule_code, rs);
+							}
+							while (true) {
+								n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
+								if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
+									break;
+								}
+								for (auto& b : actions[n].getSingleActions()) {
+									r.all_single_equivalent_actions[b]++;
+								}
+								if (!r.findNextRuleCode()) {
+									break;
+								}
+							}
+						}
+					}
+					
+				}
+				else {
+					std::cerr << "Task type" + std::to_string(task) + " not yet implemented." << std::endl;;
+					throw std::runtime_error("Task type" + std::to_string(task) + " not yet implemented.");
 				}
 
 #pragma omp single
@@ -1163,7 +1209,22 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 
 
 #pragma region Read and Classify Rules
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+void HdtCountEquivalentActions(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts, const RecursionInstanceGroup& rig) {
+
+	ParallelPartitionProcessing<EquivalentCountingPass>(brs, rs, PartitionProcessingTaskData(&r_insts, &rig));
+
+	// Reset RecursionInstances so their state is zero
+	for (auto& r : r_insts) {
+		r.forwardToRuleCode(0, rs);
+	}
+}
+#endif
+
 void FindBestSingleActionCombinationRunningCombined(
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+	const LazyCountingVector& all_single_equivalent_actions,
+#endif
 	LazyCountingVector& all_single_actions,
 	std::vector<LazyCountingVector>& single_actions,
 	const std::vector<int>& conditions,
@@ -1173,6 +1234,18 @@ void FindBestSingleActionCombinationRunningCombined(
 	const auto& actions = combined_action.getSingleActions();
 
 	Action most_popular_single_action_index = actions[0];
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+	ActionCounter most_popular_single_action_occurences = all_single_equivalent_actions[actions[0]];
+
+	if (actions.size() > 1) {
+		for (const auto& a : actions) { // TODO: optimize by skipping first element
+			if (all_single_equivalent_actions[a] > most_popular_single_action_occurences) {
+				most_popular_single_action_index = a;
+				most_popular_single_action_occurences = all_single_equivalent_actions[a];
+			}
+		}
+	}
+#else
 	ActionCounter most_popular_single_action_occurences = all_single_actions[actions[0]];
 
 	if (actions.size() > 1) {
@@ -1183,6 +1256,7 @@ void FindBestSingleActionCombinationRunningCombined(
 			}
 		}
 	}
+#endif
 
 	all_single_actions[most_popular_single_action_index]++;
 
@@ -1523,6 +1597,12 @@ void FindHdtIteratively(rule_set& rs,
 #if HDT_TABLE_PROGRESS_ENABLED == true
 			// look for counting table files and load them
 			LoadTableProgressFromFile(*pending_recursion_instances);
+#endif
+
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+			TLOG6("Counting equivalent actions",
+				HdtCountEquivalentActions(brs, rs, *pending_recursion_instances, rig);
+			);
 #endif
 
 			TLOG2("Reading rules and classifying",
