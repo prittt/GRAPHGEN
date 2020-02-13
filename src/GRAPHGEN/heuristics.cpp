@@ -178,9 +178,7 @@ struct RecursionInstance {
 	// local vars
 	std::vector<LazyCountingVector> single_actions;
 	LazyCountingVector all_single_actions = LazyCountingVector(false);
-#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
 	LazyCountingVector all_single_equivalent_actions = LazyCountingVector(false);
-#endif
 #if HDT_COMBINED_CLASSIFIER == false
 	std::vector<std::array<int, 2>> most_probable_action_index_;
 	std::vector<std::array<int, 2>> most_probable_action_occurences_;
@@ -417,6 +415,11 @@ struct LeafInfo {
 struct RecursionInstanceGroup {
 	size_t begin_index;
 	size_t end_index;
+
+	const size_t size() const {
+		return end_index - begin_index;
+	}
+
 	RecursionInstanceGroup(size_t begin_index, size_t end_index) : begin_index(begin_index), end_index(end_index) {}
 };
 
@@ -842,7 +845,82 @@ ProgressMetaData GetInitialProgress(std::vector<RecursionInstance>& recursion_in
 }
 #pragma endregion
 
+
+#pragma region Read and Classify Rules
+void FindBestSingleActionCombinationRunningCombined(
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+	const LazyCountingVector& all_single_equivalent_actions,
+#endif
+	LazyCountingVector& all_single_actions,
+	std::vector<LazyCountingVector>& single_actions,
+	const std::vector<int>& conditions,
+	const action_bitset& combined_action,
+	const ullong& rule_code) {
+
+	const auto& actions = combined_action.getSingleActions();
+
+	Action most_popular_single_action_index = actions[0];
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+	ActionCounter most_popular_single_action_occurences = all_single_equivalent_actions[actions[0]];
+
+	if (actions.size() > 1) {
+		for (const auto& a : actions) { // TODO: optimize by skipping first element
+			if (all_single_equivalent_actions[a] > most_popular_single_action_occurences) {
+				most_popular_single_action_index = a;
+				most_popular_single_action_occurences = all_single_equivalent_actions[a];
+			}
+		}
+	}
+#else
+	ActionCounter most_popular_single_action_occurences = all_single_actions[actions[0]];
+
+	if (actions.size() > 1) {
+		for (const auto& a : actions) { // TODO: optimize by skipping first element
+			if (all_single_actions[a] > most_popular_single_action_occurences) {
+				most_popular_single_action_index = a;
+				most_popular_single_action_occurences = all_single_actions[a];
+			}
+		}
+	}
+#endif
+
+	all_single_actions[most_popular_single_action_index]++;
+
+	for (const auto& c : conditions) {
+		single_actions[2 * c + ((rule_code >> c) & 1)][most_popular_single_action_index]++;
+	}
+}
+
+void FindBestSingleActionCombinationRunningCombinedPtr(
+	LazyCountingVector& all_single_actions,
+	std::vector<LazyCountingVector>& single_actions,
+	const std::vector<int>& conditions,
+	const action_bitset* combined_action,
+	const ullong& rule_code) {
+
+	int most_popular_single_action_index = -1;
+	ActionCounter most_popular_single_action_occurences = -1;
+
+	for (const auto& a : combined_action->getSingleActions()) {
+		if (all_single_actions[a] > most_popular_single_action_occurences) {
+			most_popular_single_action_index = a;
+			most_popular_single_action_occurences = all_single_actions[a];
+		}
+	}
+	all_single_actions[most_popular_single_action_index]++;
+
+	for (const auto& c : conditions) {
+		single_actions[2 * c + ((rule_code >> c) & 1)][most_popular_single_action_index]++;
+	}
+}
+
+#pragma endregion
+
 #pragma region Parallel Partition Processing
+
+int threads_reading = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL;
+int threads_processing = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL;
+
 enum PartitionProcessingTaskType {
 	ReadAndApply,
 	RegenerateEquivalentActions,
@@ -860,7 +938,7 @@ struct PartitionProcessingTaskData {
 };
 
 template<PartitionProcessingTaskType task>
-void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProcessingTaskData& data) {
+void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProcessingTaskData data) {
 	auto start = std::chrono::system_clock::now();
 
 #if HDT_BENCHMARK_READAPPLY_ENABLED == true
@@ -911,7 +989,18 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 	std::vector<std::vector<action_bitset>> action_data(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, std::vector<action_bitset>(RULES_PER_PARTITION));
 	std::vector<PartitionState> action_data_state(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, PartitionState());
 
-	std::cout << "Thread Distribution: [Reading: " << threads_reading << "] [Processing: " << threads_processing << "]" << std::endl;
+	for (size_t i = 0; i < action_data_state.size(); i++) {
+		action_data_state[i].partition_id = static_cast<int>(i);
+	}
+
+	bool clamped_processing_thread_count = false;
+
+	if (data.rig != nullptr && data.rig->size() < threads_processing) {
+		threads_processing = static_cast<int>(data.rig->size());
+		threads_reading = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL - threads_processing;
+		clamped_processing_thread_count = true;
+	}
+	std::cout << "Thread Distribution: [Reading: " << threads_reading << "] [Processing: " << threads_processing << (clamped_processing_thread_count ? " (clamped to recursion instance size)" : "") << "]" << std::endl;
 
 	int partition_reader_idle = 0;
 	int partition_processor_idle = 0;
@@ -929,9 +1018,11 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 			{
 #pragma omp for schedule(dynamic, 1)
 				for (int next_loaded_partition = begin_partition; next_loaded_partition < end_partition; next_loaded_partition++) {
+					//std::ofstream os(GetTableProgressPath("Read" + std::to_string(next_loaded_partition) + ".txt"));
 					int index = next_loaded_partition % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
-					while (action_data_state[index].processed == false) {
-						//std::cout << "partition reader idle\n";
+					//os << "Thread Number: " << omp_get_thread_num() << " PartitionIndex: " << index << std::endl;
+					while (action_data_state[index].processed == false || action_data_state[index].partition_id != next_loaded_partition) {
+						//os << "partition reader idle\n";
 #if HDT_BENCHMARK_READAPPLY_ENABLED == true
 						if (benchmark_started) {
 #pragma omp atomic
@@ -945,11 +1036,12 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 						}
 						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
 					}
+					//os << "start\n";
 					brs.LoadPartition(next_loaded_partition, action_data[index]);
 					action_data_state[index].processed = false;
-					action_data_state[index].partition_id = next_loaded_partition;
 					rule_accesses += RULES_PER_PARTITION;
-					//std::cout << ("loaded p" + std::to_string(next_loaded_partition) + " into " + std::to_string(index) + "\n");
+					//os << "end\n";
+					//os.close();
 				}
 			}
 		}
@@ -962,8 +1054,11 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 				int index = p % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
 #pragma omp single
 				{
+					//std::ofstream os(GetTableProgressPath("Process" + std::to_string(p) + ".txt"));
+					//os << "(Waiting) Thread Number: " << omp_get_thread_num() << " PartitionIndex: " << index << std::endl;
+
 					while (action_data_state[index].processed == true || action_data_state[index].partition_id != p) {
-						//std::cout << "processing thread team idle\n";
+						//os << " processing idle (action data state: processed: " << action_data_state[index].processed << " partition id: " << action_data_state[index].partition_id << ")\n";
 #if HDT_BENCHMARK_READAPPLY_ENABLED == true
 						if (benchmark_started) {
 #pragma omp atomic
@@ -977,7 +1072,8 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 						}
 						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
 					}
-					//std::cout << ("now processing p" + std::to_string(p) + " from " + std::to_string(index) + "\n");
+					//os << "start processing\n";
+					//os.close();
 
 #if HDT_BENCHMARK_READAPPLY_ENABLED == true
 					if (!benchmark_started && p >= benchmark_start_partition) {
@@ -1107,7 +1203,12 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 
 #pragma omp single
 				{
+					//std::ofstream os(GetTableProgressPath("Process" + std::to_string(p) + ".txt"), std::ios::app);
+					//os << "finished\n";
+					//os.close();
 					action_data_state[index].processed = true;
+					action_data_state[index].partition_id = p + HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
+
 					//std::cout << ("processed p" + std::to_string(p) + "\n");
 				}
 #if HDT_READAPPLY_VERBOSE_TIMINGS == true
@@ -1120,15 +1221,21 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 	}
 #if HDT_BENCHMARK_READAPPLY_ENABLED == false
 	std::cout << "\n\nPartition Reader Idle: " << (partition_reader_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds. Partition Processor Idle: " << (partition_processor_idle * HDT_PARALLEL_PARTITIONBASED_IDLE_MS / 1000.) << " seconds." << std::endl;
-	if ((partition_reader_idle / 100.) > partition_processor_idle && threads_reading > 1) {
-		threads_processing++;
-		threads_reading--;
-		std::cout << "In next level, one thread re-assigned to processing." << std::endl;
-	}
-	if ((partition_processor_idle / 100.) > partition_reader_idle && threads_processing > 1) {
-		threads_processing--;
-		threads_reading++;
-		std::cout << "In next level, one thread re-assigned to reading." << std::endl;
+	
+	if (clamped_processing_thread_count) {
+		threads_reading = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL;
+		threads_processing = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL;
+	} else {
+		if ((partition_reader_idle / 100.) > partition_processor_idle && threads_reading > 1) {
+			threads_processing++;
+			threads_reading--;
+			std::cout << "In next level, one thread re-assigned to processing." << std::endl;
+		}
+		if ((partition_processor_idle / 100.) > partition_reader_idle && threads_processing > 1) {
+			threads_processing--;
+			threads_reading++;
+			std::cout << "In next level, one thread re-assigned to reading." << std::endl;
+		}	
 	}
 #endif
 #if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
@@ -1203,174 +1310,6 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 
 	getchar();
 	exit(EXIT_SUCCESS);
-#endif
-}
-#pragma endregion
-
-
-#pragma region Read and Classify Rules
-#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
-void HdtCountEquivalentActions(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts, const RecursionInstanceGroup& rig) {
-
-	ParallelPartitionProcessing<EquivalentCountingPass>(brs, rs, PartitionProcessingTaskData(&r_insts, &rig));
-
-	// Reset RecursionInstances so their state is zero
-	for (auto& r : r_insts) {
-		r.forwardToRuleCode(0, rs);
-	}
-}
-#endif
-
-void FindBestSingleActionCombinationRunningCombined(
-#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
-	const LazyCountingVector& all_single_equivalent_actions,
-#endif
-	LazyCountingVector& all_single_actions,
-	std::vector<LazyCountingVector>& single_actions,
-	const std::vector<int>& conditions,
-	const action_bitset& combined_action,
-	const ullong& rule_code) {
-
-	const auto& actions = combined_action.getSingleActions();
-
-	Action most_popular_single_action_index = actions[0];
-#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
-	ActionCounter most_popular_single_action_occurences = all_single_equivalent_actions[actions[0]];
-
-	if (actions.size() > 1) {
-		for (const auto& a : actions) { // TODO: optimize by skipping first element
-			if (all_single_equivalent_actions[a] > most_popular_single_action_occurences) {
-				most_popular_single_action_index = a;
-				most_popular_single_action_occurences = all_single_equivalent_actions[a];
-			}
-		}
-	}
-#else
-	ActionCounter most_popular_single_action_occurences = all_single_actions[actions[0]];
-
-	if (actions.size() > 1) {
-		for (const auto& a : actions) { // TODO: optimize by skipping first element
-			if (all_single_actions[a] > most_popular_single_action_occurences) {
-				most_popular_single_action_index = a;
-				most_popular_single_action_occurences = all_single_actions[a];
-			}
-		}
-	}
-#endif
-
-	all_single_actions[most_popular_single_action_index]++;
-
-	for (const auto& c : conditions) {
-		single_actions[2 * c + ((rule_code >> c) & 1)][most_popular_single_action_index]++;
-	}
-}
-
-void FindBestSingleActionCombinationRunningCombinedPtr(
-	LazyCountingVector& all_single_actions,
-	std::vector<LazyCountingVector>& single_actions,
-	const std::vector<int>& conditions,
-	const action_bitset* combined_action,
-	const ullong& rule_code) {
-
-	int most_popular_single_action_index = -1;
-	ActionCounter most_popular_single_action_occurences = -1;
-
-	for (const auto& a : combined_action->getSingleActions()) {
-		if (all_single_actions[a] > most_popular_single_action_occurences) {
-			most_popular_single_action_index = a;
-			most_popular_single_action_occurences = all_single_actions[a];
-		}
-	}
-	all_single_actions[most_popular_single_action_index]++;
-
-	for (const auto& c : conditions) {
-		single_actions[2 * c + ((rule_code >> c) & 1)][most_popular_single_action_index]++;
-	}
-}
-
-int threads_reading = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL;
-int threads_processing = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL;
-
-void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts, const RecursionInstanceGroup& rig) {
-#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
- 	ParallelPartitionProcessing<ReadAndApply>(brs, rs, PartitionProcessingTaskData(&r_insts, &rig));
-#else
-	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
-#if HDT_BENCHMARK_READAPPLY == false
-		if (rule_code % (TOTAL_RULES / 64) == 0) { // TODO: optimize this?
-			auto end = std::chrono::system_clock::now();
-			std::chrono::duration<double> elapsed_seconds = end - start;
-			std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-			double progress = rule_code * 1.f / TOTAL_RULES;
-			double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
-			char mbstr[100];
-			if (rule_code == 0) {
-				std::cout << std::endl;
-			}
-			if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
-				std::cout << "[" << mbstr << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
-			}
-			else {
-				std::cout << "[" << std::ctime(&end_time) << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
-			}
-		}
-#endif
-#if HDT_BENCHMARK_READAPPLY == true
-		if (!benchmark_started && rule_code > benchmark_start_rule_code) {
-			benchmark_started = true;
-			benchmark_start_point = std::chrono::system_clock::now();
-			std::cout << "start - " << std::flush;
-		}
-#endif
-		first_match = true;
-
-#if HDT_PARALLEL_INNERLOOP_ENABLED == true
-#pragma omp parallel for num_threads(HDT_PARALLEL_INNERLOOP_NUMTHREADS)
-		for (int i = 0; i < r_insts.size(); i++) {
-			auto& r = r_insts[i];
-#else
-		for (auto& r : r_insts) {
-#endif
-			if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
-				if (first_match) {
-#if (HDT_ACTION_SOURCE == 0)
-					action = &zero_action;									// 0) Zero action
-#elif (HDT_ACTION_SOURCE == 1)
-					action = &rs.rules[rule_code].actions;					// 1) load from rule table
-#elif (HDT_ACTION_SOURCE == 2)
-					action = &brs.GetActionFromRuleIndex(rs, rule_code);	// 2) generate during run-time
-#elif (HDT_ACTION_SOURCE == 3)
-					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 3) read from file
-#endif
-					rule_accesses++;
-					first_match = false;
-				}
-#if HDT_COMBINED_CLASSIFIER == true
-				FindBestSingleActionCombinationRunningCombinedPtr(
-					r.all_single_actions,
-					r.single_actions,
-					r.conditions,
-					action,
-					rule_code);
-#else
-				FindBestSingleActionCombinationRunning(r.all_single_actions, action);
-
-				for (auto& c : r.conditions) {
-					int bit_value = (rule_code >> c) & 1;
-
-					int return_code = FindBestSingleActionCombinationRunning(r.single_actions[c][bit_value], action, r.most_probable_action_occurences_[c][bit_value]);
-
-					if (return_code >= 0) {
-						{
-							r.most_probable_action_index_[c][bit_value] = return_code;
-							r.most_probable_action_occurences_[c][bit_value] = r.single_actions[c][bit_value][return_code];
-						}
-					}
-				}
-#endif
-			}
-		}
-		}
 #endif
 }
 #pragma endregion
@@ -1459,7 +1398,7 @@ int HdtProcessNode(
 		double rightGain = (baseEntropy - rightEntropy);
 		if (leftGain < 0) {
 			leftGain *= 0;
-		} 
+		}
 		if (rightGain < 0) {
 			rightGain *= 0;
 		}
@@ -1528,6 +1467,100 @@ int HdtProcessNode(
 
 #pragma region Interface/High-Level Functions
 
+void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts, const RecursionInstanceGroup& rig) {
+#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
+	ParallelPartitionProcessing<ReadAndApply>(brs, rs, PartitionProcessingTaskData(&r_insts, &rig));
+#else
+	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
+#if HDT_BENCHMARK_READAPPLY == false
+		if (rule_code % (TOTAL_RULES / 64) == 0) { // TODO: optimize this?
+			auto end = std::chrono::system_clock::now();
+			std::chrono::duration<double> elapsed_seconds = end - start;
+			std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+			double progress = rule_code * 1.f / TOTAL_RULES;
+			double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+			char mbstr[100];
+			if (rule_code == 0) {
+				std::cout << std::endl;
+			}
+			if (std::strftime(mbstr, sizeof(mbstr), "%Y-%m-%d %H:%M:%S", std::localtime(&end_time))) {
+				std::cout << "[" << mbstr << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+			}
+			else {
+				std::cout << "[" << std::ctime(&end_time) << "] Rule " << rule_code << " of " << TOTAL_RULES << " (" << progress * 100 << "%, ca. " << projected_mins << " minutes remaining)." << std::endl;
+			}
+		}
+#endif
+#if HDT_BENCHMARK_READAPPLY == true
+		if (!benchmark_started && rule_code > benchmark_start_rule_code) {
+			benchmark_started = true;
+			benchmark_start_point = std::chrono::system_clock::now();
+			std::cout << "start - " << std::flush;
+		}
+#endif
+		first_match = true;
+
+#if HDT_PARALLEL_INNERLOOP_ENABLED == true
+#pragma omp parallel for num_threads(HDT_PARALLEL_INNERLOOP_NUMTHREADS)
+		for (int i = 0; i < r_insts.size(); i++) {
+			auto& r = r_insts[i];
+#else
+		for (auto& r : r_insts) {
+#endif
+			if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
+				if (first_match) {
+#if (HDT_ACTION_SOURCE == 0)
+					action = &zero_action;									// 0) Zero action
+#elif (HDT_ACTION_SOURCE == 1)
+					action = &rs.rules[rule_code].actions;					// 1) load from rule table
+#elif (HDT_ACTION_SOURCE == 2)
+					action = &brs.GetActionFromRuleIndex(rs, rule_code);	// 2) generate during run-time
+#elif (HDT_ACTION_SOURCE == 3)
+					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 3) read from file
+#endif
+					rule_accesses++;
+					first_match = false;
+				}
+#if HDT_COMBINED_CLASSIFIER == true
+				FindBestSingleActionCombinationRunningCombinedPtr(
+					r.all_single_actions,
+					r.single_actions,
+					r.conditions,
+					action,
+					rule_code);
+#else
+				FindBestSingleActionCombinationRunning(r.all_single_actions, action);
+
+				for (auto& c : r.conditions) {
+					int bit_value = (rule_code >> c) & 1;
+
+					int return_code = FindBestSingleActionCombinationRunning(r.single_actions[c][bit_value], action, r.most_probable_action_occurences_[c][bit_value]);
+
+					if (return_code >= 0) {
+						{
+							r.most_probable_action_index_[c][bit_value] = return_code;
+							r.most_probable_action_occurences_[c][bit_value] = r.single_actions[c][bit_value][return_code];
+						}
+					}
+				}
+#endif
+			}
+		}
+		}
+#endif
+	}
+
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+void HdtCountEquivalentActions(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts, const RecursionInstanceGroup& rig) {
+
+	ParallelPartitionProcessing<EquivalentCountingPass>(brs, rs, PartitionProcessingTaskData(&r_insts, &rig));
+
+	// Reset RecursionInstances so their state is zero
+	for (auto& r : r_insts) {
+		r.forwardToRuleCode(0, rs);
+	}
+}
+#endif
 
 void FindHdtIteratively(rule_set& rs,
 	BaseRuleSet& brs,
@@ -1570,7 +1603,7 @@ void FindHdtIteratively(rule_set& rs,
 		std::cout << "Processing next batch of recursion instances (depth: " << depth << ", count: " << pending_recursion_instances->size() << ")" << std::endl;
 
 		{
-			int groups = std::max(static_cast<int>(std::ceil(pending_recursion_instances->size() * 1./ HDT_RECURSION_INSTANCE_GROUP_SIZE)), 1);
+			int groups = std::max(static_cast<int>(std::ceil(pending_recursion_instances->size() * 1. / HDT_RECURSION_INSTANCE_GROUP_SIZE)), 1);
 			int previous_end = 0;
 			for (int i = 0; i < groups; i++) {
 				size_t group_size = (i == groups - 1) ? (pending_recursion_instances->size() - previous_end) : HDT_RECURSION_INSTANCE_GROUP_SIZE;
@@ -1696,7 +1729,7 @@ void RegenerateEquivalentActionsInLeaves(rule_set& rs, BaseRuleSet& brs, BinaryD
 	AddLeavesToVectorRec(tree.GetRoot(), 0, 0, rs, leaves);
 
 	ParallelPartitionProcessing<RegenerateEquivalentActions>(brs, rs, PartitionProcessingTaskData(&leaves));
-	
+
 #pragma omp parallel for
 	for (int i = 0; i < leaves.size(); i++) {
 		//std::cout << "**** Leaf: " << i << std::endl;
