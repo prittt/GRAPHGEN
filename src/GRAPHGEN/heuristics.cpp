@@ -44,7 +44,7 @@
 constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO ACTION = GARBAGE DATA !! ****", "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
 #define HDT_ACTION_SOURCE 3 /* Source of the actions. 4/Binary Rule Files is the most common option. */
 #define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
-#define HDT_INFORMATION_GAIN_METHOD_VERSION 2 /* Select a different formula on how information gain is calculated */
+#define HDT_INFORMATION_GAIN_METHOD_VERSION 1 /* Select a different formula on how information gain is calculated */
 
 #define HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS false /* Count equivalent actions globally in a separate pass. May improve accuracy? */
 
@@ -74,7 +74,7 @@ constexpr auto HDT_RECURSION_INSTANCE_GROUP_SIZE = 600000;
 #define HDT_PROCESS_NODE_LOGGING_ENABLED true /* Write log files for all the recursion instances as they are processed. Very helpful for debugging. */
 
 // How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
-constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(1, PARTITIONS);
+constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(1024, PARTITIONS);
 
 // BBDT3D-36: from depth 5 on INT can be used, before that ULLONG needs to be used to prevent overflow.
 using ActionCounter = int; // int, ullong
@@ -845,7 +845,6 @@ ProgressMetaData GetInitialProgress(std::vector<RecursionInstance>& recursion_in
 }
 #pragma endregion
 
-
 #pragma region Read and Classify Rules
 void FindBestSingleActionCombinationRunningCombined(
 #if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
@@ -997,10 +996,10 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 
 	if (data.rig != nullptr && data.rig->size() < threads_processing) {
 		threads_processing = static_cast<int>(data.rig->size());
-		threads_reading = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL - threads_processing;
+		threads_reading = std::min(threads_processing * 3, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL - threads_processing);
 		clamped_processing_thread_count = true;
 	}
-	std::cout << "Thread Distribution: [Reading: " << threads_reading << "] [Processing: " << threads_processing << (clamped_processing_thread_count ? " (clamped to recursion instance size)" : "") << "]" << std::endl;
+	std::cout << "Thread Distribution: [Reading: " << threads_reading << "] [Processing: " << threads_processing << "]" << (clamped_processing_thread_count ? " (clamped threads to recursion instance size)" : "") << std::endl;
 
 	int partition_reader_idle = 0;
 	int partition_processor_idle = 0;
@@ -1226,12 +1225,12 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 		threads_reading = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL;
 		threads_processing = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL;
 	} else {
-		if ((partition_reader_idle / 100.) > partition_processor_idle && threads_reading > 1) {
+		if ((partition_reader_idle / 10.) > partition_processor_idle && threads_reading > 1) {
 			threads_processing++;
 			threads_reading--;
 			std::cout << "In next level, one thread re-assigned to processing." << std::endl;
 		}
-		if ((partition_processor_idle / 100.) > partition_reader_idle && threads_processing > 1) {
+		if ((partition_processor_idle / 10.) > partition_reader_idle && threads_processing > 1) {
 			threads_processing--;
 			threads_reading++;
 			std::cout << "In next level, one thread re-assigned to reading." << std::endl;

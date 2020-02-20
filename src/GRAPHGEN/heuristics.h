@@ -56,4 +56,6 @@ In this case the tree is always regenerated. The loaded/generated tree is then r
 */
 BinaryDrag<conact> GetHdt(const rule_set& rs, const BaseRuleSet& brs, bool force_generation = false);
 
+void RegenerateEquivalentActionsInLeaves(rule_set& rs, BaseRuleSet& brs, BinaryDrag<conact>& tree);
+
 #endif // !GRAPHSGEN_HEURISTICS_H_
