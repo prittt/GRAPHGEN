@@ -36,7 +36,6 @@
 #include <utility>
 #include <filesystem>
 
-#include "compression.h"
 #include "zstdstream.h"
 
 #include "yaml-cpp/yaml.h"
@@ -54,7 +53,6 @@ class BaseRuleSet {
     rule_set rs_;
 
 	std::vector<action_bitset> currently_loaded_rules = std::vector<action_bitset>();
-	ZstdDecompression decompression;
 	int currently_open_partition = -1;
 
     bool LoadRuleSet() {
