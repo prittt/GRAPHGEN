@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019 
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -71,11 +71,6 @@ void Dag2DagUsingIdenties(BinaryDrag<conact>& t) {
 	Dag2DagUsingIdentiesRec(t.GetRoot(), t, visited_n);
 }
 
-// TODO: 
-// Le funzioni che seguono sono praticamente identiche alle versione con identit�, riddurre il codice aggiungendo parametri alle funzioni?
-// FindAndLinkEquivalencesDagRec
-// Dag2DagUsingEquivalencesRec
-// Dag2DagUsingEquivalences
 void FindAndLinkEquivalencesDagRec(BinaryDrag<conact>::node* n1, BinaryDrag<conact>::node* n2, std::map<BinaryDrag<conact>::node*, bool> &visited_fl) {
 	if (n2->isleaf() || n1 == n2 || visited_fl[n2])
 		return;
@@ -117,8 +112,7 @@ void Dag2DagUsingEquivalences(BinaryDrag<conact>& t, bool considering_leaves) {
 }
 
 // Given a dag with multiple actions on leaves this function generate all possible dags with only one action per leaf
-// VERSIONE CHE CONTA I NODI E LE FOGLIE PER DECIDERE QUAL E' L'ALBERO MIGLIORE
-void Dag2OptimalDagRec(BinaryDrag<conact>& t, BinaryDrag<conact>::node* n, BinaryDrag<conact> &best_tree, uint &best_nodes, uint &best_leaves, std::map<const BinaryDrag<conact>::node*, bool> &visited_n, uint &counter) {
+void Dag2OptimalDagRec(BinaryDrag<conact>& t, BinaryDrag<conact>::node* n, BinaryDrag<conact> &best_tree, size_t &best_nodes, size_t &best_leaves, std::map<const BinaryDrag<conact>::node*, bool> &visited_n, uint &counter) {
     BinaryDrag<conact> nt;
     if (n->isleaf()) {
         // leaf with multiple action
@@ -174,14 +168,14 @@ void Dag2OptimalDagRec(BinaryDrag<conact>& t, BinaryDrag<conact>::node* n, Binar
 
 
 // Converts a tree into dag minimizing the number of nodes (Note: this is "necessary" when the leaves of a tree contain multiple actions)
-// UTILIZZA IL NUMERO DI NODI PER SCEGLIERE IL DAG OTTIMO
+// USES NUMBER OF NODES TO PICK THE OPTIMAL DAG
 void Dag2OptimalDag(BinaryDrag<conact>& t) {
     std::vector<BinaryDrag<conact>> trees;
     BinaryDrag<conact> best_tree;
     std::map<const BinaryDrag<conact>::node*, bool> visited_nodes;
     uint counter = 0;
-    uint best_nodes = std::numeric_limits<uint>::max();
-    uint best_leaves = std::numeric_limits<uint>::max();
+    size_t best_nodes = std::numeric_limits<size_t>::max();
+    size_t best_leaves = std::numeric_limits<size_t>::max();
     Dag2OptimalDagRec(t, t.GetRoot(), best_tree, best_nodes, best_leaves, visited_nodes, counter);
     std::cout << "** Vector size:" << counter << " **\n";
     std::cout << "** Counter:" << counter << " **\n";

@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,6 @@ string Forest2Dag::Tree2String(BinaryDrag<conact>::node* n) {
 // and explore its subtrees. For each subtree, if there is an equal subtree (i.e. sp_ hash table
 // contains the tree identifier string) the function updates the link, otherwise it updates the 
 // hash table with the "new" subtree. This must be repeated for every root of the forest (see Forest2Dag) 
-// TODO sistemare la funzione evitando la ripetizione sinistra/destra.
 void Forest2Dag::FindAndLink(BinaryDrag<conact>::node* n) {
 	if (!n->isleaf()) {
 		auto s = Tree2String(n->left);

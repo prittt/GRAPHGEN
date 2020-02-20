@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -348,7 +348,6 @@ void CreateSpaghettiLabeling() {
 	}
 }
 
-// Per rispondere ai revisori di TIP. Genera BBDT e spaghetti con la maschera a blocchi ridotta di WYChang
 void CreateChangLabeling() {
     auto at = ruleset_generator_type::chen;
 
@@ -520,7 +519,6 @@ void CreateChangLabeling() {
     }
 }
 
-// Per rispondere ai revisori di TIP. Genera BBDT e spaghetti con la maschera di CTB estesa
 void CreateCtbeLabeling() {
     auto at = ruleset_generator_type::ctbe;
 
@@ -533,7 +531,6 @@ void CreateCtbeLabeling() {
         rs.print_rules(os);
     }
 
-    // Conto quante sono le azioni effettivamente usate e quante volte si ripetono:
     vector<unsigned long long> cnt(rs.rules[0].actions.size(), 0);
     for (int i = 0; i < rs.rules.size(); ++i) {
         for (int j = 0; j < cnt.size(); ++j) {
@@ -561,7 +558,6 @@ void CreateCtbeLabeling() {
     DrawDagOnFile(tree_filename, t, false, true);
     PrintStats(t);
 
-    // Inutile, non ci sono sottoalberi identici nel caso della maschera di resenfeld 3d
     //Dag2DagUsingIdenties(t);
     //DrawDagOnFile("dag_rosenfeld_3d_with_identities", t, false, true);
 
@@ -853,11 +849,11 @@ void CreateThinning() {
 
 int main()
 {
-    CreateRonsefeldLabeling();
+    //CreateRonsefeldLabeling();
     //CreateSpaghettiLabeling();
     //CreateChangLabeling();
     //CreateCtbeLabeling();
-    //CreateRonsefeldLabeling();
+    CreateRonsefeldLabeling();
 
 	return EXIT_SUCCESS;
 }

@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -144,8 +144,9 @@ public:
     @param[in] flag Not used yet. Default value is zero.
 
     * all the functions must have the following signature:
+    \code{.cpp}
     std::string fun_name(int index, const std::string& prefix, const std::vector<std::vector<int>>& mapping, int end_group_id)
-
+    \endcode
     */
     void GenerateCode(BEFORE_AFTER_FUNC(before_main)       = BeforeMainShiftOne,
                       BEFORE_AFTER_FUNC(after_main)        = DefaultEmptyFunc,
@@ -154,7 +155,7 @@ public:
                       BEFORE_AFTER_FUNC(after_end_no_loop) = AfterEndNoLoop,
                       int flags = 0 /* no flags available right now */)
     {
-        int last_id = 0;
+        size_t last_id = 0;
         for (const auto& i : f_) {
             std::filesystem::path filepath = conf.GetForestCodePath(names[i.first] + "_line");
             std::ofstream os(filepath);

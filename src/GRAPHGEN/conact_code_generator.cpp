@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -129,7 +129,7 @@ void GeneratePointersCode(ofstream& os, const rule_set& rs) {
     os << "//Pointers:\n";
 
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
-    unsigned n_dims = static_cast<unsigned>(shifts.size()); // Here we get how many dims image has
+    size_t n_dims = shifts.size(); // Here we get how many dims image has
 
     stringstream global_ss, in_ss, out_ss;
     string type_in_prefix_string = "const unsigned char* const ";
@@ -241,7 +241,7 @@ void GeneratePointersCode(ofstream& os, const rule_set& rs) {
 void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditions)
 {
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
-    unsigned n_dims = static_cast<unsigned>(shifts.size()); // Here we get how many dims image has
+    size_t n_dims = shifts.size(); // Here we get how many dims image has
     // Conditions:
     os << "//Conditions:\n";
 
@@ -271,7 +271,7 @@ void GenerateConditionsCode(ofstream& os, const rule_set& rs, bool with_conditio
 void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& names, bool with_continues = true)
 {
     auto& shifts = rs.ps_.shifts_; // Shifts on each dim -> [x, y] or [x, y, z]
-    unsigned n_dims = static_cast<unsigned>(shifts.size()); // Here we get how many dims image has
+    size_t n_dims = shifts.size(); // Here we get how many dims image has
 
     // Actions:
     os << "\n\n//Actions:\n";

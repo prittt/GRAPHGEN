@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,6 @@
 #include <map>
 #include <numeric>
 
-#include "base_forest.h"
 #include "conact_tree.h"
 #include "pixel_set.h"
 #include "utilities.h"
@@ -67,7 +66,7 @@ struct Equivalences {
 };
 
 using constraints = std::map<std::string, int>;
-static std::vector<int> DEFAULT_VECTOR; // Dummy vector for the default value of DeleteTree member function
+static std::vector<size_t> DEFAULT_VECTOR; // Dummy vector for the default value of DeleteTree member function
 
 /** @brief Generates all the forests needed to handle one line of the image.
 */
@@ -115,10 +114,10 @@ struct LineForestHandler {
     BinaryDrag<conact> f_;
     std::vector<BinaryDrag<conact>> end_forests_;
 
-    std::vector<int> next_tree_; // This vector contains the equivalences between main trees
+    std::vector<size_t> next_tree_; // This vector contains the equivalences between main trees
     
-    std::vector<std::vector<int>> end_next_tree_; // This vectors contain the equivalences between end trees
-    std::vector<std::vector<int>> main_end_tree_mapping_; // This is the mapping between main trees and end trees
+    std::vector<std::vector<size_t>> end_next_tree_; // This vectors contain the equivalences between end trees
+    std::vector<std::vector<size_t>> main_end_tree_mapping_; // This is the mapping between main trees and end trees
 
     LineForestHandler() {}
     LineForestHandler(const BinaryDrag<conact>& t, const pixel_set& ps, const constraints& initial_constraints = {}); // Initial_constraints are useful to create particular forests such as the first line forest
@@ -154,10 +153,10 @@ private:
 
     // Actual implementation of RemoveEqualTrees, RemoveEquivalentTrees, RemoveEqualEndTrees, RemoveEquivalentEndTrees
     bool RemoveTrees(bool(*FunctionPrt)(const BinaryDrag<conact>::node* n1, const BinaryDrag<conact>::node* n2),
-        std::vector<int>& next_tree,
+        std::vector<size_t>& next_tree,
         BinaryDrag<conact>& f,
         bool are_end_trees = false,
-        std::vector<int>& mapping = DEFAULT_VECTOR);
+        std::vector<size_t>& mapping = DEFAULT_VECTOR);
 };
 
 #endif // !GRAPHGEN_FOREST_H_

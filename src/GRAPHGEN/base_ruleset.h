@@ -1,4 +1,4 @@
-﻿// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,13 @@
 #include "utilities.h"
 #include <omp.h>
 
+
+/** @brief Is the base class for the RuleSet from which every user-defined RuleSet should inherit
+
+It contains member functions (LoadRuleSet and SaveRuleSet) to load and store a .yaml file which
+define the RuleSet.
+
+*/
 class BaseRuleSet {
     std::filesystem::path p_;
     bool force_generation_;
@@ -55,6 +62,9 @@ class BaseRuleSet {
 	std::vector<action_bitset> currently_loaded_rules = std::vector<action_bitset>();
 	int currently_open_partition = -1;
 
+    /** @brief Load the RuleSet from a (.yaml) file. The name of the file is defined in 
+    the conf global variable. 
+    */
     bool LoadRuleSet() {
 
         YAML::Node rs_node;
@@ -69,6 +79,9 @@ class BaseRuleSet {
         return true;
     }
 
+    /** @brief Store the RuleSet into a (.yaml) file. The name of the file is defined in 
+    the conf global variable. 
+    */
     void SaveRuleSet() {
         std::ofstream os(p_.string());
         if (os) {

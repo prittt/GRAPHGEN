@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,7 @@ struct conact {
     std::string condition;
     // ACTION
     action_bitset action; // List of actions (bitmapped)
-    uint next = 0;
+    size_t next = 0;
 
     conact() {}
     conact(std::string c) : t(type::CONDITION), condition(std::move(c)) {}

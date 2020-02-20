@@ -1,4 +1,4 @@
-# Copyright(c) 2018 - 2019 Federico Bolelli, Stefano Allegretti, Costantino Grana
+# Copyright(c) 2019
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -108,7 +108,7 @@ endif (WIN32)
 
 set(LABELING_ALGORITHMS SAUF SAUF3D SAUF++3D PRED PRED3D PRED++ PRED++3D BBDT BBDT++3D BBDT3D DRAG Spaghetti Tagliatelle CACHE INTERNAL ON FORCE)
 if(GRAPHGEN_FREQUENCIES_ENABLED)
-	set(LABELING_ALGORITHMS ${LABELING_ALGORITHMS} Spaghetti_FREQ)
+	set(LABELING_ALGORITHMS ${LABELING_ALGORITHMS} DRAG_FREQ BBDT_FREQ Spaghetti_FREQ)
 endif()
 
 foreach(ALGO ${LABELING_ALGORITHMS})

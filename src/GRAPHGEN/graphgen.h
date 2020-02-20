@@ -17,7 +17,7 @@
 #include "graph_code_generator.h"
 #include "hypercube.h"
 #include "heuristics.h"
-#include "magic_optimizer.h"
+#include "collect_drag_stats.h"
 #include "merge_set.h"
 #include "output_generator.h"
 #include "tree2dag_identities.h"

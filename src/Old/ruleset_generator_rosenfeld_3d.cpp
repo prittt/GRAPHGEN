@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,56 +26,55 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "ruleset_generator.h"
+#include <fstream>
 
-#include <bitset>
-#include <string>
-
+#include "connectivity_graph.h"
 #include "merge_set.h"
+#include "ruleset_generator.h"
 
 using namespace std;
 
-
-rule_set generate_chen()
+rule_set generate_rosenfeld_3d()
 {
-    pixel_set chen_mask{
-        /*{ "a", {-2, -2} },   { "b", {-1, -2} },{ "c", {+0, -2} },{ "d", {+1, -2} },{ "e", {+2, -2} },   { "f", {+3, -2} },*/
-        /*{ "g", {-2, -1} },*/ { "h", {-1, -1} },{ "i", {+0, -1} },{ "j", {+1, -1} },{ "k", {+2, -1} }, /*{ "l", {+3, -1} },*/
-        /*{ "m", {-2, +0} },*/ { "n", {-1, +0} },{ "o", {+0, +0} },{ "p", {+1, +0} },
-        /*{ "q", {-2, +1} },*/ { "r", {-1, +1} },{ "s", {+0, +1} },{ "t", {+1, +1} },
+    pixel_set rosenfeld_mask = {
+        { "a", {-1,-1,-1} }, { "b", {+0,-1,-1} }, { "c", {+1,-1,-1} },
+        { "d", {-1,+0,-1} }, { "e", {+0,+0,-1} }, { "f", {+1,+0,-1} },
+        { "g", {-1,+1,-1} }, { "h", {+0,+1,-1} }, { "i", {+1,+1,-1} },
+        { "j", {-1,-1,+0} }, { "k", {+0,-1,+0} }, { "l", {+1,-1,+0} },
+        { "m", {-1,+0,+0} }, { "x", {+0,+0,+0} },
     };
-    chen_mask.SetShifts({ 2, 2 });
 
     rule_set labeling;
-    labeling.InitConditions(chen_mask);
-    labeling.InitActions({ "nothing", "x<-newlabel",
-        "x<-P", "x<-Q", "x<-R", "x<-S",
-        "x<-P+Q", "x<-P+R", "x<-P+S", "x<-Q+R", "x<-Q+S", "x<-R+S",
-        "x<-P+Q+R", "x<-P+Q+S", "x<-P+R+S", "x<-Q+R+S", });
+    labeling.InitConditions(rosenfeld_mask);
 
-    labeling.generate_rules([](rule_set& rs, uint i) {
+    graph ag = MakeAdjacencies(rosenfeld_mask);
+
+    auto actions = GenerateAllPossibleLabelingActions(ag);
+	
+	/*{
+		ofstream os("out.txt");
+		os << ag;
+	}*/
+
+    labeling.InitActions(actions);
+
+    labeling.generate_rules([&](rule_set& rs, uint i) {
         rule_wrapper r(rs, i);
 
-        bool X = r["o"] || r["p"] || r["s"] || r["t"];
-        if (!X) {
+        if (!r["x"]) {
             r << "nothing";
             return;
         }
 
-        connectivity_mat con({ "P", "Q", "R", "S", "x" });
+        auto lag = ag;
+        for (size_t j = 0; j < lag.size(); ++j) {
+            if (((i >> j) & 1) == 0)
+                lag.DetachNode(j);
+        }
+        graph cg = MakeConnectivities(lag);
 
-        con.set("x", "P", r["h"] && r["o"]);
-        con.set("x", "Q", (r["i"] || r["j"]) && (r["o"] || r["p"]));
-        con.set("x", "R", r["k"] && r["p"]);
-        con.set("x", "S", (r["n"] || r["r"]) && (r["o"] || r["s"]));
-
-        con.set("P", "Q", r["h"] && r["i"]);
-        con.set("P", "S", r["h"] && r["n"]);
-        con.set("Q", "R", r["j"] && r["k"]);
-        con.set("Q", "S", (r["i"] && r["n"]) || (con("P", "Q") && con("P", "S")));
-
-        con.set("P", "R", con("P", "Q") && con("Q", "R"));
-        con.set("S", "R", (con("P", "R") && con("P", "S")) || (con("S", "Q") && con("Q", "R")));
+        connectivity_mat con(rs.conditions);
+        con.data_ = cg.arcs_;
 
         MergeSet ms(con);
         ms.BuildMergeSet();

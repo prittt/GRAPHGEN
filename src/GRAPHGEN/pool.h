@@ -1,4 +1,4 @@
-// https://vorbrodt.blog/2019/02/12/simple-thread-pool/
+// Extrapolated from https://vorbrodt.blog/2019/02/12/simple-thread-pool/
 #pragma once
 
 #include <vector>

@@ -1,4 +1,4 @@
-// Copyright(c) 2016 - 2019 Federico Bolelli, Costantino Grana, Michele Cancilla, Lorenzo Baraldi and Roberto Vezzani
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,11 @@
 #ifndef GRAPHGEN_SYSTEM_INFO_H_
 #define GRAPHGEN_SYSTEM_INFO_H_
 
+/** @file system_info.h
+
+This file contains a bunch of defines to deal with OS dependent functionalities. 
+
+ */
 
 #if _WIN32 || _WIN64 || WIN32 || __WIN32__ || __WINDOWS__ || __TOS_WIN__
 // #ifdef _MSC_VER

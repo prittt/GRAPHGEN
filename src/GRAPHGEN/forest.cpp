@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -150,7 +150,7 @@ LineForestHandler::LineForestHandler(const BinaryDrag<conact>& bd,
         }
 
         // Initialize the mapping between main trees (including the start line tree) and end trees 
-        main_end_tree_mapping_ = vector<vector<int>>(end_forests_.size(), vector<int>(f_.roots_.size()));
+        main_end_tree_mapping_ = vector<vector<size_t>>(end_forests_.size(), vector<size_t>(f_.roots_.size()));
         for (auto& etm : main_end_tree_mapping_) {
             iota(etm.begin(), etm.end(), 0);
         }
@@ -162,7 +162,7 @@ LineForestHandler::LineForestHandler(const BinaryDrag<conact>& bd,
         for (auto& f : end_forests_) { // For each end forest
             for (auto& n : f.nodes_) { // For each node of the forest
                 if (n->isleaf()) {
-                    n->data.next = numeric_limits<uint32_t>::max();
+                    n->data.next = numeric_limits<size_t>::max();
                 }
             }
         }
@@ -286,10 +286,10 @@ bool LineForestHandler::RemoveEqualTrees() {
 
 // Removes duplicate trees inside the forest
 bool LineForestHandler::RemoveTrees(bool(*FunctionPtr)(const BinaryDrag<conact>::node* n1, const BinaryDrag<conact>::node* n2), 
-                         vector<int>& next_tree, 
+                         vector<size_t>& next_tree, 
                          BinaryDrag<conact>& f, 
                          bool are_end_trees, 
-                         vector<int>& mapping) {
+                         vector<size_t>& mapping) {
     // Find which trees are identical and mark them in next_tree
     bool found = false;
     for (size_t i = 0; i < next_tree.size() - 1; ++i) {

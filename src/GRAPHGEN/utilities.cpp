@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
 
 ConfigData conf;
 
-std::string binary(uint u, uint nbits) {
+std::string binary(size_t u, size_t nbits) {
     std::string s;
     while (nbits-- > 0)
         s += ((u >> nbits) & 1) + 48;

@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -41,10 +41,10 @@
 typedef unsigned char byte;
 
 
-enum VDim :byte { Zero = 0, One = 1, Indifference = 2 };
+enum VDim { Zero = 0, One = 1, Indifference = 2 };
 
 struct VIndex {
-	int m_iDim;
+	size_t m_iDim;
 	std::vector<VDim> m_arrIndex;
 
 	VIndex(int iDim = 0) : m_iDim(iDim), m_arrIndex(iDim) {
@@ -62,7 +62,7 @@ struct VIndex {
 	bool SetIndex(const std::string &s) {
 		if (s.length() != m_iDim)
 			return false;
-		for (int i = 0; i<m_iDim; i++) {
+		for (size_t i = 0; i<m_iDim; i++) {
 			if (s[i] == '0')
 				m_arrIndex[i] = Zero;
 			else if (s[i] == '1')
@@ -79,7 +79,7 @@ struct VIndex {
 		std::string s;
 		s.resize(m_iDim);
 		char aRepresentation[3] = { '0','1','-' };
-		for (int i = 0; i<m_iDim; i++) {
+		for (size_t i = 0; i<m_iDim; i++) {
 			s[i] = aRepresentation[m_arrIndex[i]];
 		}
 		return s;
@@ -87,7 +87,7 @@ struct VIndex {
 
 	unsigned GetIndex() const {
 		unsigned ui(0);
-		for (int i = 0; i<m_iDim; i++) {
+		for (size_t i = 0; i<m_iDim; i++) {
 			ui *= 3;
 			ui += m_arrIndex[i];
 		}
@@ -95,7 +95,7 @@ struct VIndex {
 	}
 
 	bool MoveNext() {
-		for (int i = m_iDim - 1; i >= 0; i--) {
+		for (int i = int(m_iDim) - 1; i >= 0; i--) {
 			if (m_arrIndex[i] == Indifference)
 				continue;
 			else if (m_arrIndex[i] == Zero) {
@@ -168,7 +168,6 @@ struct VHyperCube {
     BinaryDrag<conact> optimize(bool bVerbose = false);
 };
 
-// TODO should these functions be hide from the outside?
 // Generates an Optimal Decision Tree from the given rule_set,
 // and store it in the filename when specified.
 BinaryDrag<conact> GenerateOdt(const rule_set& rs);
@@ -182,7 +181,6 @@ is loaded from file, unless the "force_generation" parameter is set to true. In 
 is always regenerated. The loaded/generated tree is then returned from the function.
 
 @param[in] rs Rule set from which generate the decision tree.
-@param[in] algorithm_name Name of the algorithm for which the tree must be generated.
 @param[in] force_generation Whether the tree must be generated or can be loaded from file.
 
 @return The optimal decision tree associated to the specified rule set.

@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,12 +26,50 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHGEN_BASE_FOREST_H_
-#define GRAPHGEN_BASE_FOREST_H_
+#include "graphgen.h"
 
-class BaseForest {
+#include "grana_ruleset.h"
 
+#include <unordered_set>
 
-};
+using namespace std;
 
-#endif // !GRAPHGEN_BASE_FOREST_H_
+int main()
+{
+    string algorithm_name = "DRAG_FREQ";
+    conf = ConfigData(algorithm_name, "Grana", true);
+
+    GranaRS g_rs;
+    auto rs = g_rs.GetRuleSet();
+
+	AddFrequenciesToRuleset(rs);
+
+    // Call GRAPHGEN:
+    // 1) Load or generate Optimal Decision Tree based on Grana mask
+    BinaryDrag<conact> bd = GetOdt(rs);
+
+    // 2) Draw the generated tree
+    string tree_filename = algorithm_name + "_tree";
+    DrawDagOnFile(tree_filename, bd);
+
+    // 3) Compress the tree into a DRAG
+    DragCompressor{ bd };
+
+    // 4) Draw the generated DRAG
+    string drag_filename = algorithm_name + "_drag";
+    DrawDagOnFile(drag_filename, bd);
+    
+    // 5) Generate the DRAG C/C++ code taking care of the names used
+    //    in the Grana's rule set GranaRS
+    GenerateDragCode(bd);
+    pixel_set block_positions{
+           { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
+           { "S", {-2, +0} },{ "x", {+0, +0} }
+    };
+    GeneratePointersConditionsActionsCode(rs, 
+                                          GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE, 
+                                          GenerateActionCodeTypes::LABELING,
+                                          block_positions);
+    
+    return EXIT_SUCCESS;
+}

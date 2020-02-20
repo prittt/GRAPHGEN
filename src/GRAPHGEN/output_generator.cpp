@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,7 @@ string GetNodeCode(const string& condition, bool with_root_id) {
     if (!with_root_id) {
         size_t pos = real_condition.find("- ");
         if (pos != string::npos) {
-            real_condition = real_condition.substr(pos + 2); // This supposes that there is a space between dash and condition name
+            real_condition = real_condition.substr(pos + 2); // This assumes that there is a space between dash and condition name
         }
     }
 
@@ -79,7 +79,7 @@ string GetNodeCode(const string& condition, bool with_root_id) {
 
 void GenerateDotCodeForDagRec(std::ostream& os, 
                               BinaryDrag<conact>::node *n, 
-                              std::map<BinaryDrag<conact>::node*, int>& printed_node, 
+                              std::map<BinaryDrag<conact>::node*, size_t>& printed_node,
                               std::vector<std::string>& links, 
                               nodeid &id, 
                               bool with_next,
@@ -129,7 +129,7 @@ void GenerateDotCodeForDagRec(std::ostream& os,
     }
 }
 
-// All nodes must have both sons! 
+// All nodes must have both children! 
 void GenerateDotCodeForDag(std::ostream& os, const BinaryDrag<conact>& bd, bool with_next, bool with_root_id) {
     os << "digraph dag{\n"
           "ranksep=" + conf.dot_ranksep_ + "\n" +
@@ -137,7 +137,7 @@ void GenerateDotCodeForDag(std::ostream& os, const BinaryDrag<conact>& bd, bool 
           "\tsubgraph tree{\n";
     nodeid id;
     
-    std::map<BinaryDrag<conact>::node*, int> printed_node; // = { { bd.roots_[0] } , 0 };
+    std::map<BinaryDrag<conact>::node*, size_t> printed_node; // = { { bd.roots_[0] } , 0 };
     std::vector<std::string> links;
     
     for (size_t i = 0; i < bd.roots_.size(); ++i) {

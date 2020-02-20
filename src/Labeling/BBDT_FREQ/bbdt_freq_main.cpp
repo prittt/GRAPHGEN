@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,27 +26,41 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHGEN_RULESET_GENERATOR_H_
-#define GRAPHGEN_RULESET_GENERATOR_H_
+#include "graphgen.h"
 
-#include "rule_set.h"
+#include "grana_ruleset.h"
 
-#define RSG_ALGO RSG(rosenfeld) RSG(rosenfeld_3d) RSG(bbdt) RSG(chen) RSG(ctbe) RSG(thin_zs) RSG(thin_gh) RSG(thin_ch) RSG(thin_hscp)
+using namespace std;
 
-#define RSG(a) rule_set generate_##a();
-RSG_ALGO
-#undef RSG
+int main()
+{
+    string algorithm_name = "BBDT_FREQ";
+    conf = ConfigData(algorithm_name, "Grana", true);
 
-#define RSG(a) a, 
-enum class ruleset_generator_type { RSG_ALGO };
-#undef RSG
+    GranaRS g_rs;
+    auto rs = g_rs.GetRuleSet();
 
-#define RSG(a) #a, 
-static std::string ruleset_generator_names[] = { RSG_ALGO };
-#undef RSG
+	AddFrequenciesToRuleset(rs);
 
-#define RSG(a) generate_##a, 
-static rule_set(*ruleset_generator_functions[])(void) = { RSG_ALGO };
-#undef RSG
+    // Call GRAPHGEN:
+    // 1) Load or generate Optimal Decision Tree based on Grana mask
+    BinaryDrag<conact> bd = GetOdt(rs);
 
-#endif // !GRAPHGEN_RULESET_GENERATOR_H_
+    // 2) Draw the generated tree
+    string tree_filename = algorithm_name + "_tree";
+    DrawDagOnFile(tree_filename, bd);
+
+    // 3) Generate the tree C/C++ code taking care of the names used
+    //    in the Grana's rule set GranaRS
+    GenerateDragCode(bd);
+    pixel_set block_positions{
+           { "P", {-2, -2} },{ "Q", {+0, -2} },{ "R", {+2, -2} },
+           { "S", {-2, +0} },{ "x", {+0, +0} }
+    };
+    GeneratePointersConditionsActionsCode(rs, 
+                                          GenerateConditionActionCodeFlags::CONDITIONS_WITH_IFS | GenerateConditionActionCodeFlags::ACTIONS_WITH_CONTINUE, 
+                                          GenerateActionCodeTypes::LABELING,
+                                          block_positions);
+
+    return EXIT_SUCCESS;
+}

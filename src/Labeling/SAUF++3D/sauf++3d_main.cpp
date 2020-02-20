@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Costantino Grana, Federico Bolelli
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@ int main()
     DrawDagOnFile(tree_filename, bd);
 
     // 3) Compress the tree
-    DragCompressor{ bd, 1000 };
+    DragCompressor{ bd };
 
     // 4) Generate the C++ source code
     ofstream os(conf.treecode_path_);

@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -207,7 +207,6 @@ using namespace std;
 //			}
 //		}
 //
-//		// Accrocchio temporaneo
 //		if (vec.empty())
 //			return false;
 //
@@ -223,7 +222,6 @@ using namespace std;
 //		Intersect(vec[0].n_, vec[j].n_);
 //		for (size_t k = 0; k < f_.trees_.size(); ++k) {
 //			auto& t = f_.trees_[k];
-//			// Era un viaggio che poi � deviato verso un altro viaggio
 //			//// Whole trees can be equivalent too
 //			//if (t.GetRoot() == vec[0].n_) {
 //			//	t.GetRoot() = vec[j].n_;
@@ -290,7 +288,6 @@ using namespace std;
 //			}
 //		}
 //
-//		// Accrocchio temporaneo
 //		if (vec.empty())
 //			return false;
 //
@@ -308,7 +305,6 @@ using namespace std;
 //			const auto& cur_trees = trees[tg];
 //			for (size_t k = 0; k < cur_trees.size(); ++k) {
 //				const auto& t = cur_trees[k];
-//				// Era un viaggio che poi � deviato verso un altro viaggio
 //				// Whole trees can be equivalent too
 //				/*if (t->root == vec[0].n_) {
 //					t->root = vec[j].n_;

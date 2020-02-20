@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,7 @@
 
 #include "conact_tree.h"
 #include "drag_statistics.h"
-#include "magic_optimizer.h"
+#include "collect_drag_stats.h"
 #include "output_generator.h"
 #include "remove_equal_subtrees.h"
 #include "forest2dag.h"

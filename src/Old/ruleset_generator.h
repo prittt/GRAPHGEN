@@ -1,4 +1,4 @@
-// Copyright(c) 2018 Costantino Grana, Federico Bolelli 
+// Copyright(c) 2018
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,14 +26,27 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "forest_statistics.h"
+#ifndef GRAPHGEN_RULESET_GENERATOR_H_
+#define GRAPHGEN_RULESET_GENERATOR_H_
 
-#include <iostream>
+#include "rule_set.h"
 
-//void PrintStats(const LineForestHandler& f) {
-//	ForestStatistics fs(f);
-//	std::cout << "Nodes = " << fs.nodes() << "\n";
-//	std::cout << "Leaves = " << fs.leaves() << "\n";
-//	std::cout << "End Nodes = " << fs.end_nodes() << "\n";
-//	std::cout << "End Leaves = " << fs.end_leaves() << "\n";
-//}
+#define RSG_ALGO RSG(rosenfeld) RSG(rosenfeld_3d) RSG(bbdt) RSG(chen) RSG(ctbe) RSG(thin_zs) RSG(thin_gh) RSG(thin_ch) RSG(thin_hscp)
+
+#define RSG(a) rule_set generate_##a();
+RSG_ALGO
+#undef RSG
+
+#define RSG(a) a, 
+enum class ruleset_generator_type { RSG_ALGO };
+#undef RSG
+
+#define RSG(a) #a, 
+static std::string ruleset_generator_names[] = { RSG_ALGO };
+#undef RSG
+
+#define RSG(a) generate_##a, 
+static rule_set(*ruleset_generator_functions[])(void) = { RSG_ALGO };
+#undef RSG
+
+#endif // !GRAPHGEN_RULESET_GENERATOR_H_

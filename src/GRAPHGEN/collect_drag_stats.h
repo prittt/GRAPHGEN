@@ -1,4 +1,4 @@
-// Copyright(c) 2018 - 2019 Federico Bolelli, Costantino Grana
+// Copyright(c) 2019
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -26,8 +26,8 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef GRAPHGEN_MAGIC_OPTIMIZER_H_
-#define GRAPHGEN_MAGIC_OPTIMIZER_H_
+#ifndef GRAPHGEN_COLLECT_DRAG_STATISTICS_H_
+#define GRAPHGEN_COLLECT_DRAG_STATISTICS_H_
 
 #include <algorithm>
 #include <unordered_set>
@@ -98,4 +98,4 @@ struct CollectDragStatistics {
     }
 };
 
-#endif // GRAPHGEN_MAGIC_OPTIMIZER_H_
+#endif // GRAPHGEN_COLLECT_DRAG_STATISTICS_H_
