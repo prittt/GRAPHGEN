@@ -42,7 +42,7 @@
 #define HDT_USE_FINISHED_TREE_ONLY false && HDT_DEPTH_PROGRESS_ENABLED
 
 constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO ACTION = GARBAGE DATA !! ****", "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
-#define HDT_ACTION_SOURCE 3 /* Source of the actions. 4/Binary Rule Files is the most common option. */
+#define HDT_ACTION_SOURCE 3 /* Source of the actions. 3/Binary Rule Files is the most common option. */
 #define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 1 /* Select a different formula on how information gain is calculated */
 
@@ -63,7 +63,7 @@ constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO
 #define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
 
 #define HDT_PARALLEL_PARTITIONBASED_ENABLED true /* Best approach at the moment. Allows for great parallelization and is generally faster for BBDT3D-36. For smaller problems like BBDT2D, turning this off may be faster (rule-based approach). */
-constexpr auto HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS = std::min(PARTITIONS, 16);
+constexpr auto HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS = std::min(PARTITIONS, 64);
 constexpr auto HDT_PARALLEL_PARTITIONBASED_IDLE_MS = 1;
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL 8
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL 1
@@ -916,15 +916,14 @@ void FindBestSingleActionCombinationRunningCombinedPtr(
 #pragma endregion
 
 #pragma region Parallel Partition Processing
-
-int threads_reading = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL;
-int threads_processing = HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL;
-
 enum PartitionProcessingTaskType {
 	ReadAndApply,
 	RegenerateEquivalentActions,
 	EquivalentCountingPass
 };
+
+std::vector<int> saved_threads_reading(EquivalentCountingPass + 1, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL);
+std::vector<int> saved_threads_processing(EquivalentCountingPass + 1, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL);
 
 struct PartitionProcessingTaskData {
 	std::vector<LeafInfo>* leaves;
@@ -938,6 +937,9 @@ struct PartitionProcessingTaskData {
 
 template<PartitionProcessingTaskType task>
 void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProcessingTaskData data) {
+	int& threads_reading = saved_threads_reading[task];
+	int& threads_processing = saved_threads_processing[task];
+
 	auto start = std::chrono::system_clock::now();
 
 #if HDT_BENCHMARK_READAPPLY_ENABLED == true
@@ -1470,9 +1472,15 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 #if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
 	ParallelPartitionProcessing<ReadAndApply>(brs, rs, PartitionProcessingTaskData(&r_insts, &rig));
 #else
+	constexpr llong begin_rule_code = 0;
+	constexpr llong end_rule_code = TOTAL_RULES;
+	auto start = std::chrono::system_clock::now();
+	bool first_match;
+	action_bitset* action;
+
 	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
 #if HDT_BENCHMARK_READAPPLY == false
-		if (rule_code % (TOTAL_RULES / 64) == 0) { // TODO: optimize this?
+		if (rule_code % (TOTAL_RULES / HDT_GENERATION_LOG_FREQUENCY) == 0) { // TODO: optimize this?
 			auto end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
 			std::time_t end_time = std::chrono::system_clock::to_time_t(end);
@@ -1734,7 +1742,7 @@ void RegenerateEquivalentActionsInLeaves(rule_set& rs, BaseRuleSet& brs, BinaryD
 		//std::cout << "**** Leaf: " << i << std::endl;
 		auto& leaf = leaves[i];
 		action_bitset& action = leaf.ptr->data.action;
-		const LazyCountingVector counts = const_cast<const LazyCountingVector&>(leaf.counts); // force read-only access on counting vector
+		const LazyCountingVector& counts = const_cast<const LazyCountingVector&>(leaf.counts); // force read-only access on counting vector
 		auto previous_single_action = action.getSingleActions()[0];
 		ActionCounter expected_count = 1 << leaf.conditions.size();
 

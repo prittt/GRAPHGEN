@@ -140,8 +140,10 @@ public:
 					}
 				}
 				if (!std::filesystem::is_directory(std::filesystem::path(tmp_path).remove_filename())) {
-					std::cerr << "[Partition " << p << "] Rules directory does not exist, aborting.\n";
-					exit(EXIT_FAILURE);
+					if (!std::filesystem::create_directories(std::filesystem::path(tmp_path).remove_filename())) {
+						std::cerr << "[Partition " << p << "] Could not create rules directory, aborting.\n";
+						exit(EXIT_FAILURE);
+					}
 				}
 				
 				zstd::ofstream os(tmp_path, std::ios::binary);

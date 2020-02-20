@@ -29,6 +29,16 @@
 	const std::string GLOBAL_RULEFILES_BASEPATH_OVERRIDE = "D:/rules-bkp/zst-variable-data-format-" + std::to_string(PARTITIONS) + "p-" + std::to_string(ACTION_COUNT) + "a";
 #endif
 
+#if BUILD == 2 // SAUF
+	constexpr int PARTITIONS = 1; 
+	constexpr int BATCHES = 32;
+
+	constexpr int CONDITION_COUNT = 5; 
+	constexpr int ACTION_COUNT = 8; 
+
+	const std::string GLOBAL_RULEFILES_BASEPATH_OVERRIDE = "";
+#endif
+
 constexpr uint64_t TOTAL_RULES = (1ULL << CONDITION_COUNT);
 constexpr size_t RULES_PER_PARTITION = TOTAL_RULES / PARTITIONS;
 constexpr size_t RULES_PER_BATCH = RULES_PER_PARTITION / BATCHES;
