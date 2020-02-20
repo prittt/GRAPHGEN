@@ -144,7 +144,7 @@ struct rule_set {
     }
 
     void set_action(const std::string& s, uint rule) {
-        rules[rule].actions.set(actions_pos.at(s) - 1);
+        rules[rule].actions.set(static_cast<Action>(actions_pos.at(s) - 1));
     }
     void SetFrequency(uint rule, uint frequency) {
         // To improve: who ensures that there is correspondence in the rules representation

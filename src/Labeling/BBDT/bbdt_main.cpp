@@ -27,7 +27,6 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "graphgen.h"
-#include "compression.h"
 #include "grana_ruleset.h"
 
 using namespace std;

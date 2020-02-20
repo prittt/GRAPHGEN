@@ -68,7 +68,7 @@ BinaryDrag<conact> VHyperCube::optimize(bool bVerbose)
 				std::cout << "0";
 			else
 				for (size_t i = 1; i < 128; i++)
-					if (m_arrIndex[idx.GetIndex()].uiAction[i - 1])
+					if (m_arrIndex[idx.GetIndex()].uiAction[static_cast<Action>(i - 1)])
 						std::cout << i << ",";
 			std::cout << "\n";
 		} while (idx.MoveNext());

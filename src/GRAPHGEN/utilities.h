@@ -98,7 +98,7 @@ public:
 
 	// METHODS
 
-	action_bitset& set(const Action& a) {
+	action_bitset& set(const Action a) {
 		data_.push_back(a);
 		return *this;
 	}
@@ -119,7 +119,7 @@ public:
 		return data_;
 	}
 
-	const bool test(const Action& action) const {
+	const bool test(const Action action) const {
 		for (size_t i = 0; i < size(); i++) {
 			if (data_[i] == action) {
 				return true;

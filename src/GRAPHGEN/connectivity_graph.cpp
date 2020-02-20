@@ -129,7 +129,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag)
                     }
                     cur_conds.push_back(j);
                     if (!adj) {
-                        cur_action.set(j);
+                        cur_action.set(static_cast<Action>(j));
                     }
                 }
             }
@@ -180,7 +180,7 @@ std::vector<std::string> GenerateAllPossibleLabelingActions(const graph& ag, con
                     }
                     cur_conds.push_back(j);
                     if (!adj) {
-                        cur_action.set(j);
+                        cur_action.set(static_cast<Action>(j));
                     }
                 }
             }

@@ -44,7 +44,7 @@
 constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO ACTION = GARBAGE DATA !! ****", "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
 #define HDT_ACTION_SOURCE 3 /* Source of the actions. 3/Binary Rule Files is the most common option. */
 #define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
-#define HDT_INFORMATION_GAIN_METHOD_VERSION 1 /* Select a different formula on how information gain is calculated */
+#define HDT_INFORMATION_GAIN_METHOD_VERSION 2 /* Select a different formula on how information gain is calculated */
 
 #define HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS false /* Count equivalent actions globally in a separate pass. May improve accuracy? */
 
@@ -836,7 +836,7 @@ ProgressMetaData GetInitialProgress(std::vector<RecursionInstance>& recursion_in
 		std::vector<int> conditions;
 		conditions.reserve(rs.conditions.size());
 		for (auto &c : rs.conditions) {
-			conditions.push_back(rs.conditions_pos.at(c));
+			conditions.push_back(static_cast<int>(rs.conditions_pos.at(c)));
 		}
 		auto r = RecursionInstance(conditions, 0, 0, root);
 		recursion_instances.push_back(r);
@@ -1765,9 +1765,7 @@ BinaryDrag<conact> GenerateHdt(rule_set& rs, BaseRuleSet& brs) {
 	BinaryDrag<conact> tree;
 	auto parent = tree.make_root();
 
-	std::bitset<CONDITION_COUNT> set_conditions0, set_conditions1;
-
-	bool b1 = set_conditions0.size() == rs.conditions.size();
+	bool b1 = CONDITION_COUNT == rs.conditions.size();
 	bool b2 = ACTION_COUNT == rs.actions.size();
 
 	if (!(b1 && b2)) {
