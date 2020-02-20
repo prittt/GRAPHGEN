@@ -279,8 +279,8 @@ void GenerateActionsCode(ofstream& os, const rule_set& rs, const pixel_set& name
 
         string cur_action = rs.actions[a];
 
-        os << "// Action " << a + 1 << ": " << cur_action << "\n";
-        os << "#define ACTION_" << a + 1 << " ";
+        os << "// Action " << a << ": " << cur_action << "\n";
+        os << "#define ACTION_" << a << " ";
 
         string where_to_write = "img_labels_" + string(n_dims > 2 ? "slice00_" : "") + "row00[c] = ";
 

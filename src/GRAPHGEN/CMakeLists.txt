@@ -32,8 +32,6 @@ target_sources(GRAPHGEN PRIVATE
 	performance_evaluator.h
 	pixel_set.h
 	rule_set.h
-	compression.h
-	compression.cpp
 	zstdstream.h
 	zstdstream.cpp
 	tree.h
