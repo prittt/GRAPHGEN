@@ -7,8 +7,6 @@
 
 #define BUILD 1
 
-
-
 #if BUILD == 0 // BBDT
 	constexpr int PARTITIONS = 1; // 1, 1024, 65536
 	constexpr int BATCHES = 32;
@@ -35,6 +33,16 @@
 
 	constexpr int CONDITION_COUNT = 5; 
 	constexpr int ACTION_COUNT = 8; 
+
+	const std::string GLOBAL_RULEFILES_BASEPATH_OVERRIDE = "";
+#endif
+
+#if BUILD == 3 // SAUF3D
+	constexpr int PARTITIONS = 1;
+	constexpr int BATCHES = 32;
+
+	constexpr int CONDITION_COUNT = 14;
+	constexpr int ACTION_COUNT = 77;
 
 	const std::string GLOBAL_RULEFILES_BASEPATH_OVERRIDE = "";
 #endif

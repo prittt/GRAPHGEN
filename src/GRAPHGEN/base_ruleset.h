@@ -112,11 +112,7 @@ public:
 			}
 
             rs_ = GenerateRuleSet();
-			TLOG("Writing rules to disk",
-				//SaveAllRulesBinary();
-			);
-			//std::cout << "** DONE" << std::endl;
-			//exit(EXIT_SUCCESS);
+			SaveAllRulesBinary();
             SaveRuleSet();
         }
         return rs_;
@@ -137,7 +133,7 @@ public:
 
 				// check status of existing files
 				if (std::filesystem::exists(final_path)) {
-					std::cout << "[Partition " << p << "] Final partition exists: skipping.\n";
+					//std::cout << "[Partition " << p << "] Final partition exists: skipping.\n";
 					continue;
 				}
 				if (std::filesystem::exists(tmp_path)) {
@@ -169,8 +165,14 @@ public:
 
 				if (rs_.rulesStatus == IN_MEMORY) {
 					// rules are in memory
-					throw std::runtime_error("writing rules from memory not yet implemented");
-					//std::for_each(rs_.rules.begin(), rs_.rules.end(), [&os, stream_size](rule r) { os.write(reinterpret_cast<const char*>(&r.actions), stream_size); });
+					for (const rule& r : rs_.rules) {
+						const action_bitset& a = r.actions;
+						auto s = a.size();
+						os.write(reinterpret_cast<const char*>(&s), 1);
+						for (const ushort& b : a.getSingleActions()) {
+							os.write(reinterpret_cast<const char*>(&b), 2);
+						}
+					}
 				}
 				else {
 					// rules are generated during the writing
@@ -180,8 +182,6 @@ public:
 						exit(EXIT_FAILURE);
 					}
 					actions.resize(RULES_PER_BATCH);
-
-					//TLOG("rules batched", 
 
 					for (int b = 0; b < BATCHES; b++) {
 						const ullong batch_begin_rule_code = (begin_rule_code + b * RULES_PER_BATCH);
@@ -200,7 +200,6 @@ public:
 							}
 						}
 					}
-					//);
 				}
 				os.close();
 				std::filesystem::rename(tmp_path, final_path);
@@ -215,7 +214,6 @@ public:
 			std::cerr << "Cannot store 1 partition in memory, aborting. (" << RULES_PER_PARTITION << " / " << currently_loaded_rules.max_size() << ")" << std::endl;
 			throw std::runtime_error("Cannot store 1 partition in memory, aborting.");
 		}
-		//decompression.allocateResources();
 		currently_loaded_rules.resize(RULES_PER_PARTITION);
 		std::cout << "done." << std::endl;
 	}

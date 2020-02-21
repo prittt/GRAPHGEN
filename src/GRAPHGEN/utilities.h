@@ -52,7 +52,6 @@ using Action = ushort;
 
 class action_bitset {
 private:
-	//std::bitset<MAX_COMBINED_ACTIONS_COUNT * MAX_ACTION_BITS> data;
 	std::vector<Action> data_;
 
 public:
@@ -75,7 +74,6 @@ public:
 	Action& getActionByDataIndex(const int& index) {
 		return data_[index];
 	}
-
 
 	bool operator==(const action_bitset& rhs) const {
 		size_t my_size = size();
@@ -242,7 +240,6 @@ void StringSplit(const std::string& str, T& cont, char delim = '+')
 // No braces around instruction, so you can log also variable definitions without scoping them
 #define LOG(message, instructions) std::cout << (message) << "... "; instructions std::cout << "done.\n"
 
-//static PerformanceEvaluator tlog_pe;
 #define TLOG(message, instructions) std::cout << (message) << "... " << std::flush; PerformanceEvaluator my_tlog; my_tlog.start(); instructions; std::cout << "done. " << my_tlog.stop() << " ms.\n";
 #define TLOG2(message, instructions) std::cout << (message) << "... " << std::flush; PerformanceEvaluator my_tlog2; my_tlog2.start(); instructions; std::cout << "done. " << my_tlog2.stop() << " ms.\n";
 #define TLOG3_START(message) std::cout << (message) << "... " << std::flush; PerformanceEvaluator my_tlog3; my_tlog3.start();

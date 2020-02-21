@@ -44,21 +44,25 @@ statistics.
 class BinaryDragStatistics {
     std::set<const BinaryDrag<conact>::node*> visited_nodes;
     std::set<const BinaryDrag<conact>::node*> visited_leaves;
-	uint64_t path_length_sum = 0;
+	uint64_t leaf_path_length_sum = 0;
 	uint64_t seen_leaves = 0;
+	uint64_t case_path_length_sum = 0;
+	uint64_t seen_cases = 0;
 
     void PerformStatistics(const BinaryDrag<conact>::node *n, const int depth) {
         if (n->isleaf()) {
-			seen_leaves++;
             visited_leaves.insert(n);
-			path_length_sum += depth;
+			seen_cases += (1ULL << (CONDITION_COUNT - depth));
+			case_path_length_sum += (1ULL << (CONDITION_COUNT - depth)) * depth;
+			seen_leaves++;
+			leaf_path_length_sum += depth;
             return;
         }
 
-        if (visited_nodes.insert(n).second) {
-            PerformStatistics(n->left, depth + 1);
-            PerformStatistics(n->right, depth + 1);
-        }
+		visited_nodes.insert(n);
+
+        PerformStatistics(n->left, depth + 1);
+        PerformStatistics(n->right, depth + 1);
     }
 
 public:
@@ -86,9 +90,15 @@ public:
 
 	/** @brief Returns the average path length from the root to the leaves in the DRAG.
 
-	@return average path length
+	@return average path length with all leaves weighted equally
 	*/
-	auto AveragePathLength() const { return path_length_sum / static_cast<float>(seen_leaves); }
+	auto AveragePathLength() const { return leaf_path_length_sum / static_cast<float>(seen_leaves); }
+	
+	/** @brief Returns the weighted average path length from the root to the leaves in the DRAG.
+
+	@return average path length with leaves weighted according to their depth
+	*/
+	auto WeightedAveragePathLength() const { return case_path_length_sum / static_cast<float>(seen_cases); }
 
     /** @brief Reverse into the specified output stream the unique leaves of a BinaryDrag.
 

@@ -98,7 +98,7 @@ public:
 				for (size_t i = 1; i < s.size(); ++i)
 					action += "+" + s[i];
 			}
-			combined_actions.set(rs.actions_pos.at(action) - 1);
+			combined_actions.set(static_cast<Action>(rs.actions_pos.at(action) - 1));
 		}
 		return combined_actions;
 	}

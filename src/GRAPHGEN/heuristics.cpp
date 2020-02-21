@@ -39,49 +39,57 @@
 
 #include "constants.h"
 
-#define HDT_USE_FINISHED_TREE_ONLY false && HDT_DEPTH_PROGRESS_ENABLED
 
-constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { "**** !! ZERO ACTION = GARBAGE DATA !! ****", "Memory (pre-generated or read from rule file)", "Generation during run-time", "Binary rule files" };
-#define HDT_ACTION_SOURCE 3 /* Source of the actions. 3/Binary Rule Files is the most common option. */
-#define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
-#define HDT_INFORMATION_GAIN_METHOD_VERSION 2 /* Select a different formula on how information gain is calculated */
+#define HDT_INFORMATION_GAIN_METHOD_VERSION 4 /* Select a different formula on how information gain is calculated */
 
-#define HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS false /* Count equivalent actions globally in a separate pass. May improve accuracy? */
+constexpr float HDT_INFORMATION_GAIN_4_PUNISH_FACTOR = 2; /* How much negative information gains are "punished" in IG method 4. */
 
 #define HDT_BENCHMARK_READAPPLY_ENABLED false /* Benchmark the performance of the ReadApply function */
 #define HDT_BENCHMARK_READAPPLY_DEPTH 12 /* Choose from: 12, 14, 16. Higher depth means more but smaller recursion instances */
-#define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS false && HDT_BENCHMARK_READAPPLY_ENABLED /* Pause the program at different points to allow for measuring memory usage manually */
-#define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE false /* Generate the ground truth files for the current configuration */
+#define HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS (false && HDT_BENCHMARK_READAPPLY_ENABLED) /* Pause the program at different points to allow for measuring memory usage manually */
 #define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED true /* Whether a correctness test should be executed after the benchmark */
+#define HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE (false && HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED) /* Generate the ground truth files for the current configuration */
 
 #define HDT_DEPTH_PROGRESS_ENABLED true /* Saves and loads depth progress files after every completed depth */
-#define HDT_TABLE_PROGRESS_ENABLED false && !HDT_BENCHMARK_READAPPLY_ENABLED /* Saves and loads table progress files before processing, requires benchmark to be turned off */
+#define HDT_TABLE_PROGRESS_ENABLED (false && !HDT_BENCHMARK_READAPPLY_ENABLED) /* Saves and loads table progress files before processing, requires benchmark to be turned off */
+#define HDT_USE_FINISHED_TREE_ONLY (false && HDT_DEPTH_PROGRESS_ENABLED) /* Instead of generating the HDT, try to read the finished progress file from the last completed run. */
 
 #define HDT_READAPPLY_VERBOSE_TIMINGS false /* Display separate timings of loading the partitions and processing the rules in memory */
 
-#define HDT_PARALLEL_INNERLOOP_ENABLED false /* Old solution for parallelization. If partition-based is off, this can be used to scale up without increasing memory. */
-#define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
-
 #define HDT_PARALLEL_PARTITIONBASED_ENABLED true /* Best approach at the moment. Allows for great parallelization and is generally faster for BBDT3D-36. For smaller problems like BBDT2D, turning this off may be faster (rule-based approach). */
-constexpr auto HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS = std::min(PARTITIONS, 64);
-constexpr auto HDT_PARALLEL_PARTITIONBASED_IDLE_MS = 1;
-#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL 8
-#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL 1
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL 2 /* Needs to be >= 2. Recommended <= cores of your system. */
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL 1 /* Needs to >= 1 && <= (TOTAL_THREADS - 1) */
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL (HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL - HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL)
+constexpr int HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE = std::min(PARTITIONS, 64); /* Needs be greater than TOTAL_THREADS. TOTAL_THREADS * 2 or * 3 recommended. */
+constexpr int HDT_PARALLEL_PARTITIONBASED_IDLE_MS = 10; /* The amount of time spent in one idle cycle. */
 
-constexpr auto HDT_RECURSION_INSTANCE_GROUP_SIZE = 600000;
+#if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
+	#define HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS false /* Count equivalent actions globally in a separate pass. May improve accuracy? */
+#else
+	constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { 
+		"**** !! ZERO ACTION = GARBAGE DATA !! ****", 
+		"Memory (pre-generated or read from rule file)", 
+		"Generation during run-time", 
+		"Binary rule files" 
+	};
+	#define HDT_ACTION_SOURCE 3 /* Source of the actions. 3/Binary Rule Files is the most common option. */
+
+	#define HDT_PARALLEL_INNERLOOP_ENABLED false /* Old solution for parallelization. If partition-based is off, this can be used to scale up without increasing memory. */
+	#define HDT_PARALLEL_INNERLOOP_NUMTHREADS 2
+
+	#define HDT_COMBINED_CLASSIFIER true /* Count popularity based on all the actions, not just on the single-action tables. Makes everything much faster. */
+#endif
+
+constexpr int HDT_RECURSION_INSTANCE_GROUP_SIZE = 600000; /* The maximum amount of recursion instances that are processed at the same time. */
 
 #define HDT_PROCESS_NODE_LOGGING_ENABLED true /* Write log files for all the recursion instances as they are processed. Very helpful for debugging. */
 
-// How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be
-constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(1024, PARTITIONS);
+constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS); /* How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be. */
 
 // BBDT3D-36: from depth 5 on INT can be used, before that ULLONG needs to be used to prevent overflow.
+// For all others like BBDT, SAUF, etc. INT is fine
 using ActionCounter = int; // int, ullong
-
-
 uint64_t rule_accesses = 0;
-uint64_t necessary_rule_accesses = 0;
 
 constexpr int32_t ceiling(float num)
 {
@@ -92,6 +100,7 @@ constexpr int32_t ceiling(float num)
 
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL = 256;
 constexpr int LAZY_COUNTING_VECTOR_PARTITIONS_COUNT = ceiling(ACTION_COUNT * 1.f / LAZY_COUNTING_VECTOR_PARTITIONS_INTERVAL);
+
 constexpr static ActionCounter ZERO = 0;
 
 
@@ -922,9 +931,6 @@ enum PartitionProcessingTaskType {
 	EquivalentCountingPass
 };
 
-std::vector<int> saved_threads_reading(EquivalentCountingPass + 1, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL);
-std::vector<int> saved_threads_processing(EquivalentCountingPass + 1, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL);
-
 struct PartitionProcessingTaskData {
 	std::vector<LeafInfo>* leaves;
 
@@ -937,13 +943,17 @@ struct PartitionProcessingTaskData {
 
 template<PartitionProcessingTaskType task>
 void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProcessingTaskData data) {
+	static std::vector<int> saved_threads_reading(EquivalentCountingPass + 1, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL);
+	static std::vector<int> saved_threads_processing(EquivalentCountingPass + 1, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL);
+
 	int& threads_reading = saved_threads_reading[task];
 	int& threads_processing = saved_threads_processing[task];
+
+	omp_set_nested(1);
 
 	auto start = std::chrono::system_clock::now();
 
 #if HDT_BENCHMARK_READAPPLY_ENABLED == true
-	int indicated_progress = -1;
 	bool benchmark_started = false;
 	std::chrono::system_clock::time_point benchmark_start_point;
 	std::cout << "warm up for benchmark - " << std::flush;
@@ -987,11 +997,11 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 	getchar();
 #endif
 
-	std::vector<std::vector<action_bitset>> action_data(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, std::vector<action_bitset>(RULES_PER_PARTITION));
-	std::vector<PartitionState> action_data_state(HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS, PartitionState());
+	std::vector<std::vector<action_bitset>> action_data(HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE, std::vector<action_bitset>(RULES_PER_PARTITION));
+	std::vector<PartitionState> action_data_state(HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE, PartitionState());
 
-	for (size_t i = 0; i < action_data_state.size(); i++) {
-		action_data_state[i].partition_id = static_cast<int>(i);
+	for (size_t i = begin_partition; i < begin_partition + action_data_state.size(); i++) {
+		action_data_state[i % action_data_state.size()].partition_id = static_cast<int>(i);
 	}
 
 	bool clamped_processing_thread_count = false;
@@ -1001,7 +1011,7 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 		threads_reading = std::min(threads_processing * 3, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL - threads_processing);
 		clamped_processing_thread_count = true;
 	}
-	std::cout << "Thread Distribution: [Reading: " << threads_reading << "] [Processing: " << threads_processing << "]" << (clamped_processing_thread_count ? " (clamped threads to recursion instance size)" : "") << std::endl;
+	std::cout << "Thread Distribution: [Reading: " << threads_reading << "] [Processing: " << threads_processing << "]" << (clamped_processing_thread_count ? " (clamped due to low recursion instance size)" : "") << std::endl;
 
 	int partition_reader_idle = 0;
 	int partition_processor_idle = 0;
@@ -1020,10 +1030,10 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 #pragma omp for schedule(dynamic, 1)
 				for (int next_loaded_partition = begin_partition; next_loaded_partition < end_partition; next_loaded_partition++) {
 					//std::ofstream os(GetTableProgressPath("Read" + std::to_string(next_loaded_partition) + ".txt"));
-					int index = next_loaded_partition % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
+					int index = next_loaded_partition % HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE;
 					//os << "Thread Number: " << omp_get_thread_num() << " PartitionIndex: " << index << std::endl;
 					while (action_data_state[index].processed == false || action_data_state[index].partition_id != next_loaded_partition) {
-						//os << "partition reader idle\n";
+						//std::cout << "partition reader idle\n";
 #if HDT_BENCHMARK_READAPPLY_ENABLED == true
 						if (benchmark_started) {
 #pragma omp atomic
@@ -1052,14 +1062,14 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 		{
 #pragma omp parallel num_threads(threads_processing)
 			for (int p = begin_partition; p < end_partition; p++) {
-				int index = p % HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
+				int index = p % HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE;
 #pragma omp single
 				{
 					//std::ofstream os(GetTableProgressPath("Process" + std::to_string(p) + ".txt"));
 					//os << "(Waiting) Thread Number: " << omp_get_thread_num() << " PartitionIndex: " << index << std::endl;
 
 					while (action_data_state[index].processed == true || action_data_state[index].partition_id != p) {
-						//os << " processing idle (action data state: processed: " << action_data_state[index].processed << " partition id: " << action_data_state[index].partition_id << ")\n";
+						//std::cout << " processing idle (action data state: processed: " << action_data_state[index].processed << " partition id: " << action_data_state[index].partition_id << ")\n";
 #if HDT_BENCHMARK_READAPPLY_ENABLED == true
 						if (benchmark_started) {
 #pragma omp atomic
@@ -1068,7 +1078,7 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 						else
 #endif
 						{
-#pragma omp atomic
+							#pragma omp atomic
 							partition_processor_idle += threads_processing;
 						}
 						std::this_thread::sleep_for(std::chrono::milliseconds(HDT_PARALLEL_PARTITIONBASED_IDLE_MS));
@@ -1116,7 +1126,7 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 					const int begin_r_inst = static_cast<int>(data.rig->begin_index);
 					const int end_r_inst = static_cast<int>(data.rig->end_index);
 					auto& r_insts = *data.r_insts;
-#pragma omp for schedule(dynamic, 1)
+					#pragma omp for schedule(dynamic, 1)
 					for (int i = begin_r_inst; i < end_r_inst; i++) {
 						auto& r = r_insts[i];
 						if (r.counted_partitions == PARTITIONS) {
@@ -1208,7 +1218,7 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 					//os << "finished\n";
 					//os.close();
 					action_data_state[index].processed = true;
-					action_data_state[index].partition_id = p + HDT_PARALLEL_PARTITIONBASED_PRELOADED_PARTITIONS;
+					action_data_state[index].partition_id = p + HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE;
 
 					//std::cout << ("processed p" + std::to_string(p) + "\n");
 				}
@@ -1277,7 +1287,7 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 	auto path = conf.GetCountingTablesFilePath(correctness_file_path);
 	std::filesystem::create_directories(conf.GetCountingTablesFilePath(""));
 	std::ofstream os(path);
-	for (const auto& r : r_insts) {
+	for (const auto& r : *data.r_insts) {
 		os << r.printTables();
 	}
 	os.close();
@@ -1286,8 +1296,8 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 	std::cout << "\nChecking correctness of counting tables..." << std::endl;
 
 	std::ifstream correct_stream(benchmark_correctness_file_path);
-	auto test_stream = stringstream();
-	for (const auto& r : r_insts) {
+	auto test_stream = std::stringstream();
+	for (const auto& r : *data.r_insts) {
 		test_stream << r.printTables();
 	}
 
@@ -1398,10 +1408,10 @@ int HdtProcessNode(
 		double leftGain = (baseEntropy - leftEntropy);
 		double rightGain = (baseEntropy - rightEntropy);
 		if (leftGain < 0) {
-			leftGain *= 0;
+			leftGain *= HDT_INFORMATION_GAIN_4_PUNISH_FACTOR;
 		}
 		if (rightGain < 0) {
-			rightGain *= 0;
+			rightGain *= HDT_INFORMATION_GAIN_4_PUNISH_FACTOR;
 		}
 		double informationGain = rightGain + leftGain;
 #endif
@@ -1472,14 +1482,39 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 #if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
 	ParallelPartitionProcessing<ReadAndApply>(brs, rs, PartitionProcessingTaskData(&r_insts, &rig));
 #else
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+	bool benchmark_started = false;
+	std::chrono::system_clock::time_point benchmark_start_point;
+	std::cout << "warm up for benchmark - " << std::flush;
+
+	constexpr llong benchmark_sample_point = TOTAL_RULES / 2;
+
+	constexpr llong begin_rule_code = benchmark_sample_point - (1ULL << 20);
+	constexpr llong benchmark_start_rule_code = benchmark_sample_point;
+	constexpr llong end_rule_code = benchmark_sample_point + (1ULL << 21);
+#else
 	constexpr llong begin_rule_code = 0;
 	constexpr llong end_rule_code = TOTAL_RULES;
+#endif
+#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED == true
+	std::string correctness_file_path = "benchmark-p" + std::to_string(PARTITIONS) + "-a" + std::to_string(ACTION_COUNT) + "-depth" + std::to_string(HDT_BENCHMARK_READAPPLY_DEPTH) + "_R" + std::to_string(begin_rule_code) + "-" + std::to_string(end_rule_code) + ".txt";
+#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE == false
+	auto benchmark_correctness_file_path = conf.GetCountingTablesFilePath(correctness_file_path);
+	if (!std::filesystem::exists(benchmark_correctness_file_path)) {
+		std::cout << "\n\nBenchmark correctness file does not exist: " << benchmark_correctness_file_path << std::endl;
+		getchar();
+		exit(EXIT_FAILURE);
+	}
+#endif
+#endif
+
 	auto start = std::chrono::system_clock::now();
 	bool first_match;
 	action_bitset* action;
+	action_bitset action_data;
 
 	for (llong rule_code = begin_rule_code; rule_code < end_rule_code; rule_code++) {
-#if HDT_BENCHMARK_READAPPLY == false
+#if HDT_BENCHMARK_READAPPLY_ENABLED == false
 		if (rule_code % (TOTAL_RULES / HDT_GENERATION_LOG_FREQUENCY) == 0) { // TODO: optimize this?
 			auto end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
@@ -1498,7 +1533,7 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 			}
 		}
 #endif
-#if HDT_BENCHMARK_READAPPLY == true
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
 		if (!benchmark_started && rule_code > benchmark_start_rule_code) {
 			benchmark_started = true;
 			benchmark_start_point = std::chrono::system_clock::now();
@@ -1517,23 +1552,24 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 			if (((rule_code & r.set_conditions0) == 0ULL) && ((rule_code & r.set_conditions1) == r.set_conditions1)) {
 				if (first_match) {
 #if (HDT_ACTION_SOURCE == 0)
-					action = &zero_action;									// 0) Zero action
+					action = &zero_action;										// 0) Zero action
 #elif (HDT_ACTION_SOURCE == 1)
-					action = &rs.rules[rule_code].actions;					// 1) load from rule table
+					action = &rs.rules[rule_code].actions;						// 1) load from rule table
 #elif (HDT_ACTION_SOURCE == 2)
-					action = &brs.GetActionFromRuleIndex(rs, rule_code);	// 2) generate during run-time
+					action_data = brs.GetActionFromRuleIndex(rs, rule_code);	// 2) generate during run-time
+					action = &action_data;
 #elif (HDT_ACTION_SOURCE == 3)
-					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);	// 3) read from file
+					action = brs.LoadRuleFromBinaryRuleFiles(rule_code);		// 3) read from file
 #endif
 					rule_accesses++;
 					first_match = false;
 				}
 #if HDT_COMBINED_CLASSIFIER == true
-				FindBestSingleActionCombinationRunningCombinedPtr(
+				FindBestSingleActionCombinationRunningCombined(
 					r.all_single_actions,
 					r.single_actions,
 					r.conditions,
-					action,
+					*action,
 					rule_code);
 #else
 				FindBestSingleActionCombinationRunning(r.all_single_actions, action);
@@ -1553,11 +1589,67 @@ void HdtReadAndApplyRulesOnePass(BaseRuleSet& brs, rule_set& rs, std::vector<Rec
 #endif
 			}
 		}
-		}
-#endif
 	}
 
-#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+#if HDT_BENCHMARK_READAPPLY_ENABLED == true
+#if HDT_BENCHMARK_READAPPLY_PAUSE_FOR_MEMORY_MEASUREMENTS == true
+		std::cout << "Before finish memory - press enter to continue" << std::endl;
+	getchar();
+#endif
+	auto end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end - benchmark_start_point;
+
+	ullong processed_rules = (end_rule_code - benchmark_start_rule_code);
+	double progress = (end_rule_code - benchmark_start_rule_code) * 1. / TOTAL_RULES;
+
+	double projected_mins = ((elapsed_seconds.count() / progress) - elapsed_seconds.count()) / 60;
+	std::cout << "\n\n*******************************\nBenchmark Result:\n" << elapsed_seconds.count() << " seconds for " << processed_rules << " of " << TOTAL_RULES << " rules\n" << progress * 100 << "%, ca. " << projected_mins << " minutes for total benchmarked depth." << std::endl;
+
+	std::cout << "begin_rule_code : " << begin_rule_code << " benchmark_start_rule_code : " << benchmark_start_rule_code << " end_rule_code : " << end_rule_code << std::endl;
+
+
+#if HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_GENERATE_FILE == true
+	auto path = conf.GetCountingTablesFilePath(correctness_file_path);
+	std::filesystem::create_directories(conf.GetCountingTablesFilePath(""));
+	std::ofstream os(path);
+	for (const auto& r : r_insts) {
+		os << r.printTables();
+	}
+	os.close();
+	std::cout << "\nWrote correctness benchmark file to " << path << std::endl;
+#elif HDT_BENCHMARK_READAPPLY_CORRECTNESS_TEST_ENABLED == true
+	std::cout << "\nChecking correctness of counting tables..." << std::endl;
+
+	std::ifstream correct_stream(benchmark_correctness_file_path);
+	auto test_stream = std::stringstream();
+	for (const auto& r : r_insts) {
+		test_stream << r.printTables();
+	}
+
+	std::string correct_line, test_line;
+	int i = 0;
+	bool correct = true;
+	while (correct_stream.good()) {
+		std::getline(test_stream, test_line);
+		std::getline(correct_stream, correct_line);
+		if (test_line.compare(correct_line) != 0) {
+			correct = false;
+			std::cout << "Correctness test failed (Line " << i << ").\nLine generated from benchmark:\n" << test_line << "\nCorrect line:\n" << correct_line << std::endl;
+			break;
+		}
+		i++;
+	}
+	if (correct) {
+		std::cout << "Counting tables are correct." << std::endl;
+	}
+#endif
+
+	getchar();
+	exit(EXIT_SUCCESS);
+#endif
+#endif
+}
+
 void HdtCountEquivalentActions(BaseRuleSet& brs, rule_set& rs, std::vector<RecursionInstance>& r_insts, const RecursionInstanceGroup& rig) {
 
 	ParallelPartitionProcessing<EquivalentCountingPass>(brs, rs, PartitionProcessingTaskData(&r_insts, &rig));
@@ -1567,7 +1659,6 @@ void HdtCountEquivalentActions(BaseRuleSet& brs, rule_set& rs, std::vector<Recur
 		r.forwardToRuleCode(0, rs);
 	}
 }
-#endif
 
 void FindHdtIteratively(rule_set& rs,
 	BaseRuleSet& brs,
@@ -1585,8 +1676,6 @@ void FindHdtIteratively(rule_set& rs,
 	std::vector<RecursionInstanceGroup> recursion_instance_groups;
 
 	ProgressMetaData pmd = GetInitialProgress(*pending_recursion_instances, tree.GetRoot(), rs, brs, tree);
-
-	omp_set_nested(1);
 
 	int depth = pmd.start_depth;
 	int leaves = pmd.start_leaves;
@@ -1626,8 +1715,11 @@ void FindHdtIteratively(rule_set& rs,
 #endif
 		int recursion_instance_counter = 0;
 
-		for (const auto& rig : recursion_instance_groups) {
-			std::cout << "Begin processing of RecursionInstanceGroup from RecInst " << rig.begin_index << " to RecInst " << (rig.end_index - 1) << std::endl;
+		for (int l = 0; l < recursion_instance_groups.size(); l++) {
+			const auto& rig = recursion_instance_groups[l];
+			if (recursion_instance_groups.size() > 1) {
+				std::cout << "Begin processing of RecursionInstanceGroup " << (l+1) << " of " << recursion_instance_groups.size()  << " from RecInst " << rig.begin_index << " to RecInst " << (rig.end_index - 1) << std::endl;
+			}
 			TLOG("Allocating tables",
 				for (size_t i = rig.begin_index; i < rig.end_index; i++) {
 					(*pending_recursion_instances)[i].allocateTables();
@@ -1653,22 +1745,17 @@ void FindHdtIteratively(rule_set& rs,
 			SaveTableProgressToFile(*pending_recursion_instances, depth, TOTAL_RULES);
 #endif
 
-
-			std::cout << "debug marker A" << std::endl;
-
-			TLOG3_START("Processing instances");
-			{
-				for (size_t i = rig.begin_index; i < rig.end_index; i++) {
+			TLOG3_START("Processing instances");			
+			for (size_t i = rig.begin_index; i < rig.end_index; i++) {
 #if HDT_PROCESS_NODE_LOGGING_ENABLED == true
-					process_node_log_os << "*********************************\n# RecursionInstance " << recursion_instance_counter++ << std::endl;
-					int amount_of_action_children = HdtProcessNode((*pending_recursion_instances)[i], tree, rs, *upcoming_recursion_instances, Log(process_node_log_os));
+				process_node_log_os << "*********************************\n# RecursionInstance " << recursion_instance_counter++ << std::endl;
+				int amount_of_action_children = HdtProcessNode((*pending_recursion_instances)[i], tree, rs, *upcoming_recursion_instances, Log(process_node_log_os));
 #else
-					int amount_of_action_children = HdtProcessNode((*pending_recursion_instances)[i], tree, rs, *upcoming_recursion_instances, Log());
+				int amount_of_action_children = HdtProcessNode((*pending_recursion_instances)[i], tree, rs, *upcoming_recursion_instances, Log());
 #endif
-					leaves += amount_of_action_children;
-					path_length_sum += (depth + 1) * amount_of_action_children;
-				}
-			}
+				leaves += amount_of_action_children;
+				path_length_sum += (depth + 1) * amount_of_action_children;
+			}			
 			TLOG3_STOP;
 
 			TLOG5("Dellocating tables",
@@ -1686,16 +1773,12 @@ void FindHdtIteratively(rule_set& rs,
 #if HDT_DEPTH_PROGRESS_ENABLED == true
 		SaveDepthProgressToFile(*upcoming_recursion_instances, tree, depth, leaves, path_length_sum, rule_accesses);
 #endif
-		std::cout << "debug marker B" << std::endl;
 
 		pending_recursion_instances->clear();
 		recursion_instance_groups.clear();
 
 		// swap pointers
 		std::swap(upcoming_recursion_instances, pending_recursion_instances);
-
-		std::cout << "debug marker C" << std::endl;
-		//getchar();
 	}
 	float average_path_length = path_length_sum / static_cast<float>(leaves);
 	std::cout << "HDT construction done. Nodes: " << leaves << " Average path length: " << average_path_length << std::endl;
@@ -1767,19 +1850,24 @@ BinaryDrag<conact> GenerateHdt(rule_set& rs, BaseRuleSet& brs) {
 
 	bool b1 = CONDITION_COUNT == rs.conditions.size();
 	bool b2 = ACTION_COUNT == rs.actions.size();
+	bool b3 = (HDT_INFORMATION_GAIN_METHOD_VERSION >= 1 && HDT_INFORMATION_GAIN_METHOD_VERSION <= 4);
 
-	if (!(b1 && b2)) {
-		std::cerr << "Assert failed: check ACTION_COUNT and CONDITION_COUNT." << std::endl;
-		throw std::runtime_error("Assert failed: check ACTION_COUNT and CONDITION_COUNT.");
+	if (!(b1 && b2 && b3)) {
+		auto s = "Assert failed: check ACTION_COUNT, CONDITION_COUNT (constants.h) and HDT_INFORMATION_GAIN_METHOD_VERSION.";
+		std::cerr << s << std::endl;
+		throw std::runtime_error(s);
 	}
 
-	bool b3 = (HDT_INFORMATION_GAIN_METHOD_VERSION >= 1 && HDT_INFORMATION_GAIN_METHOD_VERSION <= 4);
+#ifdef HDT_ACTION_SOURCE
 	bool b4 = (HDT_ACTION_SOURCE >= 0 && HDT_ACTION_SOURCE <= 3);
 
-	if (!(b3 && b4)) {
-		std::cerr << "Assert failed: check HDT_ACTION_SOURCE and HDT_INFORMATION_GAIN_METHOD_VERSION." << std::endl;
-		throw std::runtime_error("Assert failed: check HDT_ACTION_SOURCE and HDT_INFORMATION_GAIN_METHOD_VERSION.");
+	if (!b4) {
+		std::cerr << "Assert failed: check HDT_ACTION_SOURCE." << std::endl;
+		throw std::runtime_error("Assert failed: check HDT_ACTION_SOURCE.");
 	}
+#endif
+
+
 
 	bool b5 = RULES_PER_PARTITION < INT_MAX;
 
@@ -1798,10 +1886,12 @@ BinaryDrag<conact> GenerateHdt(rule_set& rs, BaseRuleSet& brs) {
 	std::cout << "\nExecuting correctness test." << std::endl;
 #endif
 #endif
-	std::cout << "\nInformation gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
-	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;
-	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
 
+	std::cout << "\nInformation gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
+	std::cout << "Partition-based processing enabled: [" << (HDT_PARALLEL_PARTITIONBASED_ENABLED ? "Yes" : "No") << "]" << std::endl;
+#ifdef HDT_ACTION_SOURCE
+	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
+#endif
 
 #if HDT_PARALLEL_PARTITIONBASED_ENABLED == false
 	brs.OpenRuleFiles();
@@ -1826,8 +1916,10 @@ BinaryDrag<conact> GenerateHdt(rule_set& rs, BaseRuleSet& brs) {
 
 	std::cout << "Total rule accesses: " << rule_accesses << "\n";
 	std::cout << "Information gain method version: [" << HDT_INFORMATION_GAIN_METHOD_VERSION << "]" << std::endl;
-	std::cout << "Combined classifier enabled: [" << (HDT_COMBINED_CLASSIFIER ? "Yes" : "No") << "]" << std::endl;
+	std::cout << "Partition-based processing enabled: [" << (HDT_PARALLEL_PARTITIONBASED_ENABLED ? "Yes" : "No") << "]" << std::endl;
+#ifdef HDT_ACTION_SOURCE
 	std::cout << "Action source: [" << HDT_ACTION_SOURCE_STRINGS[HDT_ACTION_SOURCE] << "]" << std::endl;
+#endif
 #ifndef NDEBUG
 	std::cout << "Build: [Debug]" << std::endl;
 #else
