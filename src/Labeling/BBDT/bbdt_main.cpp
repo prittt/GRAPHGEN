@@ -27,6 +27,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "graphgen.h"
+
 #include "grana_ruleset.h"
 
 using namespace std;
@@ -41,7 +42,8 @@ int main()
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
-	BinaryDrag<conact> bd = GetHdt(rs, g_rs, true);
+    BinaryDrag<conact> bd = GetOdt(rs);
+	//BinaryDrag<conact> bd = GetHdt(rs, g_rs, true);
 
     // 2) Draw the generated tree
     string tree_filename = algorithm_name + "_tree";
@@ -59,6 +61,5 @@ int main()
                                           GenerateActionCodeTypes::LABELING,
                                           block_positions);
 
-	getchar();
     return EXIT_SUCCESS;
 }
