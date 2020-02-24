@@ -57,10 +57,10 @@ constexpr float HDT_INFORMATION_GAIN_4_PUNISH_FACTOR = 2; /* How much negative i
 #define HDT_READAPPLY_VERBOSE_TIMINGS false /* Display separate timings of loading the partitions and processing the rules in memory */
 
 #define HDT_PARALLEL_PARTITIONBASED_ENABLED true /* Best approach at the moment. Allows for great parallelization and is generally faster for BBDT3D-36. For smaller problems like BBDT2D, turning this off may be faster (rule-based approach). */
-#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL 2 /* Needs to be >= 2. Recommended <= cores of your system. */
-#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL 1 /* Needs to >= 1 && <= (TOTAL_THREADS - 1) */
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL 7 /* Needs to be 2 or larger. Recommended to be equal or less than the logical cores of your system. */
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL 4 /* Needs to >= 1 && <= (TOTAL_THREADS - 1) */
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL (HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL - HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL)
-constexpr int HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE = std::min(PARTITIONS, 64); /* Needs be greater than TOTAL_THREADS. TOTAL_THREADS * 2 or * 3 recommended. */
+constexpr int HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE = std::min(PARTITIONS, 64); /* Must be greater than TOTAL_THREADS. TOTAL_THREADS * 2 or * 3 recommended. */
 constexpr int HDT_PARALLEL_PARTITIONBASED_IDLE_MS = 10; /* The amount of time spent in one idle cycle. */
 
 #if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
@@ -1006,8 +1006,14 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 
 	bool clamped_processing_thread_count = false;
 
-	if (data.rig != nullptr && data.rig->size() < threads_processing) {
-		threads_processing = static_cast<int>(data.rig->size());
+	int maximum_allowed_thread_processing = INT_MAX;
+
+	if (data.rig != nullptr) {
+		maximum_allowed_thread_processing = static_cast<int>(std::ceil(data.rig->size() / 128.));
+	}
+
+	if (threads_processing > maximum_allowed_thread_processing) {
+		threads_processing = maximum_allowed_thread_processing;
 		threads_reading = std::min(threads_processing * 3, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL - threads_processing);
 		clamped_processing_thread_count = true;
 	}
