@@ -29,22 +29,23 @@
 #include "graphgen.h"
 
 //#include "grana3d_36c_222b_ruleset.h"
-#include "grana3d_26c_221b_ruleset.h"
+//#include "grana3d_26c_221b_ruleset.h"
+#include "grana3d_19c_211b_ruleset.h"
 
 using namespace std;
 
 int main()
 {
 	//string algorithm_name = "BBDT3D-36c-222b";
-	string algorithm_name = "BBDT3D-26c-221b";
+	//string algorithm_name = "BBDT3D-26c-221b";
+	string algorithm_name = "BBDT3D-19c-211b";
     conf = ConfigData(algorithm_name, "Grana3D");
 
-    Grana3d_26c_221b_RS g_rs;
+    Grana3d_19c_211b_RS g_rs;
     auto rs = g_rs.GetRuleSet();
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
-    BinaryDrag<conact> bd = GetHdt(rs, g_rs, true);
 
 	//std::cout << " --> DrawDagOnFile()" << std::endl;
 
@@ -61,11 +62,11 @@ int main()
 	std::cout << " --> GeneratePointersConditionsActionsCode()" << std::endl;
 
     pixel_set block_positions{
-			    {"K", {-2,-2,-1}},{"L", {+0,-2,-1}},{"M", {+2,-2,-1}},
+			    {"K", {-2,-1,-1}},{"L", {+0,-1,-1}},{"M", {+2,-1,-1}},
 				{"N", {-2,+0,-1}},{"O", {+0,+0,-1}},{"P", {+2,+0,-1}},
-				{"Q", {-2,+2,-1}},{"R", {+0,+2,-1}},{"S", {+2,+2,-1}},
+				{"Q", {-2,+1,-1}},{"R", {+0,+1,-1}},{"S", {+2,+1,-1}},
 
-				{"T", {-2,-2,+0}},{"U", {+0,-2,+0}},{"V", {+2,-2,+0}},
+				{"T", {-2,-1,+0}},{"U", {+0,-1,+0}},{"V", {+2,-1,+0}},
 				{"W", {-2,+0,+0}},{"X", {+0,+0,+0}} 
     };
     GeneratePointersConditionsActionsCode(rs, 
@@ -74,5 +75,6 @@ int main()
                                           block_positions);
 
 	std::cout << " ** DONE" << std::endl;
+	getchar();
     return EXIT_SUCCESS;
 }

@@ -1009,7 +1009,7 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 	int maximum_allowed_thread_processing = INT_MAX;
 
 	if (data.rig != nullptr) {
-		maximum_allowed_thread_processing = static_cast<int>(std::ceil(data.rig->size() / 128.));
+		maximum_allowed_thread_processing = static_cast<int>(std::ceil(static_cast<int>(data.rig->size()) / 128.));
 	}
 
 	if (threads_processing > maximum_allowed_thread_processing) {

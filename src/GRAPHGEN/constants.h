@@ -5,7 +5,7 @@
 // To balance file IO and memory consumption, the rules of each partition are generated and written to file in batches. 
 // Once all rules of one batch have been generated and saved in memory, all these rules are written to the partition.
 
-#define BUILD 2
+#define BUILD 3
 
 #if BUILD == 0 // BBDT
 	constexpr int PARTITIONS = 1; // 1, 1024, 65536
@@ -38,7 +38,17 @@
 	const std::string GLOBAL_RULEFILES_BASEPATH_OVERRIDE = "D:/rules/bbdt3d-26c-221b/zst-variable-data-format-" + std::to_string(PARTITIONS) + "p-" + std::to_string(ACTION_COUNT) + "a";
 #endif
 
-#if BUILD == 3 // SAUF
+#if BUILD == 3 // BBDT3D-19c-211b
+	constexpr int PARTITIONS = 1; // 1, 1024, 65536
+	constexpr int BATCHES = 32;
+
+	constexpr int CONDITION_COUNT = 19; // 8, 14, 16, 36
+	constexpr int ACTION_COUNT = 2829; // 5, 77, 16, 5813 (reduced 2829)
+
+	const std::string GLOBAL_RULEFILES_BASEPATH_OVERRIDE = "D:/rules/bbdt3d-19c-211b/zst-variable-data-format-" + std::to_string(PARTITIONS) + "p-" + std::to_string(ACTION_COUNT) + "a";
+#endif
+
+#if BUILD == 4 // SAUF
 	constexpr int PARTITIONS = 1; 
 	constexpr int BATCHES = 32;
 
@@ -48,7 +58,7 @@
 	const std::string GLOBAL_RULEFILES_BASEPATH_OVERRIDE = "";
 #endif
 
-#if BUILD == 4 // SAUF3D
+#if BUILD == 5 // SAUF3D
 	constexpr int PARTITIONS = 1;
 	constexpr int BATCHES = 32;
 

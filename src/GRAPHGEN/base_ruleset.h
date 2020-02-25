@@ -119,7 +119,7 @@ public:
     }
 
 	void SaveAllRulesBinary() {
-		std::cout << "[Rule Files] Partitions: " << PARTITIONS << " Rulecodes for each partition: " << RULES_PER_PARTITION << std::endl;
+		//std::cout << "[Rule Files] Partitions: " << PARTITIONS << " Rulecodes for each partition: " << RULES_PER_PARTITION << std::endl;
 
 
 		auto path = std::filesystem::path(conf.binary_rule_file_path_partitioned("")).remove_filename();
