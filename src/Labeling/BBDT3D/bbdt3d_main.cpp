@@ -46,6 +46,7 @@ int main()
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Grana mask
+	BinaryDrag<conact> bd = GetHdt(rs, g_rs, true);
 
 	//std::cout << " --> DrawDagOnFile()" << std::endl;
 
