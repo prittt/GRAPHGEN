@@ -40,7 +40,7 @@
 #include "constants.h"
 
 
-#define HDT_INFORMATION_GAIN_METHOD_VERSION 4 /* Select a different formula on how information gain is calculated */
+#define HDT_INFORMATION_GAIN_METHOD_VERSION 1 /* Select a different formula on how information gain is calculated */
 
 constexpr float HDT_INFORMATION_GAIN_4_PUNISH_FACTOR = 2; /* How much negative information gains are "punished" in IG method 4. */
 

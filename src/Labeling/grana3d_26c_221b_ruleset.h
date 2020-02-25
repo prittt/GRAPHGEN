@@ -30,42 +30,32 @@
 
 #include "graphgen.h"
 
-constexpr auto Kh = 0;
-constexpr auto Lg = 1;
-constexpr auto Lh = 2;
-constexpr auto Mg = 3;
-constexpr auto Nf = 4;
-constexpr auto Nh = 5;
-constexpr auto Oe = 6;
-constexpr auto Of = 7;
-constexpr auto Og = 8;
-constexpr auto Oh = 9;
-constexpr auto Pe = 10;
-constexpr auto Pg = 11;
-constexpr auto Qf = 12;
-constexpr auto Re = 13;
-constexpr auto Rf = 14;
-constexpr auto Se = 15;
+constexpr auto Kd = 0;
+constexpr auto Lc = 1;
+constexpr auto Ld = 2;
+constexpr auto Mc = 3;
+constexpr auto Nb = 4;
+constexpr auto Nd = 5;
+constexpr auto Oa = 6;
+constexpr auto Ob = 7;
+constexpr auto Oc = 8;
+constexpr auto Od = 9;
+constexpr auto Pa = 10;
+constexpr auto Pc = 11;
+constexpr auto Qb = 12;
+constexpr auto Ra = 13;
+constexpr auto Rb = 14;
+constexpr auto Sa = 15;
 constexpr auto Td = 16;
-constexpr auto Th = 17;
-constexpr auto Uc = 18;
-constexpr auto Ud = 19;
-constexpr auto Ug = 20;
-constexpr auto Uh = 21;
-constexpr auto Vc = 22;
-constexpr auto Vg = 23;
-constexpr auto Wb = 24;
-constexpr auto Wd = 25;
-constexpr auto Wf = 26;
-constexpr auto Wh = 27;
-constexpr auto Xa = 28;
-constexpr auto Xb = 29;
-constexpr auto Xc = 30;
-constexpr auto Xd = 31;
-constexpr auto Xe = 32;
-constexpr auto Xf = 33;
-constexpr auto Xg = 34;
-constexpr auto Xh = 35;
+constexpr auto Uc = 17;
+constexpr auto Ud = 18;
+constexpr auto Vc = 19;
+constexpr auto Wb = 20;
+constexpr auto Wd = 21;
+constexpr auto Xa = 22;
+constexpr auto Xb = 23;
+constexpr auto Xc = 24;
+constexpr auto Xd = 25;
 
 constexpr auto K = 0;
 constexpr auto L = 1;
@@ -115,150 +105,150 @@ action_bitset GetActions(rule_wrapper& r,
 	connectivity_mat con({ "K","L","M","N","O","P","Q","R","S","T","U","V","W","x" });
 
 	// X connections
-	if (K_set) con.set(x, K, r[Xa] && r[Kh]);
-	if (L_set) con.set(x, L, (r[Lg] || r[Lh]) && (r[Xa] || r[Xb]));
-	if (M_set) con.set(x, M, r[Xb] && r[Mg]);
-	if (N_set) con.set(x, N, (r[Xa] || r[Xc]) && (r[Nf] || r[Nh]));
-	if (O_set) con.set(x, O, ((r[Xa] || r[Xb] || r[Xc] || r[Xd]) && (r[Oe] || r[Of] || r[Og] || r[Oh])));
-	if (P_set) con.set(x, P, (r[Xb] || r[Xd]) && (r[Pe] || r[Pg]));
-	if (Q_set) con.set(x, Q, r[Qf] && r[Xc]);
-	if (R_set) con.set(x, R, (r[Xc] || r[Xd]) && (r[Re] || r[Rf]));
-	if (S_set) con.set(x, S, r[Se] && r[Xd]);
-	if (T_set) con.set(x, T, (r[Xa] || r[Xe]) && (r[Td] || r[Th]));
-	if (U_set) con.set(x, U, ((r[Xa] || r[Xb] || r[Xe] || r[Xf]) && (r[Uc] || r[Ud] || r[Ug] || r[Uh])));
-	if (V_set) con.set(x, V, (r[Xb] || r[Xf]) && (r[Vc] || r[Vg]));
-	if (W_set) con.set(x, W, ((r[Xa] || r[Xc] || r[Xe] || r[Xg]) && (r[Wd] || r[Wb] || r[Wh] || r[Wf])));
+	if (K_set) con.set(x, K, r[Xa] && r[Kd]);
+	if (L_set) con.set(x, L, (r[Lc] || r[Ld]) && (r[Xa] || r[Xb]));
+	if (M_set) con.set(x, M, r[Xb] && r[Mc]);
+	if (N_set) con.set(x, N, (r[Xa] || r[Xc]) && (r[Nb] || r[Nd]));
+	if (O_set) con.set(x, O, ((r[Xa] || r[Xb] || r[Xc] || r[Xd]) && (r[Oa] || r[Ob] || r[Oc] || r[Od])));
+	if (P_set) con.set(x, P, (r[Xb] || r[Xd]) && (r[Pa] || r[Pc]));
+	if (Q_set) con.set(x, Q, r[Qb] && r[Xc]);
+	if (R_set) con.set(x, R, (r[Xc] || r[Xd]) && (r[Ra] || r[Rb]));
+	if (S_set) con.set(x, S, r[Sa] && r[Xd]);
+	if (T_set) con.set(x, T, (r[Xa]) && (r[Td]));
+	if (U_set) con.set(x, U, ((r[Xa] || r[Xb]) && (r[Uc] || r[Ud])));
+	if (V_set) con.set(x, V, (r[Xb]) && (r[Vc]));
+	if (W_set) con.set(x, W, ((r[Xa] || r[Xc]) && (r[Wd] || r[Wb])));
 
 
 	// Adjacent Block Connections
-	if (L_set && K_set) con.set(K, L, (r[Kh]) && (r[Lg]));
-	if (N_set && K_set) con.set(K, N, (r[Kh]) && (r[Nf]));
-	if (O_set && K_set) con.set(K, O, (r[Kh]) && (r[Oe]));
-	if (T_set && K_set) con.set(K, T, (r[Kh]) && (r[Td]));
-	if (U_set && K_set) con.set(K, U, (r[Kh]) && (r[Uc]));
-	if (W_set && K_set) con.set(K, W, (r[Kh]) && (r[Wb]));
-	if (M_set && L_set) con.set(L, M, (r[Lh]) && (r[Mg]));
-	if (N_set && L_set) con.set(L, N, (r[Lg]) && (r[Nf]));
-	if (O_set && L_set) con.set(L, O, (r[Lg] || r[Lh]) && (r[Oe] || r[Of]));
-	if (P_set && L_set) con.set(L, P, (r[Lh]) && (r[Pe]));
-	if (T_set && L_set) con.set(L, T, (r[Lg]) && (r[Td]));
-	if (U_set && L_set) con.set(L, U, (r[Lg] || r[Lh]) && (r[Uc] || r[Ud]));
-	if (V_set && L_set) con.set(L, V, (r[Lh]) && (r[Vc]));
-	if (W_set && L_set) con.set(L, W, (r[Lg]) && (r[Wb]));
-	if (O_set && M_set) con.set(M, O, (r[Mg]) && (r[Of]));
-	if (P_set && M_set) con.set(M, P, (r[Mg]) && (r[Pe]));
-	if (U_set && M_set) con.set(M, U, (r[Mg]) && (r[Ud]));
-	if (V_set && M_set) con.set(M, V, (r[Mg]) && (r[Vc]));
-	if (O_set && N_set) con.set(N, O, (r[Nf] || r[Nh]) && (r[Oe] || r[Og]));
-	if (Q_set && N_set) con.set(N, Q, (r[Nh]) && (r[Qf]));
-	if (R_set && N_set) con.set(N, R, (r[Nh]) && (r[Re]));
-	if (T_set && N_set) con.set(N, T, (r[Nf]) && (r[Td]));
-	if (U_set && N_set) con.set(N, U, (r[Nf]) && (r[Uc]));
-	if (W_set && N_set) con.set(N, W, (r[Nf] || r[Nh]) && (r[Wb] || r[Wd]));
-	if (P_set && O_set) con.set(O, P, (r[Of] || r[Oh]) && (r[Pe] || r[Pg]));
-	if (Q_set && O_set) con.set(O, Q, (r[Og]) && (r[Qf]));
-	if (R_set && O_set) con.set(O, R, (r[Og] || r[Oh]) && (r[Re] || r[Rf]));
-	if (S_set && O_set) con.set(O, S, (r[Oh]) && (r[Se]));
-	if (T_set && O_set) con.set(O, T, (r[Oe]) && (r[Td]));
-	if (U_set && O_set) con.set(O, U, (r[Oe] || r[Of]) && (r[Uc] || r[Ud]));
-	if (V_set && O_set) con.set(O, V, (r[Of]) && (r[Vc]));
-	if (W_set && O_set) con.set(O, W, (r[Oe] || r[Og]) && (r[Wb] || r[Wd]));
-	if (R_set && P_set) con.set(P, R, (r[Pg]) && (r[Rf]));
-	if (S_set && P_set) con.set(P, S, (r[Pg]) && (r[Se]));
-	if (U_set && P_set) con.set(P, U, (r[Pe]) && (r[Ud]));
-	if (V_set && P_set) con.set(P, V, (r[Pe]) && (r[Vc]));
-	if (R_set && Q_set) con.set(Q, R, (r[Qf]) && (r[Re]));
-	if (W_set && Q_set) con.set(Q, W, (r[Qf]) && (r[Wd]));
-	if (S_set && R_set) con.set(R, S, (r[Rf]) && (r[Se]));
-	if (W_set && R_set) con.set(R, W, (r[Re]) && (r[Wd]));
-	if (U_set && T_set) con.set(T, U, (r[Td] || r[Th]) && (r[Uc] || r[Ug]));
-	if (W_set && T_set) con.set(T, W, (r[Td] || r[Th]) && (r[Wb] || r[Wf]));
-	if (V_set && U_set) con.set(U, V, (r[Ud] || r[Uh]) && (r[Vc] || r[Vg]));
-	if (W_set && U_set) con.set(U, W, (r[Uc] || r[Ug]) && (r[Wb] || r[Wf]));
+	if (K_set && L_set) con.set("K", "L", (r["Kd"]) && (r["Lc"]));
+	if (K_set && N_set) con.set("K", "N", (r["Kd"]) && (r["Nb"]));
+	if (K_set && O_set) con.set("K", "O", (r["Kd"]) && (r["Oa"]));
+	if (K_set && T_set) con.set("K", "T", (r["Kd"]) && (r["Td"]));
+	if (K_set && U_set) con.set("K", "U", (r["Kd"]) && (r["Uc"]));
+	if (K_set && W_set) con.set("K", "W", (r["Kd"]) && (r["Wb"]));
+	if (L_set && M_set) con.set("L", "M", (r["Ld"]) && (r["Mc"]));
+	if (L_set && N_set) con.set("L", "N", (r["Lc"]) && (r["Nb"]));
+	if (L_set && O_set) con.set("L", "O", (r["Lc"] || r["Ld"]) && (r["Oa"] || r["Ob"]));
+	if (L_set && P_set) con.set("L", "P", (r["Ld"]) && (r["Pa"]));
+	if (L_set && T_set) con.set("L", "T", (r["Lc"]) && (r["Td"]));
+	if (L_set && U_set) con.set("L", "U", (r["Lc"] || r["Ld"]) && (r["Uc"] || r["Ud"]));
+	if (L_set && V_set) con.set("L", "V", (r["Ld"]) && (r["Vc"]));
+	if (L_set && W_set) con.set("L", "W", (r["Lc"]) && (r["Wb"]));
+	if (M_set && O_set) con.set("M", "O", (r["Mc"]) && (r["Ob"]));
+	if (M_set && P_set) con.set("M", "P", (r["Mc"]) && (r["Pa"]));
+	if (M_set && U_set) con.set("M", "U", (r["Mc"]) && (r["Ud"]));
+	if (M_set && V_set) con.set("M", "V", (r["Mc"]) && (r["Vc"]));
+	if (N_set && O_set) con.set("N", "O", (r["Nb"] || r["Nd"]) && (r["Oa"] || r["Oc"]));
+	if (N_set && Q_set) con.set("N", "Q", (r["Nd"]) && (r["Qb"]));
+	if (N_set && R_set) con.set("N", "R", (r["Nd"]) && (r["Ra"]));
+	if (N_set && T_set) con.set("N", "T", (r["Nb"]) && (r["Td"]));
+	if (N_set && U_set) con.set("N", "U", (r["Nb"]) && (r["Uc"]));
+	if (N_set && W_set) con.set("N", "W", (r["Nb"] || r["Nd"]) && (r["Wb"] || r["Wd"]));
+	if (O_set && P_set) con.set("O", "P", (r["Ob"] || r["Od"]) && (r["Pa"] || r["Pc"]));
+	if (O_set && Q_set) con.set("O", "Q", (r["Oc"]) && (r["Qb"]));
+	if (O_set && R_set) con.set("O", "R", (r["Oc"] || r["Od"]) && (r["Ra"] || r["Rb"]));
+	if (O_set && S_set) con.set("O", "S", (r["Od"]) && (r["Sa"]));
+	if (O_set && T_set) con.set("O", "T", (r["Oa"]) && (r["Td"]));
+	if (O_set && U_set) con.set("O", "U", (r["Oa"] || r["Ob"]) && (r["Uc"] || r["Ud"]));
+	if (O_set && V_set) con.set("O", "V", (r["Ob"]) && (r["Vc"]));
+	if (O_set && W_set) con.set("O", "W", (r["Oa"] || r["Oc"]) && (r["Wb"] || r["Wd"]));
+	if (P_set && R_set) con.set("P", "R", (r["Pc"]) && (r["Rb"]));
+	if (P_set && S_set) con.set("P", "S", (r["Pc"]) && (r["Sa"]));
+	if (P_set && U_set) con.set("P", "U", (r["Pa"]) && (r["Ud"]));
+	if (P_set && V_set) con.set("P", "V", (r["Pa"]) && (r["Vc"]));
+	if (Q_set && R_set) con.set("Q", "R", (r["Qb"]) && (r["Ra"]));
+	if (Q_set && W_set) con.set("Q", "W", (r["Qb"]) && (r["Wd"]));
+	if (R_set && S_set) con.set("R", "S", (r["Rb"]) && (r["Sa"]));
+	if (R_set && W_set) con.set("R", "W", (r["Ra"]) && (r["Wd"]));
+	if (T_set && U_set) con.set("T", "U", (r["Td"]) && (r["Uc"]));
+	if (T_set && W_set) con.set("T", "W", (r["Td"]) && (r["Wb"]));
+	if (U_set && V_set) con.set("U", "V", (r["Ud"]) && (r["Vc"]));
+	if (U_set && W_set) con.set("U", "W", (r["Uc"]) && (r["Wb"]));
 
 	// Non-adjacent, transitive Block Connections
 	bool changed = true;
 	while (changed) {
 		changed = false;
 
-		if (K_set && L_set) changed |= con.set(K, L, con(K, L) || ((con(K, N) && con(N, L)) || (con(K, O) && con(O, L)) || (con(K, T) && con(T, L)) || (con(K, U) && con(U, L)) || (con(K, W) && con(W, L))));
-		if (K_set && M_set) changed |= con.set(K, M, con(K, M) || ((con(K, L) && con(L, M)) || (con(K, N) && con(N, M)) || (con(K, O) && con(O, M)) || (con(K, T) && con(T, M)) || (con(K, U) && con(U, M)) || (con(K, W) && con(W, M))));
-		if (K_set && N_set) changed |= con.set(K, N, con(K, N) || ((con(K, L) && con(L, N)) || (con(K, O) && con(O, N)) || (con(K, T) && con(T, N)) || (con(K, U) && con(U, N)) || (con(K, W) && con(W, N))));
-		if (K_set && O_set) changed |= con.set(K, O, con(K, O) || ((con(K, L) && con(L, O)) || (con(K, N) && con(N, O)) || (con(K, T) && con(T, O)) || (con(K, U) && con(U, O)) || (con(K, W) && con(W, O))));
-		if (K_set && P_set) changed |= con.set(K, P, con(K, P) || ((con(K, L) && con(L, P)) || (con(K, N) && con(N, P)) || (con(K, O) && con(O, P)) || (con(K, T) && con(T, P)) || (con(K, U) && con(U, P)) || (con(K, W) && con(W, P))));
-		if (K_set && Q_set) changed |= con.set(K, Q, con(K, Q) || ((con(K, L) && con(L, Q)) || (con(K, N) && con(N, Q)) || (con(K, O) && con(O, Q)) || (con(K, T) && con(T, Q)) || (con(K, U) && con(U, Q)) || (con(K, W) && con(W, Q))));
-		if (K_set && R_set) changed |= con.set(K, R, con(K, R) || ((con(K, L) && con(L, R)) || (con(K, N) && con(N, R)) || (con(K, O) && con(O, R)) || (con(K, T) && con(T, R)) || (con(K, U) && con(U, R)) || (con(K, W) && con(W, R))));
-		if (K_set && S_set) changed |= con.set(K, S, con(K, S) || ((con(K, L) && con(L, S)) || (con(K, N) && con(N, S)) || (con(K, O) && con(O, S)) || (con(K, T) && con(T, S)) || (con(K, U) && con(U, S)) || (con(K, W) && con(W, S))));
-		if (K_set && T_set) changed |= con.set(K, T, con(K, T) || ((con(K, L) && con(L, T)) || (con(K, N) && con(N, T)) || (con(K, O) && con(O, T)) || (con(K, U) && con(U, T)) || (con(K, W) && con(W, T))));
-		if (K_set && U_set) changed |= con.set(K, U, con(K, U) || ((con(K, L) && con(L, U)) || (con(K, N) && con(N, U)) || (con(K, O) && con(O, U)) || (con(K, T) && con(T, U)) || (con(K, W) && con(W, U))));
-		if (K_set && V_set) changed |= con.set(K, V, con(K, V) || ((con(K, L) && con(L, V)) || (con(K, N) && con(N, V)) || (con(K, O) && con(O, V)) || (con(K, T) && con(T, V)) || (con(K, U) && con(U, V)) || (con(K, W) && con(W, V))));
-		if (K_set && W_set) changed |= con.set(K, W, con(K, W) || ((con(K, L) && con(L, W)) || (con(K, N) && con(N, W)) || (con(K, O) && con(O, W)) || (con(K, T) && con(T, W)) || (con(K, U) && con(U, W))));
-		if (L_set && M_set) changed |= con.set(L, M, con(L, M) || ((con(L, K) && con(K, M)) || (con(L, N) && con(N, M)) || (con(L, O) && con(O, M)) || (con(L, P) && con(P, M)) || (con(L, T) && con(T, M)) || (con(L, U) && con(U, M)) || (con(L, V) && con(V, M)) || (con(L, W) && con(W, M))));
-		if (L_set && N_set) changed |= con.set(L, N, con(L, N) || ((con(L, K) && con(K, N)) || (con(L, M) && con(M, N)) || (con(L, O) && con(O, N)) || (con(L, P) && con(P, N)) || (con(L, T) && con(T, N)) || (con(L, U) && con(U, N)) || (con(L, V) && con(V, N)) || (con(L, W) && con(W, N))));
-		if (L_set && O_set) changed |= con.set(L, O, con(L, O) || ((con(L, K) && con(K, O)) || (con(L, M) && con(M, O)) || (con(L, N) && con(N, O)) || (con(L, P) && con(P, O)) || (con(L, T) && con(T, O)) || (con(L, U) && con(U, O)) || (con(L, V) && con(V, O)) || (con(L, W) && con(W, O))));
-		if (L_set && P_set) changed |= con.set(L, P, con(L, P) || ((con(L, K) && con(K, P)) || (con(L, M) && con(M, P)) || (con(L, N) && con(N, P)) || (con(L, O) && con(O, P)) || (con(L, T) && con(T, P)) || (con(L, U) && con(U, P)) || (con(L, V) && con(V, P)) || (con(L, W) && con(W, P))));
-		if (L_set && Q_set) changed |= con.set(L, Q, con(L, Q) || ((con(L, K) && con(K, Q)) || (con(L, M) && con(M, Q)) || (con(L, N) && con(N, Q)) || (con(L, O) && con(O, Q)) || (con(L, P) && con(P, Q)) || (con(L, T) && con(T, Q)) || (con(L, U) && con(U, Q)) || (con(L, V) && con(V, Q)) || (con(L, W) && con(W, Q))));
-		if (L_set && R_set) changed |= con.set(L, R, con(L, R) || ((con(L, K) && con(K, R)) || (con(L, M) && con(M, R)) || (con(L, N) && con(N, R)) || (con(L, O) && con(O, R)) || (con(L, P) && con(P, R)) || (con(L, T) && con(T, R)) || (con(L, U) && con(U, R)) || (con(L, V) && con(V, R)) || (con(L, W) && con(W, R))));
-		if (L_set && S_set) changed |= con.set(L, S, con(L, S) || ((con(L, K) && con(K, S)) || (con(L, M) && con(M, S)) || (con(L, N) && con(N, S)) || (con(L, O) && con(O, S)) || (con(L, P) && con(P, S)) || (con(L, T) && con(T, S)) || (con(L, U) && con(U, S)) || (con(L, V) && con(V, S)) || (con(L, W) && con(W, S))));
-		if (L_set && T_set) changed |= con.set(L, T, con(L, T) || ((con(L, K) && con(K, T)) || (con(L, M) && con(M, T)) || (con(L, N) && con(N, T)) || (con(L, O) && con(O, T)) || (con(L, P) && con(P, T)) || (con(L, U) && con(U, T)) || (con(L, V) && con(V, T)) || (con(L, W) && con(W, T))));
-		if (L_set && U_set) changed |= con.set(L, U, con(L, U) || ((con(L, K) && con(K, U)) || (con(L, M) && con(M, U)) || (con(L, N) && con(N, U)) || (con(L, O) && con(O, U)) || (con(L, P) && con(P, U)) || (con(L, T) && con(T, U)) || (con(L, V) && con(V, U)) || (con(L, W) && con(W, U))));
-		if (L_set && V_set) changed |= con.set(L, V, con(L, V) || ((con(L, K) && con(K, V)) || (con(L, M) && con(M, V)) || (con(L, N) && con(N, V)) || (con(L, O) && con(O, V)) || (con(L, P) && con(P, V)) || (con(L, T) && con(T, V)) || (con(L, U) && con(U, V)) || (con(L, W) && con(W, V))));
-		if (L_set && W_set) changed |= con.set(L, W, con(L, W) || ((con(L, K) && con(K, W)) || (con(L, M) && con(M, W)) || (con(L, N) && con(N, W)) || (con(L, O) && con(O, W)) || (con(L, P) && con(P, W)) || (con(L, T) && con(T, W)) || (con(L, U) && con(U, W)) || (con(L, V) && con(V, W))));
-		if (M_set && N_set) changed |= con.set(M, N, con(M, N) || ((con(M, L) && con(L, N)) || (con(M, O) && con(O, N)) || (con(M, P) && con(P, N)) || (con(M, U) && con(U, N)) || (con(M, V) && con(V, N))));
-		if (M_set && O_set) changed |= con.set(M, O, con(M, O) || ((con(M, L) && con(L, O)) || (con(M, P) && con(P, O)) || (con(M, U) && con(U, O)) || (con(M, V) && con(V, O))));
-		if (M_set && P_set) changed |= con.set(M, P, con(M, P) || ((con(M, L) && con(L, P)) || (con(M, O) && con(O, P)) || (con(M, U) && con(U, P)) || (con(M, V) && con(V, P))));
-		if (M_set && Q_set) changed |= con.set(M, Q, con(M, Q) || ((con(M, L) && con(L, Q)) || (con(M, O) && con(O, Q)) || (con(M, P) && con(P, Q)) || (con(M, U) && con(U, Q)) || (con(M, V) && con(V, Q))));
-		if (M_set && R_set) changed |= con.set(M, R, con(M, R) || ((con(M, L) && con(L, R)) || (con(M, O) && con(O, R)) || (con(M, P) && con(P, R)) || (con(M, U) && con(U, R)) || (con(M, V) && con(V, R))));
-		if (M_set && S_set) changed |= con.set(M, S, con(M, S) || ((con(M, L) && con(L, S)) || (con(M, O) && con(O, S)) || (con(M, P) && con(P, S)) || (con(M, U) && con(U, S)) || (con(M, V) && con(V, S))));
-		if (M_set && T_set) changed |= con.set(M, T, con(M, T) || ((con(M, L) && con(L, T)) || (con(M, O) && con(O, T)) || (con(M, P) && con(P, T)) || (con(M, U) && con(U, T)) || (con(M, V) && con(V, T))));
-		if (M_set && U_set) changed |= con.set(M, U, con(M, U) || ((con(M, L) && con(L, U)) || (con(M, O) && con(O, U)) || (con(M, P) && con(P, U)) || (con(M, V) && con(V, U))));
-		if (M_set && V_set) changed |= con.set(M, V, con(M, V) || ((con(M, L) && con(L, V)) || (con(M, O) && con(O, V)) || (con(M, P) && con(P, V)) || (con(M, U) && con(U, V))));
-		if (M_set && W_set) changed |= con.set(M, W, con(M, W) || ((con(M, L) && con(L, W)) || (con(M, O) && con(O, W)) || (con(M, P) && con(P, W)) || (con(M, U) && con(U, W)) || (con(M, V) && con(V, W))));
-		if (N_set && O_set) changed |= con.set(N, O, con(N, O) || ((con(N, K) && con(K, O)) || (con(N, L) && con(L, O)) || (con(N, Q) && con(Q, O)) || (con(N, R) && con(R, O)) || (con(N, T) && con(T, O)) || (con(N, U) && con(U, O)) || (con(N, W) && con(W, O))));
-		if (N_set && P_set) changed |= con.set(N, P, con(N, P) || ((con(N, K) && con(K, P)) || (con(N, L) && con(L, P)) || (con(N, O) && con(O, P)) || (con(N, Q) && con(Q, P)) || (con(N, R) && con(R, P)) || (con(N, T) && con(T, P)) || (con(N, U) && con(U, P)) || (con(N, W) && con(W, P))));
-		if (N_set && Q_set) changed |= con.set(N, Q, con(N, Q) || ((con(N, K) && con(K, Q)) || (con(N, L) && con(L, Q)) || (con(N, O) && con(O, Q)) || (con(N, R) && con(R, Q)) || (con(N, T) && con(T, Q)) || (con(N, U) && con(U, Q)) || (con(N, W) && con(W, Q))));
-		if (N_set && R_set) changed |= con.set(N, R, con(N, R) || ((con(N, K) && con(K, R)) || (con(N, L) && con(L, R)) || (con(N, O) && con(O, R)) || (con(N, Q) && con(Q, R)) || (con(N, T) && con(T, R)) || (con(N, U) && con(U, R)) || (con(N, W) && con(W, R))));
-		if (N_set && S_set) changed |= con.set(N, S, con(N, S) || ((con(N, K) && con(K, S)) || (con(N, L) && con(L, S)) || (con(N, O) && con(O, S)) || (con(N, Q) && con(Q, S)) || (con(N, R) && con(R, S)) || (con(N, T) && con(T, S)) || (con(N, U) && con(U, S)) || (con(N, W) && con(W, S))));
-		if (N_set && T_set) changed |= con.set(N, T, con(N, T) || ((con(N, K) && con(K, T)) || (con(N, L) && con(L, T)) || (con(N, O) && con(O, T)) || (con(N, Q) && con(Q, T)) || (con(N, R) && con(R, T)) || (con(N, U) && con(U, T)) || (con(N, W) && con(W, T))));
-		if (N_set && U_set) changed |= con.set(N, U, con(N, U) || ((con(N, K) && con(K, U)) || (con(N, L) && con(L, U)) || (con(N, O) && con(O, U)) || (con(N, Q) && con(Q, U)) || (con(N, R) && con(R, U)) || (con(N, T) && con(T, U)) || (con(N, W) && con(W, U))));
-		if (N_set && V_set) changed |= con.set(N, V, con(N, V) || ((con(N, K) && con(K, V)) || (con(N, L) && con(L, V)) || (con(N, O) && con(O, V)) || (con(N, Q) && con(Q, V)) || (con(N, R) && con(R, V)) || (con(N, T) && con(T, V)) || (con(N, U) && con(U, V)) || (con(N, W) && con(W, V))));
-		if (N_set && W_set) changed |= con.set(N, W, con(N, W) || ((con(N, K) && con(K, W)) || (con(N, L) && con(L, W)) || (con(N, O) && con(O, W)) || (con(N, Q) && con(Q, W)) || (con(N, R) && con(R, W)) || (con(N, T) && con(T, W)) || (con(N, U) && con(U, W))));
-		if (O_set && P_set) changed |= con.set(O, P, con(O, P) || ((con(O, K) && con(K, P)) || (con(O, L) && con(L, P)) || (con(O, M) && con(M, P)) || (con(O, N) && con(N, P)) || (con(O, Q) && con(Q, P)) || (con(O, R) && con(R, P)) || (con(O, S) && con(S, P)) || (con(O, T) && con(T, P)) || (con(O, U) && con(U, P)) || (con(O, V) && con(V, P)) || (con(O, W) && con(W, P))));
-		if (O_set && Q_set) changed |= con.set(O, Q, con(O, Q) || ((con(O, K) && con(K, Q)) || (con(O, L) && con(L, Q)) || (con(O, M) && con(M, Q)) || (con(O, N) && con(N, Q)) || (con(O, P) && con(P, Q)) || (con(O, R) && con(R, Q)) || (con(O, S) && con(S, Q)) || (con(O, T) && con(T, Q)) || (con(O, U) && con(U, Q)) || (con(O, V) && con(V, Q)) || (con(O, W) && con(W, Q))));
-		if (O_set && R_set) changed |= con.set(O, R, con(O, R) || ((con(O, K) && con(K, R)) || (con(O, L) && con(L, R)) || (con(O, M) && con(M, R)) || (con(O, N) && con(N, R)) || (con(O, P) && con(P, R)) || (con(O, Q) && con(Q, R)) || (con(O, S) && con(S, R)) || (con(O, T) && con(T, R)) || (con(O, U) && con(U, R)) || (con(O, V) && con(V, R)) || (con(O, W) && con(W, R))));
-		if (O_set && S_set) changed |= con.set(O, S, con(O, S) || ((con(O, K) && con(K, S)) || (con(O, L) && con(L, S)) || (con(O, M) && con(M, S)) || (con(O, N) && con(N, S)) || (con(O, P) && con(P, S)) || (con(O, Q) && con(Q, S)) || (con(O, R) && con(R, S)) || (con(O, T) && con(T, S)) || (con(O, U) && con(U, S)) || (con(O, V) && con(V, S)) || (con(O, W) && con(W, S))));
-		if (O_set && T_set) changed |= con.set(O, T, con(O, T) || ((con(O, K) && con(K, T)) || (con(O, L) && con(L, T)) || (con(O, M) && con(M, T)) || (con(O, N) && con(N, T)) || (con(O, P) && con(P, T)) || (con(O, Q) && con(Q, T)) || (con(O, R) && con(R, T)) || (con(O, S) && con(S, T)) || (con(O, U) && con(U, T)) || (con(O, V) && con(V, T)) || (con(O, W) && con(W, T))));
-		if (O_set && U_set) changed |= con.set(O, U, con(O, U) || ((con(O, K) && con(K, U)) || (con(O, L) && con(L, U)) || (con(O, M) && con(M, U)) || (con(O, N) && con(N, U)) || (con(O, P) && con(P, U)) || (con(O, Q) && con(Q, U)) || (con(O, R) && con(R, U)) || (con(O, S) && con(S, U)) || (con(O, T) && con(T, U)) || (con(O, V) && con(V, U)) || (con(O, W) && con(W, U))));
-		if (O_set && V_set) changed |= con.set(O, V, con(O, V) || ((con(O, K) && con(K, V)) || (con(O, L) && con(L, V)) || (con(O, M) && con(M, V)) || (con(O, N) && con(N, V)) || (con(O, P) && con(P, V)) || (con(O, Q) && con(Q, V)) || (con(O, R) && con(R, V)) || (con(O, S) && con(S, V)) || (con(O, T) && con(T, V)) || (con(O, U) && con(U, V)) || (con(O, W) && con(W, V))));
-		if (O_set && W_set) changed |= con.set(O, W, con(O, W) || ((con(O, K) && con(K, W)) || (con(O, L) && con(L, W)) || (con(O, M) && con(M, W)) || (con(O, N) && con(N, W)) || (con(O, P) && con(P, W)) || (con(O, Q) && con(Q, W)) || (con(O, R) && con(R, W)) || (con(O, S) && con(S, W)) || (con(O, T) && con(T, W)) || (con(O, U) && con(U, W)) || (con(O, V) && con(V, W))));
-		if (P_set && Q_set) changed |= con.set(P, Q, con(P, Q) || ((con(P, L) && con(L, Q)) || (con(P, M) && con(M, Q)) || (con(P, O) && con(O, Q)) || (con(P, R) && con(R, Q)) || (con(P, S) && con(S, Q)) || (con(P, U) && con(U, Q)) || (con(P, V) && con(V, Q))));
-		if (P_set && R_set) changed |= con.set(P, R, con(P, R) || ((con(P, L) && con(L, R)) || (con(P, M) && con(M, R)) || (con(P, O) && con(O, R)) || (con(P, S) && con(S, R)) || (con(P, U) && con(U, R)) || (con(P, V) && con(V, R))));
-		if (P_set && S_set) changed |= con.set(P, S, con(P, S) || ((con(P, L) && con(L, S)) || (con(P, M) && con(M, S)) || (con(P, O) && con(O, S)) || (con(P, R) && con(R, S)) || (con(P, U) && con(U, S)) || (con(P, V) && con(V, S))));
-		if (P_set && T_set) changed |= con.set(P, T, con(P, T) || ((con(P, L) && con(L, T)) || (con(P, M) && con(M, T)) || (con(P, O) && con(O, T)) || (con(P, R) && con(R, T)) || (con(P, S) && con(S, T)) || (con(P, U) && con(U, T)) || (con(P, V) && con(V, T))));
-		if (P_set && U_set) changed |= con.set(P, U, con(P, U) || ((con(P, L) && con(L, U)) || (con(P, M) && con(M, U)) || (con(P, O) && con(O, U)) || (con(P, R) && con(R, U)) || (con(P, S) && con(S, U)) || (con(P, V) && con(V, U))));
-		if (P_set && V_set) changed |= con.set(P, V, con(P, V) || ((con(P, L) && con(L, V)) || (con(P, M) && con(M, V)) || (con(P, O) && con(O, V)) || (con(P, R) && con(R, V)) || (con(P, S) && con(S, V)) || (con(P, U) && con(U, V))));
-		if (P_set && W_set) changed |= con.set(P, W, con(P, W) || ((con(P, L) && con(L, W)) || (con(P, M) && con(M, W)) || (con(P, O) && con(O, W)) || (con(P, R) && con(R, W)) || (con(P, S) && con(S, W)) || (con(P, U) && con(U, W)) || (con(P, V) && con(V, W))));
-		if (Q_set && R_set) changed |= con.set(Q, R, con(Q, R) || ((con(Q, N) && con(N, R)) || (con(Q, O) && con(O, R)) || (con(Q, W) && con(W, R))));
-		if (Q_set && S_set) changed |= con.set(Q, S, con(Q, S) || ((con(Q, N) && con(N, S)) || (con(Q, O) && con(O, S)) || (con(Q, R) && con(R, S)) || (con(Q, W) && con(W, S))));
-		if (Q_set && T_set) changed |= con.set(Q, T, con(Q, T) || ((con(Q, N) && con(N, T)) || (con(Q, O) && con(O, T)) || (con(Q, R) && con(R, T)) || (con(Q, W) && con(W, T))));
-		if (Q_set && U_set) changed |= con.set(Q, U, con(Q, U) || ((con(Q, N) && con(N, U)) || (con(Q, O) && con(O, U)) || (con(Q, R) && con(R, U)) || (con(Q, W) && con(W, U))));
-		if (Q_set && V_set) changed |= con.set(Q, V, con(Q, V) || ((con(Q, N) && con(N, V)) || (con(Q, O) && con(O, V)) || (con(Q, R) && con(R, V)) || (con(Q, W) && con(W, V))));
-		if (Q_set && W_set) changed |= con.set(Q, W, con(Q, W) || ((con(Q, N) && con(N, W)) || (con(Q, O) && con(O, W)) || (con(Q, R) && con(R, W))));
-		if (R_set && S_set) changed |= con.set(R, S, con(R, S) || ((con(R, N) && con(N, S)) || (con(R, O) && con(O, S)) || (con(R, P) && con(P, S)) || (con(R, Q) && con(Q, S)) || (con(R, W) && con(W, S))));
-		if (R_set && T_set) changed |= con.set(R, T, con(R, T) || ((con(R, N) && con(N, T)) || (con(R, O) && con(O, T)) || (con(R, P) && con(P, T)) || (con(R, Q) && con(Q, T)) || (con(R, S) && con(S, T)) || (con(R, W) && con(W, T))));
-		if (R_set && U_set) changed |= con.set(R, U, con(R, U) || ((con(R, N) && con(N, U)) || (con(R, O) && con(O, U)) || (con(R, P) && con(P, U)) || (con(R, Q) && con(Q, U)) || (con(R, S) && con(S, U)) || (con(R, W) && con(W, U))));
-		if (R_set && V_set) changed |= con.set(R, V, con(R, V) || ((con(R, N) && con(N, V)) || (con(R, O) && con(O, V)) || (con(R, P) && con(P, V)) || (con(R, Q) && con(Q, V)) || (con(R, S) && con(S, V)) || (con(R, W) && con(W, V))));
-		if (R_set && W_set) changed |= con.set(R, W, con(R, W) || ((con(R, N) && con(N, W)) || (con(R, O) && con(O, W)) || (con(R, P) && con(P, W)) || (con(R, Q) && con(Q, W)) || (con(R, S) && con(S, W))));
-		if (S_set && T_set) changed |= con.set(S, T, con(S, T) || ((con(S, O) && con(O, T)) || (con(S, P) && con(P, T)) || (con(S, R) && con(R, T))));
-		if (S_set && U_set) changed |= con.set(S, U, con(S, U) || ((con(S, O) && con(O, U)) || (con(S, P) && con(P, U)) || (con(S, R) && con(R, U))));
-		if (S_set && V_set) changed |= con.set(S, V, con(S, V) || ((con(S, O) && con(O, V)) || (con(S, P) && con(P, V)) || (con(S, R) && con(R, V))));
-		if (S_set && W_set) changed |= con.set(S, W, con(S, W) || ((con(S, O) && con(O, W)) || (con(S, P) && con(P, W)) || (con(S, R) && con(R, W))));
-		if (T_set && U_set) changed |= con.set(T, U, con(T, U) || ((con(T, K) && con(K, U)) || (con(T, L) && con(L, U)) || (con(T, N) && con(N, U)) || (con(T, O) && con(O, U)) || (con(T, W) && con(W, U))));
-		if (T_set && V_set) changed |= con.set(T, V, con(T, V) || ((con(T, K) && con(K, V)) || (con(T, L) && con(L, V)) || (con(T, N) && con(N, V)) || (con(T, O) && con(O, V)) || (con(T, U) && con(U, V)) || (con(T, W) && con(W, V))));
-		if (T_set && W_set) changed |= con.set(T, W, con(T, W) || ((con(T, K) && con(K, W)) || (con(T, L) && con(L, W)) || (con(T, N) && con(N, W)) || (con(T, O) && con(O, W)) || (con(T, U) && con(U, W))));
-		if (U_set && V_set) changed |= con.set(U, V, con(U, V) || ((con(U, K) && con(K, V)) || (con(U, L) && con(L, V)) || (con(U, M) && con(M, V)) || (con(U, N) && con(N, V)) || (con(U, O) && con(O, V)) || (con(U, P) && con(P, V)) || (con(U, T) && con(T, V)) || (con(U, W) && con(W, V))));
-		if (U_set && W_set) changed |= con.set(U, W, con(U, W) || ((con(U, K) && con(K, W)) || (con(U, L) && con(L, W)) || (con(U, M) && con(M, W)) || (con(U, N) && con(N, W)) || (con(U, O) && con(O, W)) || (con(U, P) && con(P, W)) || (con(U, T) && con(T, W)) || (con(U, V) && con(V, W))));
-		if (V_set && W_set) changed |= con.set(V, W, con(V, W) || ((con(V, L) && con(L, W)) || (con(V, M) && con(M, W)) || (con(V, O) && con(O, W)) || (con(V, P) && con(P, W)) || (con(V, U) && con(U, W))));
+		if (K_set && L_set) changed |= con.set("K", "L", con("K", "L") || ((con("K", "N") && con("N", "L")) || (con("K", "O") && con("O", "L")) || (con("K", "T") && con("T", "L")) || (con("K", "U") && con("U", "L")) || (con("K", "W") && con("W", "L"))));
+		if (K_set && M_set) changed |= con.set("K", "M", con("K", "M") || ((con("K", "L") && con("L", "M")) || (con("K", "N") && con("N", "M")) || (con("K", "O") && con("O", "M")) || (con("K", "T") && con("T", "M")) || (con("K", "U") && con("U", "M")) || (con("K", "W") && con("W", "M"))));
+		if (K_set && N_set) changed |= con.set("K", "N", con("K", "N") || ((con("K", "L") && con("L", "N")) || (con("K", "O") && con("O", "N")) || (con("K", "T") && con("T", "N")) || (con("K", "U") && con("U", "N")) || (con("K", "W") && con("W", "N"))));
+		if (K_set && O_set) changed |= con.set("K", "O", con("K", "O") || ((con("K", "L") && con("L", "O")) || (con("K", "N") && con("N", "O")) || (con("K", "T") && con("T", "O")) || (con("K", "U") && con("U", "O")) || (con("K", "W") && con("W", "O"))));
+		if (K_set && P_set) changed |= con.set("K", "P", con("K", "P") || ((con("K", "L") && con("L", "P")) || (con("K", "N") && con("N", "P")) || (con("K", "O") && con("O", "P")) || (con("K", "T") && con("T", "P")) || (con("K", "U") && con("U", "P")) || (con("K", "W") && con("W", "P"))));
+		if (K_set && Q_set) changed |= con.set("K", "Q", con("K", "Q") || ((con("K", "L") && con("L", "Q")) || (con("K", "N") && con("N", "Q")) || (con("K", "O") && con("O", "Q")) || (con("K", "T") && con("T", "Q")) || (con("K", "U") && con("U", "Q")) || (con("K", "W") && con("W", "Q"))));
+		if (K_set && R_set) changed |= con.set("K", "R", con("K", "R") || ((con("K", "L") && con("L", "R")) || (con("K", "N") && con("N", "R")) || (con("K", "O") && con("O", "R")) || (con("K", "T") && con("T", "R")) || (con("K", "U") && con("U", "R")) || (con("K", "W") && con("W", "R"))));
+		if (K_set && S_set) changed |= con.set("K", "S", con("K", "S") || ((con("K", "L") && con("L", "S")) || (con("K", "N") && con("N", "S")) || (con("K", "O") && con("O", "S")) || (con("K", "T") && con("T", "S")) || (con("K", "U") && con("U", "S")) || (con("K", "W") && con("W", "S"))));
+		if (K_set && T_set) changed |= con.set("K", "T", con("K", "T") || ((con("K", "L") && con("L", "T")) || (con("K", "N") && con("N", "T")) || (con("K", "O") && con("O", "T")) || (con("K", "U") && con("U", "T")) || (con("K", "W") && con("W", "T"))));
+		if (K_set && U_set) changed |= con.set("K", "U", con("K", "U") || ((con("K", "L") && con("L", "U")) || (con("K", "N") && con("N", "U")) || (con("K", "O") && con("O", "U")) || (con("K", "T") && con("T", "U")) || (con("K", "W") && con("W", "U"))));
+		if (K_set && V_set) changed |= con.set("K", "V", con("K", "V") || ((con("K", "L") && con("L", "V")) || (con("K", "N") && con("N", "V")) || (con("K", "O") && con("O", "V")) || (con("K", "T") && con("T", "V")) || (con("K", "U") && con("U", "V")) || (con("K", "W") && con("W", "V"))));
+		if (K_set && W_set) changed |= con.set("K", "W", con("K", "W") || ((con("K", "L") && con("L", "W")) || (con("K", "N") && con("N", "W")) || (con("K", "O") && con("O", "W")) || (con("K", "T") && con("T", "W")) || (con("K", "U") && con("U", "W"))));
+		if (L_set && M_set) changed |= con.set("L", "M", con("L", "M") || ((con("L", "K") && con("K", "M")) || (con("L", "N") && con("N", "M")) || (con("L", "O") && con("O", "M")) || (con("L", "P") && con("P", "M")) || (con("L", "T") && con("T", "M")) || (con("L", "U") && con("U", "M")) || (con("L", "V") && con("V", "M")) || (con("L", "W") && con("W", "M"))));
+		if (L_set && N_set) changed |= con.set("L", "N", con("L", "N") || ((con("L", "K") && con("K", "N")) || (con("L", "M") && con("M", "N")) || (con("L", "O") && con("O", "N")) || (con("L", "P") && con("P", "N")) || (con("L", "T") && con("T", "N")) || (con("L", "U") && con("U", "N")) || (con("L", "V") && con("V", "N")) || (con("L", "W") && con("W", "N"))));
+		if (L_set && O_set) changed |= con.set("L", "O", con("L", "O") || ((con("L", "K") && con("K", "O")) || (con("L", "M") && con("M", "O")) || (con("L", "N") && con("N", "O")) || (con("L", "P") && con("P", "O")) || (con("L", "T") && con("T", "O")) || (con("L", "U") && con("U", "O")) || (con("L", "V") && con("V", "O")) || (con("L", "W") && con("W", "O"))));
+		if (L_set && P_set) changed |= con.set("L", "P", con("L", "P") || ((con("L", "K") && con("K", "P")) || (con("L", "M") && con("M", "P")) || (con("L", "N") && con("N", "P")) || (con("L", "O") && con("O", "P")) || (con("L", "T") && con("T", "P")) || (con("L", "U") && con("U", "P")) || (con("L", "V") && con("V", "P")) || (con("L", "W") && con("W", "P"))));
+		if (L_set && Q_set) changed |= con.set("L", "Q", con("L", "Q") || ((con("L", "K") && con("K", "Q")) || (con("L", "M") && con("M", "Q")) || (con("L", "N") && con("N", "Q")) || (con("L", "O") && con("O", "Q")) || (con("L", "P") && con("P", "Q")) || (con("L", "T") && con("T", "Q")) || (con("L", "U") && con("U", "Q")) || (con("L", "V") && con("V", "Q")) || (con("L", "W") && con("W", "Q"))));
+		if (L_set && R_set) changed |= con.set("L", "R", con("L", "R") || ((con("L", "K") && con("K", "R")) || (con("L", "M") && con("M", "R")) || (con("L", "N") && con("N", "R")) || (con("L", "O") && con("O", "R")) || (con("L", "P") && con("P", "R")) || (con("L", "T") && con("T", "R")) || (con("L", "U") && con("U", "R")) || (con("L", "V") && con("V", "R")) || (con("L", "W") && con("W", "R"))));
+		if (L_set && S_set) changed |= con.set("L", "S", con("L", "S") || ((con("L", "K") && con("K", "S")) || (con("L", "M") && con("M", "S")) || (con("L", "N") && con("N", "S")) || (con("L", "O") && con("O", "S")) || (con("L", "P") && con("P", "S")) || (con("L", "T") && con("T", "S")) || (con("L", "U") && con("U", "S")) || (con("L", "V") && con("V", "S")) || (con("L", "W") && con("W", "S"))));
+		if (L_set && T_set) changed |= con.set("L", "T", con("L", "T") || ((con("L", "K") && con("K", "T")) || (con("L", "M") && con("M", "T")) || (con("L", "N") && con("N", "T")) || (con("L", "O") && con("O", "T")) || (con("L", "P") && con("P", "T")) || (con("L", "U") && con("U", "T")) || (con("L", "V") && con("V", "T")) || (con("L", "W") && con("W", "T"))));
+		if (L_set && U_set) changed |= con.set("L", "U", con("L", "U") || ((con("L", "K") && con("K", "U")) || (con("L", "M") && con("M", "U")) || (con("L", "N") && con("N", "U")) || (con("L", "O") && con("O", "U")) || (con("L", "P") && con("P", "U")) || (con("L", "T") && con("T", "U")) || (con("L", "V") && con("V", "U")) || (con("L", "W") && con("W", "U"))));
+		if (L_set && V_set) changed |= con.set("L", "V", con("L", "V") || ((con("L", "K") && con("K", "V")) || (con("L", "M") && con("M", "V")) || (con("L", "N") && con("N", "V")) || (con("L", "O") && con("O", "V")) || (con("L", "P") && con("P", "V")) || (con("L", "T") && con("T", "V")) || (con("L", "U") && con("U", "V")) || (con("L", "W") && con("W", "V"))));
+		if (L_set && W_set) changed |= con.set("L", "W", con("L", "W") || ((con("L", "K") && con("K", "W")) || (con("L", "M") && con("M", "W")) || (con("L", "N") && con("N", "W")) || (con("L", "O") && con("O", "W")) || (con("L", "P") && con("P", "W")) || (con("L", "T") && con("T", "W")) || (con("L", "U") && con("U", "W")) || (con("L", "V") && con("V", "W"))));
+		if (M_set && N_set) changed |= con.set("M", "N", con("M", "N") || ((con("M", "L") && con("L", "N")) || (con("M", "O") && con("O", "N")) || (con("M", "P") && con("P", "N")) || (con("M", "U") && con("U", "N")) || (con("M", "V") && con("V", "N"))));
+		if (M_set && O_set) changed |= con.set("M", "O", con("M", "O") || ((con("M", "L") && con("L", "O")) || (con("M", "P") && con("P", "O")) || (con("M", "U") && con("U", "O")) || (con("M", "V") && con("V", "O"))));
+		if (M_set && P_set) changed |= con.set("M", "P", con("M", "P") || ((con("M", "L") && con("L", "P")) || (con("M", "O") && con("O", "P")) || (con("M", "U") && con("U", "P")) || (con("M", "V") && con("V", "P"))));
+		if (M_set && Q_set) changed |= con.set("M", "Q", con("M", "Q") || ((con("M", "L") && con("L", "Q")) || (con("M", "O") && con("O", "Q")) || (con("M", "P") && con("P", "Q")) || (con("M", "U") && con("U", "Q")) || (con("M", "V") && con("V", "Q"))));
+		if (M_set && R_set) changed |= con.set("M", "R", con("M", "R") || ((con("M", "L") && con("L", "R")) || (con("M", "O") && con("O", "R")) || (con("M", "P") && con("P", "R")) || (con("M", "U") && con("U", "R")) || (con("M", "V") && con("V", "R"))));
+		if (M_set && S_set) changed |= con.set("M", "S", con("M", "S") || ((con("M", "L") && con("L", "S")) || (con("M", "O") && con("O", "S")) || (con("M", "P") && con("P", "S")) || (con("M", "U") && con("U", "S")) || (con("M", "V") && con("V", "S"))));
+		if (M_set && T_set) changed |= con.set("M", "T", con("M", "T") || ((con("M", "L") && con("L", "T")) || (con("M", "O") && con("O", "T")) || (con("M", "P") && con("P", "T")) || (con("M", "U") && con("U", "T")) || (con("M", "V") && con("V", "T"))));
+		if (M_set && U_set) changed |= con.set("M", "U", con("M", "U") || ((con("M", "L") && con("L", "U")) || (con("M", "O") && con("O", "U")) || (con("M", "P") && con("P", "U")) || (con("M", "V") && con("V", "U"))));
+		if (M_set && V_set) changed |= con.set("M", "V", con("M", "V") || ((con("M", "L") && con("L", "V")) || (con("M", "O") && con("O", "V")) || (con("M", "P") && con("P", "V")) || (con("M", "U") && con("U", "V"))));
+		if (M_set && W_set) changed |= con.set("M", "W", con("M", "W") || ((con("M", "L") && con("L", "W")) || (con("M", "O") && con("O", "W")) || (con("M", "P") && con("P", "W")) || (con("M", "U") && con("U", "W")) || (con("M", "V") && con("V", "W"))));
+		if (N_set && O_set) changed |= con.set("N", "O", con("N", "O") || ((con("N", "K") && con("K", "O")) || (con("N", "L") && con("L", "O")) || (con("N", "Q") && con("Q", "O")) || (con("N", "R") && con("R", "O")) || (con("N", "T") && con("T", "O")) || (con("N", "U") && con("U", "O")) || (con("N", "W") && con("W", "O"))));
+		if (N_set && P_set) changed |= con.set("N", "P", con("N", "P") || ((con("N", "K") && con("K", "P")) || (con("N", "L") && con("L", "P")) || (con("N", "O") && con("O", "P")) || (con("N", "Q") && con("Q", "P")) || (con("N", "R") && con("R", "P")) || (con("N", "T") && con("T", "P")) || (con("N", "U") && con("U", "P")) || (con("N", "W") && con("W", "P"))));
+		if (N_set && Q_set) changed |= con.set("N", "Q", con("N", "Q") || ((con("N", "K") && con("K", "Q")) || (con("N", "L") && con("L", "Q")) || (con("N", "O") && con("O", "Q")) || (con("N", "R") && con("R", "Q")) || (con("N", "T") && con("T", "Q")) || (con("N", "U") && con("U", "Q")) || (con("N", "W") && con("W", "Q"))));
+		if (N_set && R_set) changed |= con.set("N", "R", con("N", "R") || ((con("N", "K") && con("K", "R")) || (con("N", "L") && con("L", "R")) || (con("N", "O") && con("O", "R")) || (con("N", "Q") && con("Q", "R")) || (con("N", "T") && con("T", "R")) || (con("N", "U") && con("U", "R")) || (con("N", "W") && con("W", "R"))));
+		if (N_set && S_set) changed |= con.set("N", "S", con("N", "S") || ((con("N", "K") && con("K", "S")) || (con("N", "L") && con("L", "S")) || (con("N", "O") && con("O", "S")) || (con("N", "Q") && con("Q", "S")) || (con("N", "R") && con("R", "S")) || (con("N", "T") && con("T", "S")) || (con("N", "U") && con("U", "S")) || (con("N", "W") && con("W", "S"))));
+		if (N_set && T_set) changed |= con.set("N", "T", con("N", "T") || ((con("N", "K") && con("K", "T")) || (con("N", "L") && con("L", "T")) || (con("N", "O") && con("O", "T")) || (con("N", "Q") && con("Q", "T")) || (con("N", "R") && con("R", "T")) || (con("N", "U") && con("U", "T")) || (con("N", "W") && con("W", "T"))));
+		if (N_set && U_set) changed |= con.set("N", "U", con("N", "U") || ((con("N", "K") && con("K", "U")) || (con("N", "L") && con("L", "U")) || (con("N", "O") && con("O", "U")) || (con("N", "Q") && con("Q", "U")) || (con("N", "R") && con("R", "U")) || (con("N", "T") && con("T", "U")) || (con("N", "W") && con("W", "U"))));
+		if (N_set && V_set) changed |= con.set("N", "V", con("N", "V") || ((con("N", "K") && con("K", "V")) || (con("N", "L") && con("L", "V")) || (con("N", "O") && con("O", "V")) || (con("N", "Q") && con("Q", "V")) || (con("N", "R") && con("R", "V")) || (con("N", "T") && con("T", "V")) || (con("N", "U") && con("U", "V")) || (con("N", "W") && con("W", "V"))));
+		if (N_set && W_set) changed |= con.set("N", "W", con("N", "W") || ((con("N", "K") && con("K", "W")) || (con("N", "L") && con("L", "W")) || (con("N", "O") && con("O", "W")) || (con("N", "Q") && con("Q", "W")) || (con("N", "R") && con("R", "W")) || (con("N", "T") && con("T", "W")) || (con("N", "U") && con("U", "W"))));
+		if (O_set && P_set) changed |= con.set("O", "P", con("O", "P") || ((con("O", "K") && con("K", "P")) || (con("O", "L") && con("L", "P")) || (con("O", "M") && con("M", "P")) || (con("O", "N") && con("N", "P")) || (con("O", "Q") && con("Q", "P")) || (con("O", "R") && con("R", "P")) || (con("O", "S") && con("S", "P")) || (con("O", "T") && con("T", "P")) || (con("O", "U") && con("U", "P")) || (con("O", "V") && con("V", "P")) || (con("O", "W") && con("W", "P"))));
+		if (O_set && Q_set) changed |= con.set("O", "Q", con("O", "Q") || ((con("O", "K") && con("K", "Q")) || (con("O", "L") && con("L", "Q")) || (con("O", "M") && con("M", "Q")) || (con("O", "N") && con("N", "Q")) || (con("O", "P") && con("P", "Q")) || (con("O", "R") && con("R", "Q")) || (con("O", "S") && con("S", "Q")) || (con("O", "T") && con("T", "Q")) || (con("O", "U") && con("U", "Q")) || (con("O", "V") && con("V", "Q")) || (con("O", "W") && con("W", "Q"))));
+		if (O_set && R_set) changed |= con.set("O", "R", con("O", "R") || ((con("O", "K") && con("K", "R")) || (con("O", "L") && con("L", "R")) || (con("O", "M") && con("M", "R")) || (con("O", "N") && con("N", "R")) || (con("O", "P") && con("P", "R")) || (con("O", "Q") && con("Q", "R")) || (con("O", "S") && con("S", "R")) || (con("O", "T") && con("T", "R")) || (con("O", "U") && con("U", "R")) || (con("O", "V") && con("V", "R")) || (con("O", "W") && con("W", "R"))));
+		if (O_set && S_set) changed |= con.set("O", "S", con("O", "S") || ((con("O", "K") && con("K", "S")) || (con("O", "L") && con("L", "S")) || (con("O", "M") && con("M", "S")) || (con("O", "N") && con("N", "S")) || (con("O", "P") && con("P", "S")) || (con("O", "Q") && con("Q", "S")) || (con("O", "R") && con("R", "S")) || (con("O", "T") && con("T", "S")) || (con("O", "U") && con("U", "S")) || (con("O", "V") && con("V", "S")) || (con("O", "W") && con("W", "S"))));
+		if (O_set && T_set) changed |= con.set("O", "T", con("O", "T") || ((con("O", "K") && con("K", "T")) || (con("O", "L") && con("L", "T")) || (con("O", "M") && con("M", "T")) || (con("O", "N") && con("N", "T")) || (con("O", "P") && con("P", "T")) || (con("O", "Q") && con("Q", "T")) || (con("O", "R") && con("R", "T")) || (con("O", "S") && con("S", "T")) || (con("O", "U") && con("U", "T")) || (con("O", "V") && con("V", "T")) || (con("O", "W") && con("W", "T"))));
+		if (O_set && U_set) changed |= con.set("O", "U", con("O", "U") || ((con("O", "K") && con("K", "U")) || (con("O", "L") && con("L", "U")) || (con("O", "M") && con("M", "U")) || (con("O", "N") && con("N", "U")) || (con("O", "P") && con("P", "U")) || (con("O", "Q") && con("Q", "U")) || (con("O", "R") && con("R", "U")) || (con("O", "S") && con("S", "U")) || (con("O", "T") && con("T", "U")) || (con("O", "V") && con("V", "U")) || (con("O", "W") && con("W", "U"))));
+		if (O_set && V_set) changed |= con.set("O", "V", con("O", "V") || ((con("O", "K") && con("K", "V")) || (con("O", "L") && con("L", "V")) || (con("O", "M") && con("M", "V")) || (con("O", "N") && con("N", "V")) || (con("O", "P") && con("P", "V")) || (con("O", "Q") && con("Q", "V")) || (con("O", "R") && con("R", "V")) || (con("O", "S") && con("S", "V")) || (con("O", "T") && con("T", "V")) || (con("O", "U") && con("U", "V")) || (con("O", "W") && con("W", "V"))));
+		if (O_set && W_set) changed |= con.set("O", "W", con("O", "W") || ((con("O", "K") && con("K", "W")) || (con("O", "L") && con("L", "W")) || (con("O", "M") && con("M", "W")) || (con("O", "N") && con("N", "W")) || (con("O", "P") && con("P", "W")) || (con("O", "Q") && con("Q", "W")) || (con("O", "R") && con("R", "W")) || (con("O", "S") && con("S", "W")) || (con("O", "T") && con("T", "W")) || (con("O", "U") && con("U", "W")) || (con("O", "V") && con("V", "W"))));
+		if (P_set && Q_set) changed |= con.set("P", "Q", con("P", "Q") || ((con("P", "L") && con("L", "Q")) || (con("P", "M") && con("M", "Q")) || (con("P", "O") && con("O", "Q")) || (con("P", "R") && con("R", "Q")) || (con("P", "S") && con("S", "Q")) || (con("P", "U") && con("U", "Q")) || (con("P", "V") && con("V", "Q"))));
+		if (P_set && R_set) changed |= con.set("P", "R", con("P", "R") || ((con("P", "L") && con("L", "R")) || (con("P", "M") && con("M", "R")) || (con("P", "O") && con("O", "R")) || (con("P", "S") && con("S", "R")) || (con("P", "U") && con("U", "R")) || (con("P", "V") && con("V", "R"))));
+		if (P_set && S_set) changed |= con.set("P", "S", con("P", "S") || ((con("P", "L") && con("L", "S")) || (con("P", "M") && con("M", "S")) || (con("P", "O") && con("O", "S")) || (con("P", "R") && con("R", "S")) || (con("P", "U") && con("U", "S")) || (con("P", "V") && con("V", "S"))));
+		if (P_set && T_set) changed |= con.set("P", "T", con("P", "T") || ((con("P", "L") && con("L", "T")) || (con("P", "M") && con("M", "T")) || (con("P", "O") && con("O", "T")) || (con("P", "R") && con("R", "T")) || (con("P", "S") && con("S", "T")) || (con("P", "U") && con("U", "T")) || (con("P", "V") && con("V", "T"))));
+		if (P_set && U_set) changed |= con.set("P", "U", con("P", "U") || ((con("P", "L") && con("L", "U")) || (con("P", "M") && con("M", "U")) || (con("P", "O") && con("O", "U")) || (con("P", "R") && con("R", "U")) || (con("P", "S") && con("S", "U")) || (con("P", "V") && con("V", "U"))));
+		if (P_set && V_set) changed |= con.set("P", "V", con("P", "V") || ((con("P", "L") && con("L", "V")) || (con("P", "M") && con("M", "V")) || (con("P", "O") && con("O", "V")) || (con("P", "R") && con("R", "V")) || (con("P", "S") && con("S", "V")) || (con("P", "U") && con("U", "V"))));
+		if (P_set && W_set) changed |= con.set("P", "W", con("P", "W") || ((con("P", "L") && con("L", "W")) || (con("P", "M") && con("M", "W")) || (con("P", "O") && con("O", "W")) || (con("P", "R") && con("R", "W")) || (con("P", "S") && con("S", "W")) || (con("P", "U") && con("U", "W")) || (con("P", "V") && con("V", "W"))));
+		if (Q_set && R_set) changed |= con.set("Q", "R", con("Q", "R") || ((con("Q", "N") && con("N", "R")) || (con("Q", "O") && con("O", "R")) || (con("Q", "W") && con("W", "R"))));
+		if (Q_set && S_set) changed |= con.set("Q", "S", con("Q", "S") || ((con("Q", "N") && con("N", "S")) || (con("Q", "O") && con("O", "S")) || (con("Q", "R") && con("R", "S")) || (con("Q", "W") && con("W", "S"))));
+		if (Q_set && T_set) changed |= con.set("Q", "T", con("Q", "T") || ((con("Q", "N") && con("N", "T")) || (con("Q", "O") && con("O", "T")) || (con("Q", "R") && con("R", "T")) || (con("Q", "W") && con("W", "T"))));
+		if (Q_set && U_set) changed |= con.set("Q", "U", con("Q", "U") || ((con("Q", "N") && con("N", "U")) || (con("Q", "O") && con("O", "U")) || (con("Q", "R") && con("R", "U")) || (con("Q", "W") && con("W", "U"))));
+		if (Q_set && V_set) changed |= con.set("Q", "V", con("Q", "V") || ((con("Q", "N") && con("N", "V")) || (con("Q", "O") && con("O", "V")) || (con("Q", "R") && con("R", "V")) || (con("Q", "W") && con("W", "V"))));
+		if (Q_set && W_set) changed |= con.set("Q", "W", con("Q", "W") || ((con("Q", "N") && con("N", "W")) || (con("Q", "O") && con("O", "W")) || (con("Q", "R") && con("R", "W"))));
+		if (R_set && S_set) changed |= con.set("R", "S", con("R", "S") || ((con("R", "N") && con("N", "S")) || (con("R", "O") && con("O", "S")) || (con("R", "P") && con("P", "S")) || (con("R", "Q") && con("Q", "S")) || (con("R", "W") && con("W", "S"))));
+		if (R_set && T_set) changed |= con.set("R", "T", con("R", "T") || ((con("R", "N") && con("N", "T")) || (con("R", "O") && con("O", "T")) || (con("R", "P") && con("P", "T")) || (con("R", "Q") && con("Q", "T")) || (con("R", "S") && con("S", "T")) || (con("R", "W") && con("W", "T"))));
+		if (R_set && U_set) changed |= con.set("R", "U", con("R", "U") || ((con("R", "N") && con("N", "U")) || (con("R", "O") && con("O", "U")) || (con("R", "P") && con("P", "U")) || (con("R", "Q") && con("Q", "U")) || (con("R", "S") && con("S", "U")) || (con("R", "W") && con("W", "U"))));
+		if (R_set && V_set) changed |= con.set("R", "V", con("R", "V") || ((con("R", "N") && con("N", "V")) || (con("R", "O") && con("O", "V")) || (con("R", "P") && con("P", "V")) || (con("R", "Q") && con("Q", "V")) || (con("R", "S") && con("S", "V")) || (con("R", "W") && con("W", "V"))));
+		if (R_set && W_set) changed |= con.set("R", "W", con("R", "W") || ((con("R", "N") && con("N", "W")) || (con("R", "O") && con("O", "W")) || (con("R", "P") && con("P", "W")) || (con("R", "Q") && con("Q", "W")) || (con("R", "S") && con("S", "W"))));
+		if (S_set && T_set) changed |= con.set("S", "T", con("S", "T") || ((con("S", "O") && con("O", "T")) || (con("S", "P") && con("P", "T")) || (con("S", "R") && con("R", "T"))));
+		if (S_set && U_set) changed |= con.set("S", "U", con("S", "U") || ((con("S", "O") && con("O", "U")) || (con("S", "P") && con("P", "U")) || (con("S", "R") && con("R", "U"))));
+		if (S_set && V_set) changed |= con.set("S", "V", con("S", "V") || ((con("S", "O") && con("O", "V")) || (con("S", "P") && con("P", "V")) || (con("S", "R") && con("R", "V"))));
+		if (S_set && W_set) changed |= con.set("S", "W", con("S", "W") || ((con("S", "O") && con("O", "W")) || (con("S", "P") && con("P", "W")) || (con("S", "R") && con("R", "W"))));
+		if (T_set && U_set) changed |= con.set("T", "U", con("T", "U") || ((con("T", "K") && con("K", "U")) || (con("T", "L") && con("L", "U")) || (con("T", "N") && con("N", "U")) || (con("T", "O") && con("O", "U")) || (con("T", "W") && con("W", "U"))));
+		if (T_set && V_set) changed |= con.set("T", "V", con("T", "V") || ((con("T", "K") && con("K", "V")) || (con("T", "L") && con("L", "V")) || (con("T", "N") && con("N", "V")) || (con("T", "O") && con("O", "V")) || (con("T", "U") && con("U", "V")) || (con("T", "W") && con("W", "V"))));
+		if (T_set && W_set) changed |= con.set("T", "W", con("T", "W") || ((con("T", "K") && con("K", "W")) || (con("T", "L") && con("L", "W")) || (con("T", "N") && con("N", "W")) || (con("T", "O") && con("O", "W")) || (con("T", "U") && con("U", "W"))));
+		if (U_set && V_set) changed |= con.set("U", "V", con("U", "V") || ((con("U", "K") && con("K", "V")) || (con("U", "L") && con("L", "V")) || (con("U", "M") && con("M", "V")) || (con("U", "N") && con("N", "V")) || (con("U", "O") && con("O", "V")) || (con("U", "P") && con("P", "V")) || (con("U", "T") && con("T", "V")) || (con("U", "W") && con("W", "V"))));
+		if (U_set && W_set) changed |= con.set("U", "W", con("U", "W") || ((con("U", "K") && con("K", "W")) || (con("U", "L") && con("L", "W")) || (con("U", "M") && con("M", "W")) || (con("U", "N") && con("N", "W")) || (con("U", "O") && con("O", "W")) || (con("U", "P") && con("P", "W")) || (con("U", "T") && con("T", "W")) || (con("U", "V") && con("V", "W"))));
+		if (V_set && W_set) changed |= con.set("V", "W", con("V", "W") || ((con("V", "L") && con("L", "W")) || (con("V", "M") && con("M", "W")) || (con("V", "O") && con("O", "W")) || (con("V", "P") && con("P", "W")) || (con("V", "U") && con("U", "W"))));
 	}
 	MergeSet ms(con);
 	ms.BuildMergeSet();
@@ -279,7 +269,7 @@ action_bitset GetActions(rule_wrapper& r,
 }
 
 
-class Grana3dRS : public BaseRuleSet {
+class Grana3d_26c_221b_RS : public BaseRuleSet {
 
 public:
 
@@ -292,54 +282,40 @@ public:
 			// Regex for changing blacklist: >  ({ ".{2}", {.{2},.{2},.{2}} },)  <
 
 			// First Plane, first row
-			/*{ "Ka", {-2,-2,-2} },{ "Kb", {-1,-2,-2} },{ "Kc", {-2,-1,-2} },{ "Kd", {-1,-1,-2} },
-			{ "Ke", {-2,-2,-1} },{ "Kf", {-1,-2,-1} },{ "Kg", {-2,-1,-1} },*/{ "Kh", {-1,-1,-1} },
+			/*{ "Ka", {-2,-2,-1} },{ "Kb", {-1,-2,-1} },{ "Kc", {-2,-1,-1} },*/{ "Kd", {-1,-1,-1} },
 
-			/*{ "La", {+0,-2,-2} },{ "Lb", {+1,-2,-2} },{ "Lc", {+0,-1,-2} },{ "Ld", {+1,-1,-2} },
-			{ "Le", {+0,-2,-1} },{ "Lf", {+1,-2,-1} },*/{ "Lg", {+0,-1,-1} },{ "Lh", {+1,-1,-1} },
+			/*{ "La", {+0,-2,-1} },{ "Lb", {+1,-2,-1} },*/{ "Lc", {+0,-1,-1} },{ "Ld", {+1,-1,-1} },
 
-			/*{ "Ma", {+2,-2,-2} },{ "Mb", {+3,-2,-2} },{ "Mc", {+2,-1,-2} },{ "Md", {+3,-1,-2} },
-			{ "Me", {+2,-2,-1} },{ "Mf", {+3,-2,-1} },*/{ "Mg", {+2,-1,-1} },/*{ "Mh", {+3,-1,-1} },*/
+			/*{ "Ma", {+2,-2,-1} },{ "Mb", {+3,-2,-1} },*/{ "Mc", {+2,-1,-1} },/*{ "Md", {+3,-1,-1} },*/
 
 			// First plane, second row																	    
-			/*{ "Na", {-2,+0,-2} },{ "Nb", {-1,+0,-2} },{ "Nc", {-2,+1,-2} },{ "Nd", {-1,+1,-2} },
-			{ "Ne", {-2,+0,-1} },*/{ "Nf", {-1,+0,-1} },/*{ "Ng", {-2,+1,-1} },*/{ "Nh", {-1,+1,-1} },
+			/*{ "Na", {-2,+0,-1} },*/{ "Nb", {-1,+0,-1} },/*{ "Nc", {-2,+1,-1} },*/{ "Nd", {-1,+1,-1} },
 
-			/*{ "Oa", {+0,+0,-2} },{ "Ob", {+1,+0,-2} },{ "Oc", {+0,+1,-2} },{ "Od", {+1,+1,-2} },*/
-			{ "Oe", {+0,+0,-1} },{ "Of", {+1,+0,-1} },{ "Og", {+0,+1,-1} },{ "Oh", {+1,+1,-1} },
+			{ "Oa", {+0,+0,-1} },{ "Ob", {+1,+0,-1} },{ "Oc", {+0,+1,-1} },{ "Od", {+1,+1,-1} },
 
-			/*{ "Pa", {+2,+0,-2} },{ "Pb", {+3,+0,-2} },{ "Pc", {+2,+1,-2} },{ "Pd", {+3,+1,-2} },*/
-			{ "Pe", {+2,+0,-1} },/*{ "Pf", {+3,+0,-1} },*/{ "Pg", {+2,+1,-1} },/*{ "Ph", {+3,+1,-1} },*/
+			{ "Pa", {+2,+0,-1} },/*{ "Pb", {+3,+0,-1} },*/{ "Pc", {+2,+1,-1} },/*{ "Pd", {+3,+1,-1} },*/
 
 			// First plane, third row																		    
-			/*{ "Qa", {-2,+2,-2} },{ "Qb", {-1,+2,-2} },{ "Qc", {-2,+3,-2} },{ "Qd", {-1,+3,-2} },
-			{ "Qe", {-2,+2,-1} },*/{ "Qf", {-1,+2,-1} },/*{ "Qg", {-2,+3,-1} },{ "Qh", {-1,+3,-1} },*/
+			/*{ "Qa", {-2,+2,-1} },*/{ "Qb", {-1,+2,-1} },/*{ "Qc", {-2,+3,-1} },{ "Qd", {-1,+3,-1} },*/
 
-			/*{ "Ra", {+0,+2,-2} },{ "Rb", {+1,+2,-2} },{ "Rc", {+0,+3,-2} },{ "Rd", {+1,+3,-2} },*/
-			{ "Re", {+0,+2,-1} },{ "Rf", {+1,+2,-1} },/*{ "Rg", {+0,+3,-1} },{ "Rh", {+1,+3,-1} },*/
+			{ "Ra", {+0,+2,-1} },{ "Rb", {+1,+2,-1} },/*{ "Rc", {+0,+3,-1} },{ "Rd", {+1,+3,-1} },*/
 
-			/*{ "Sa", {+2,+2,-2} },{ "Sb", {+3,+2,-2} },{ "Sc", {+2,+3,-2} },{ "Sd", {+3,+3,-2} },*/
-			{ "Se", {+2,+2,-1} },/*{ "Sf", {+3,+2,-1} },{ "Sg", {+2,+3,-1} },{ "Sh", {+3,+3,-1} },*/
+			{ "Sa", {+2,+2,-1} },/*{ "Sb", {+3,+2,-1} },{ "Sc", {+2,+3,-1} },{ "Sd", {+3,+3,-1} },*/
 
 			// Second Plane, first row																	    
 			/*{ "Ta", {-2,-2,+0} },{ "Tb", {-1,-2,+0} },{ "Tc", {-2,-1,+0} },*/{ "Td", {-1,-1,+0} },
-			/*{ "Te", {-2,-2,+1} },{ "Tf", {-1,-2,+1} },{ "Tg", {-2,-1,+1} },*/{ "Th", {-1,-1,+1} },
 
 			/*{ "Ua", {+0,-2,+0} },{ "Ub", {+1,-2,+0} },*/{ "Uc", {+0,-1,+0} },{ "Ud", {+1,-1,+0} },
-			/*{ "Ue", {+0,-2,+1} },{ "Uf", {+1,-2,+1} },*/{ "Ug", {+0,-1,+1} },{ "Uh", {+1,-1,+1} },
 
 			/*{ "Va", {+2,-2,+0} },{ "Vb", {+3,-2,+0} },*/{ "Vc", {+2,-1,+0} },/*{ "Vd", {+3,-1,+0} },*/
-			/*{ "Ve", {+2,-2,+1} },{ "Vf", {+3,-2,+1} },*/{ "Vg", {+2,-1,+1} },/*{ "Vh", {+3,-1,+1} },*/
 
 			// Second plane, second row																	    
 			/*{ "Wa", {-2,+0,+0} },*/{ "Wb", {-1,+0,+0} },/*{ "Wc", {-2,+1,+0} },*/{ "Wd", {-1,+1,+0} },
-			/*{ "We", {-2,+0,+1} },*/{ "Wf", {-1,+0,+1} },/*{ "Wg", {-2,+1,+1} },*/{ "Wh", {-1,+1,+1} },
 
 			{ "Xa", {+0,+0,+0} },{ "Xb", {+1,+0,+0} },{ "Xc", {+0,+1,+0} },{ "Xd", {+1,+1,+0} },
-			{ "Xe", {+0,+0,+1} },{ "Xf", {+1,+0,+1} },{ "Xg", {+0,+1,+1} },{ "Xh", {+1,+1,+1} },
 
 		};
-		grana_mask.SetShifts({ 2, 2, 2 });
+		grana_mask.SetShifts({ 2, 2, 1 });
 
 		rule_set labeling;
 		labeling.InitConditions(grana_mask);
@@ -360,25 +336,25 @@ public:
 	action_bitset GetActionFromRuleIndex(const rule_set& rs, uint64_t rule_index) const override {
 		rule_wrapper r(rs, rule_index);
 
-		bool X = r[Xa] || r[Xb] || r[Xc] || r[Xd] || r[Xe] || r[Xf] || r[Xg] || r[Xh];
+		bool X = r[Xa] || r[Xb] || r[Xc] || r[Xd];
 		if (!X) {
 			//r << "nothing";
 			return action_bitset(1).set(0);
 		}
 
-		const bool K = r[Kh];
-		const bool L = r[Lg] || r[Lh];
-		const bool M = r[Mg];
-		const bool N = r[Nf] || r[Nh];
-		const bool O = r[Oe] || r[Of] || r[Og] || r[Oh];
-		const bool P = r[Pe] || r[Pg];
-		const bool Q = r[Qf];
-		const bool R = r[Re] || r[Rf];
-		const bool S = r[Se];
-		const bool T = r[Td] || r[Th];
-		const bool U = r[Uc] || r[Ud] || r[Ug] || r[Uh];
-		const bool V = r[Vc] || r[Vg];
-		const bool W = r[Wb] || r[Wd] || r[Wf] || r[Wh];
+		const bool K = r[Kd];
+		const bool L = r[Lc] || r[Ld];
+		const bool M = r[Mc];
+		const bool N = r[Nb] || r[Nd];
+		const bool O = r[Oa] || r[Ob] || r[Oc] || r[Od];
+		const bool P = r[Pa] || r[Pc];
+		const bool Q = r[Qb];
+		const bool R = r[Ra] || r[Rb];
+		const bool S = r[Sa];
+		const bool T = r[Td];
+		const bool U = r[Uc] || r[Ud];
+		const bool V = r[Vc];
+		const bool W = r[Wb] || r[Wd];
 
 		//int lookup_value = (K << 0) | (L << 1) | (M << 2) | (N << 3) | (O << 4) | (P << 5) | (Q << 6) | (R << 7) | (S << 8) | (T << 9) | (U << 10) | (V << 11) | (W << 12);
 		//return function_pointer_table[lookup_value](r, rs);

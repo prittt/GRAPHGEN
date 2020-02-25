@@ -120,7 +120,16 @@ public:
 
 	void SaveAllRulesBinary() {
 		std::cout << "[Rule Files] Partitions: " << PARTITIONS << " Rulecodes for each partition: " << RULES_PER_PARTITION << std::endl;
-		
+
+
+		auto path = std::filesystem::path(conf.binary_rule_file_path_partitioned("")).remove_filename();
+		if (!std::filesystem::is_directory(path)) {
+			if (!std::filesystem::create_directories(std::filesystem::path(path).remove_filename())) {
+				std::cerr << "Could not create rules directory, aborting.\n";
+				exit(EXIT_FAILURE);
+			}
+		}
+
 		#pragma omp parallel
 		{			
 			#pragma omp for
@@ -146,12 +155,6 @@ public:
 					catch (std::filesystem::filesystem_error e) {
 						std::cerr << "[Partition " << p << "] Partition .tmp-file exists, but is locked: skipping.\n";                    
 						continue;
-					}
-				}
-				if (!std::filesystem::is_directory(std::filesystem::path(tmp_path).remove_filename())) {
-					if (!std::filesystem::create_directories(std::filesystem::path(tmp_path).remove_filename())) {
-						std::cerr << "[Partition " << p << "] Could not create rules directory, aborting.\n";
-						exit(EXIT_FAILURE);
 					}
 				}
 				

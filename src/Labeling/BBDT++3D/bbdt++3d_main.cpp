@@ -28,16 +28,16 @@
 
 #include "graphgen.h"
 
-#include "grana3d_ruleset.h"
+#include "grana3d_26c_221b_ruleset.h"
 
 using namespace std;
 
 int main()
 {
-	string algorithm_name = "BBDT++3D";
+	string algorithm_name = "BBDT++3D-26c-221b";
 	conf = ConfigData(algorithm_name, "Grana3D");
 
-	Grana3dRS g_rs(true);
+	Grana3d_26c_221b_RS g_rs(true);
 	auto rs = g_rs.GetRuleSet();
 
 	// Call GRAPHGEN:
