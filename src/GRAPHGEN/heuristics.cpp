@@ -42,7 +42,7 @@
 
 #define HDT_INFORMATION_GAIN_METHOD_VERSION 1 /* Select a different formula on how information gain is calculated */
 
-constexpr float HDT_INFORMATION_GAIN_4_PUNISH_FACTOR = 2; /* How much negative information gains are "punished" in IG method 4. */
+constexpr float HDT_INFORMATION_GAIN_4_PUNISH_FACTOR = 2; /* Information Gain 4 only: How much negative information gains are "punished". */
 
 #define HDT_BENCHMARK_READAPPLY_ENABLED false /* Benchmark the performance of the ReadApply function */
 #define HDT_BENCHMARK_READAPPLY_DEPTH 12 /* Choose from: 12, 14, 16. Higher depth means more but smaller recursion instances */
@@ -52,19 +52,22 @@ constexpr float HDT_INFORMATION_GAIN_4_PUNISH_FACTOR = 2; /* How much negative i
 
 #define HDT_DEPTH_PROGRESS_ENABLED true /* Saves and loads depth progress files after every completed depth */
 #define HDT_TABLE_PROGRESS_ENABLED (false && !HDT_BENCHMARK_READAPPLY_ENABLED) /* Saves and loads table progress files before processing, requires benchmark to be turned off */
-#define HDT_USE_FINISHED_TREE_ONLY (false && HDT_DEPTH_PROGRESS_ENABLED) /* Instead of generating the HDT, try to read the finished progress file from the last completed run. */
+#define HDT_USE_FINISHED_TREE_ONLY (false && HDT_DEPTH_PROGRESS_ENABLED) /* Instead of generating the HDT, try to read the finished progress file (progress-finished.txt) from the last completed run. */
 
 #define HDT_READAPPLY_VERBOSE_TIMINGS false /* Display separate timings of loading the partitions and processing the rules in memory */
 
+#define HDT_X_PRIORITY false /* Gives all X voxels a high information gain, forcing the algorithm to pick X nodes in the first levels of the tree */
+
 #define HDT_PARALLEL_PARTITIONBASED_ENABLED true /* Best approach at the moment. Allows for great parallelization and is generally faster for BBDT3D-36. For smaller problems like BBDT2D, turning this off may be faster (rule-based approach). */
-#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL 7 /* Needs to be 2 or larger. Recommended to be equal or less than the logical cores of your system. */
-#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL 4 /* Needs to >= 1 && <= (TOTAL_THREADS - 1) */
+#define HDT_PARALLEL_PARTITIONBASED_SINGLE_PARTITION (true)
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL 2 /* Needs to be 2 or larger. Recommended to be equal or less than the logical cores of your system. */
+#define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL 1 /* Needs to >= 1 && <= (TOTAL_THREADS - 1) */
 #define HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL (HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_TOTAL - HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL)
 constexpr int HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE = std::min(PARTITIONS, 64); /* Must be greater than TOTAL_THREADS. TOTAL_THREADS * 2 or * 3 recommended. */
 constexpr int HDT_PARALLEL_PARTITIONBASED_IDLE_MS = 10; /* The amount of time spent in one idle cycle. */
 
 #if HDT_PARALLEL_PARTITIONBASED_ENABLED == true
-	#define HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS false /* Count equivalent actions globally in a separate pass. May improve accuracy? */
+	#define HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS true /* Count equivalent actions globally in a separate pass. May improve accuracy? */
 #else
 	constexpr std::array<const char*, 4> HDT_ACTION_SOURCE_STRINGS = { 
 		"**** !! ZERO ACTION = GARBAGE DATA !! ****", 
@@ -84,7 +87,7 @@ constexpr int HDT_RECURSION_INSTANCE_GROUP_SIZE = 600000; /* The maximum amount 
 
 #define HDT_PROCESS_NODE_LOGGING_ENABLED true /* Write log files for all the recursion instances as they are processed. Very helpful for debugging. */
 
-constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(32, PARTITIONS); /* How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be. */
+constexpr int HDT_GENERATION_LOG_FREQUENCY = std::min(1, PARTITIONS); /* How many log outputs will be done for each pass, i.e. the higher this number, the more and regular output there will be. */
 
 // BBDT3D-36: from depth 5 on INT can be used, before that ULLONG needs to be used to prevent overflow.
 // For all others like BBDT, SAUF, etc. INT is fine
@@ -942,7 +945,116 @@ struct PartitionProcessingTaskData {
 };
 
 template<PartitionProcessingTaskType task>
+void ProcessPartition(PartitionProcessingTaskData& data, const ullong first_rule_code, const ullong last_rule_code, std::vector<action_bitset>& actions, rule_set& rs) {
+	if (task == PartitionProcessingTaskType::ReadAndApply) {
+		const int begin_r_inst = static_cast<int>(data.rig->begin_index);
+		const int end_r_inst = static_cast<int>(data.rig->end_index);
+		auto& r_insts = *data.r_insts;
+#pragma omp for schedule(dynamic, 1)
+		for (int i = begin_r_inst; i < end_r_inst; i++) {
+			auto& r = r_insts[i];
+			if (r.counted_partitions == PARTITIONS) {
+				continue;
+			}
+			size_t n;
+			if (r.nextRuleCode < first_rule_code || r.nextRuleCode >= last_rule_code) {
+				r.forwardToRuleCode(first_rule_code, rs);
+			}
+			while (true) {
+				n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
+				if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
+					break;
+				}
+#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
+				FindBestSingleActionCombinationRunningCombined(r.all_single_equivalent_actions, r.all_single_actions, r.single_actions, r.conditions, (actions)[n], first_rule_code + n);
+#else
+				FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, (actions)[n], first_rule_code + n);
+#endif
+				if (!r.findNextRuleCode()) {
+					r.counted_partitions = PARTITIONS;
+					break;
+				}
+			}
+			r.counted_partitions++;
+		}
+	}
+	else if (task == PartitionProcessingTaskType::RegenerateEquivalentActions) {
+		auto& leaves = *data.leaves;
+#pragma omp for schedule(dynamic, 1)
+		for (int i = 0; i < leaves.size(); i++) {
+			auto& leaf = leaves[i];
+			size_t n;
+			if (leaf.nextRuleCode < first_rule_code || leaf.nextRuleCode >= last_rule_code) {
+				leaf.forwardToRuleCode(first_rule_code, rs);
+			}
+			while (true) {
+				n = static_cast<size_t>(leaf.nextRuleCode - first_rule_code);
+				if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
+					break;
+				}
+				for (const auto& a : actions[n].getSingleActions()) {
+					leaf.counts[a]++;
+				}
+				if (!leaf.findNextRuleCode()) {
+					break;
+				}
+			}
+		}
+	}
+	else if (task == PartitionProcessingTaskType::EquivalentCountingPass) {
+		const int begin_r_inst = static_cast<int>(data.rig->begin_index);
+		const int end_r_inst = static_cast<int>(data.rig->end_index);
+		auto& r_insts = *data.r_insts;
+
+#pragma omp critical 
+		{
+			for (int i = begin_r_inst; i < end_r_inst; i++) {
+				auto& r = r_insts[i];
+
+				size_t n;
+				if (r.nextRuleCode < first_rule_code || r.nextRuleCode >= last_rule_code) {
+					r.forwardToRuleCode(first_rule_code, rs);
+				}
+				while (true) {
+					n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
+					if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
+						break;
+					}
+					for (auto& b : actions[n].getSingleActions()) {
+						r.all_single_equivalent_actions[b]++;
+					}
+					if (!r.findNextRuleCode()) {
+						break;
+					}
+				}
+			}
+		}
+
+	}
+	else {
+		std::cerr << "Task type" + std::to_string(task) + " not yet implemented." << std::endl;;
+		throw std::runtime_error("Task type" + std::to_string(task) + " not yet implemented.");
+	}
+}
+
+template<PartitionProcessingTaskType task>
 void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProcessingTaskData data) {
+
+#if HDT_PARALLEL_PARTITIONBASED_SINGLE_PARTITION == true
+	if (PARTITIONS != 1) {
+		std::cerr << "HDT_PARALLEL_PARTITIONBASED_SINGLE_PARTITION is toggled on, but PARTITIONS is " << PARTITIONS;
+		throw std::runtime_error("HDT_PARALLEL_PARTITIONBASED_SINGLE_PARTITION is toggled on, but PARTITIONS is " + std::to_string(PARTITIONS));
+	}
+	static std::vector<action_bitset> the_partition(RULES_PER_PARTITION);
+	static bool is_loaded = false;
+	if (!is_loaded) {
+		brs.LoadPartition(0, the_partition);
+		is_loaded = true;
+	}
+	ProcessPartition<task>(data, 0, TOTAL_RULES, the_partition, rs);
+	return;
+#endif
+
 	static std::vector<int> saved_threads_reading(EquivalentCountingPass + 1, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PARTITION_READING_INITIAL);
 	static std::vector<int> saved_threads_processing(EquivalentCountingPass + 1, HDT_PARALLEL_PARTITIONBASED_NUMTHREADS_PROCESSING_INITIAL);
 
@@ -999,7 +1111,7 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 
 	std::vector<std::vector<action_bitset>> action_data(HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE, std::vector<action_bitset>(RULES_PER_PARTITION));
 	std::vector<PartitionState> action_data_state(HDT_PARALLEL_PARTITIONBASED_BUFFER_SIZE, PartitionState());
-
+	
 	for (size_t i = begin_partition; i < begin_partition + action_data_state.size(); i++) {
 		action_data_state[i % action_data_state.size()].partition_id = static_cast<int>(i);
 	}
@@ -1026,6 +1138,7 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 	int partition_reader_idle_benchmark = 0;
 	int partition_processor_idle_benchmark = 0;
 #endif
+
 #pragma omp parallel num_threads(2)
 	{
 		// Task: Read Partitions
@@ -1128,95 +1241,7 @@ void ParallelPartitionProcessing(BaseRuleSet& brs, rule_set& rs, PartitionProces
 				}
 #endif
 
-				if (task == PartitionProcessingTaskType::ReadAndApply) {
-					const int begin_r_inst = static_cast<int>(data.rig->begin_index);
-					const int end_r_inst = static_cast<int>(data.rig->end_index);
-					auto& r_insts = *data.r_insts;
-					#pragma omp for schedule(dynamic, 1)
-					for (int i = begin_r_inst; i < end_r_inst; i++) {
-						auto& r = r_insts[i];
-						if (r.counted_partitions == PARTITIONS) {
-							continue;
-						}
-						size_t n;
-						if (r.nextRuleCode < first_rule_code || r.nextRuleCode >= last_rule_code) {
-							r.forwardToRuleCode(first_rule_code, rs);
-						}
-						while (true) {
-							n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
-							if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
-								break;
-							}
-#if HDT_GLOBAL_EQUIVALENT_ACTIONS_COUNTING_PASS == true
-							FindBestSingleActionCombinationRunningCombined(r.all_single_equivalent_actions, r.all_single_actions, r.single_actions, r.conditions, (actions)[n], first_rule_code + n);
-#else
-							FindBestSingleActionCombinationRunningCombined(r.all_single_actions, r.single_actions, r.conditions, (actions)[n], first_rule_code + n);
-#endif
-							if (!r.findNextRuleCode()) {
-								r.counted_partitions = PARTITIONS;
-								break;
-							}
-						}
-						r.counted_partitions++;
-					}
-				}
-				else if (task == PartitionProcessingTaskType::RegenerateEquivalentActions) {
-					auto& leaves = *data.leaves;
-					#pragma omp for schedule(dynamic, 1)
-					for (int i = 0; i < leaves.size(); i++) {
-						auto& leaf = leaves[i];
-						size_t n;
-						if (leaf.nextRuleCode < first_rule_code || leaf.nextRuleCode >= last_rule_code) {
-							leaf.forwardToRuleCode(first_rule_code, rs);
-						}
-						while (true) {
-							n = static_cast<size_t>(leaf.nextRuleCode - first_rule_code);
-							if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
-								break;
-							}
-							for (const auto& a : actions[n].getSingleActions()) {
-								leaf.counts[a]++;
-							}
-							if (!leaf.findNextRuleCode()) {
-								break;
-							}
-						}
-					}
-				}
-				else if (task == PartitionProcessingTaskType::EquivalentCountingPass) {
-					const int begin_r_inst = static_cast<int>(data.rig->begin_index);
-					const int end_r_inst = static_cast<int>(data.rig->end_index);
-					auto& r_insts = *data.r_insts;
-
-					#pragma omp critical 
-					{
-						for (int i = begin_r_inst; i < end_r_inst; i++) {
-							auto& r = r_insts[i];
-
-							size_t n;
-							if (r.nextRuleCode < first_rule_code || r.nextRuleCode >= last_rule_code) {
-								r.forwardToRuleCode(first_rule_code, rs);
-							}
-							while (true) {
-								n = static_cast<size_t>(r.nextRuleCode - first_rule_code);
-								if (n >= RULES_PER_PARTITION) { // delegate this rule to next partition
-									break;
-								}
-								for (auto& b : actions[n].getSingleActions()) {
-									r.all_single_equivalent_actions[b]++;
-								}
-								if (!r.findNextRuleCode()) {
-									break;
-								}
-							}
-						}
-					}
-					
-				}
-				else {
-					std::cerr << "Task type" + std::to_string(task) + " not yet implemented." << std::endl;;
-					throw std::runtime_error("Task type" + std::to_string(task) + " not yet implemented.");
-				}
+				ProcessPartition<task>(data, first_rule_code, last_rule_code, actions, rs);
 
 #pragma omp single
 				{
@@ -1421,6 +1446,13 @@ int HdtProcessNode(
 		}
 		double informationGain = rightGain + leftGain;
 #endif
+
+#if HDT_X_PRIORITY == true
+		if (rs.conditions[c][0] == 'X') {
+			informationGain = 10000;
+		}
+#endif
+
 
 		if (std::abs(baseEntropy - leftEntropy) < 0.00001 && std::abs(baseEntropy - rightEntropy) < 0.00001) {
 			uselessConditions.push_back(c);
