@@ -29,6 +29,7 @@ target_sources(GRAPHGEN PRIVATE
     graphgen.h
     graph_code_generator.h
 	hypercube.h
+	hypercube++.h
 	merge_set.h
 	output_generator.h
 	performance_evaluator.h
@@ -54,6 +55,7 @@ target_sources(GRAPHGEN PRIVATE
 	forest2dag.cpp
 	graph_code_generator.cpp
 	hypercube.cpp
+	hypercube++.cpp
 	output_generator.cpp
 	tree2dag_identities.cpp
 	utilities.cpp   
