@@ -36,7 +36,7 @@ using namespace std;
 
 int main()
 {
-    string algorithm_name = "DRAG_CTBE";
+    string algorithm_name = "Spaghetti_CTBE";
     string mask_name = "CTBE";
 
     conf = ConfigData(algorithm_name, mask_name);
@@ -65,7 +65,7 @@ int main()
     fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
 
     // 5) Compress the forests
-    fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES, 2);
+    fh.Compress(DragCompressorFlags::PRINT_STATUS_BAR | DragCompressorFlags::IGNORE_LEAVES);
 
     // 6) Draw the compressed forests on file
     fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
