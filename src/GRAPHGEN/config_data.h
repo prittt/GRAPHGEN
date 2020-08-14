@@ -94,9 +94,13 @@ struct ConfigData {
     std::filesystem::path frequencies_path_;
     std::string frequencies_suffix_ = ".bin";
 
+    // CTBE Ruleset path
+    std::filesystem::path ctbe_rstable_path_;
+    std::string chaincode_rstable_filename_ = "ChainCode_rstable.yaml";
+
 	// Chaincode Ruleset Path
 	std::filesystem::path chaincode_rstable_path_;
-	std::string chaincode_rstable_filename_ = "ChainCode_rstable.yaml";
+	std::string ctbe_rstable_filename_ = "ctbe_rstable.yaml";
 
 	bool force_odt_generation_ = false;
 

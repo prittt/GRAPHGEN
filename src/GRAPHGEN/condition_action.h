@@ -44,7 +44,7 @@ struct conact {
     // CONDITION
     std::string condition;
     // ACTION
-    std::bitset</*11881*/128> action = 0; // List of actions (bitmapped)
+    std::bitset<131/*CTBE needs 131 bits*/> action = 0; // List of actions (bitmapped)
     size_t next = 0;
 
     conact() {}
