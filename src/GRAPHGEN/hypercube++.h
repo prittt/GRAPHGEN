@@ -78,7 +78,7 @@ public:
 #pragma pack(push)
 #pragma pack(1)
     struct Node {
-        std::bitset</*11881*/128> actions_ = 0;
+        std::bitset<131/*CTBE needs 131 bits*/> actions_ = 0;
         unsigned long long frequency_ = 1;
         unsigned long long gain_ = 0;
         uint8_t max_gain_index_ = 0;
