@@ -16,6 +16,7 @@
 #include "forest_handler.h"
 #include "graph_code_generator.h"
 #include "hypercube.h"
+#include "hypercube++.h"
 #include "collect_drag_stats.h"
 #include "merge_set.h"
 #include "output_generator.h"
