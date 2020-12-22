@@ -1,0 +1,53 @@
+{
+  "projectName": "GRAPHGEN",
+  "projectOwner": "prittt",
+  "files": [
+    "README.md"
+  ],
+  "commit": false,
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "imageSize": 100,
+  "contributorsPerLine": 6,
+  "contributorsSortAlphabetically": false,
+  "badgeTemplate": "[![contributors](https://img.shields.io/badge/all_contributors-<%= contributors.length %>-orange.svg?style=flat)](#contributors)",
+  "skipCi": true,
+  "contributors": [
+    {
+      "login": "prittt",
+      "name": "Federico Bolelli",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/6863130?v=4",
+      "profile": "http://www.federicobolelli.it",
+      "contributions": [
+        "code",
+        "projectManagement",
+        "maintenance",
+        "infra",
+        "ideas"
+      ]
+    },
+    {
+      "login": "stal12",
+      "name": "Stefano Allegretti",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/34423515?v=1",
+      "profile": "https://github.com/stal12",
+      "contributions": [
+        "code",
+        "maintenance",
+        "infra"
+      ]
+    },
+    {
+      "login": "CostantinoGrana",
+      "name": "Costantino Grana",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/18437151?v=1",
+      "profile": "https://github.com/CostantinoGrana",
+      "contributions": [
+        "code",
+        "projectManagement",
+        "ideas",
+        "infra"
+      ]
+    },
+  ]
+}
