@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: generate-and-push-doc
-      run: chmod +x scripts/generate_doc_and_deploy.sh && scripts/generate_doc_and_deploy.sh
+      run: chmod +x scripts/generate_doc_and_deploy.sh && ls -l ./scripts/generate_doc_and_deploy.sh && scripts/generate_doc_and_deploy.sh
       env:
         GH_REPO_NAME: GRAPHGEN
         GH_REPO_REF: github.com/prittt/GRAPHGEN.git
