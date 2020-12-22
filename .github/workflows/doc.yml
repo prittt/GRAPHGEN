@@ -9,9 +9,21 @@ jobs:
         image: tsgkadot/docker-doxygen
     steps:
     - uses: actions/checkout@v2
-    - name: generate-and-push-doc
-      run: chmod +x scripts/generate_doc_and_deploy.sh && ls -l ./scripts/generate_doc_and_deploy.sh && scripts/generate_doc_and_deploy.sh
-      env:
-        GH_REPO_NAME: GRAPHGEN
-        GH_REPO_REF: github.com/prittt/GRAPHGEN.git
-        GH_REPO_TOKEN: ${{ secrets.GH_REPO_TOKEN }}
+    
+    # Build the HTML documentation
+    - name: Doxygen
+      uses: mattnotmitt/doxygen-action@v1.1.0
+      with:
+          doxyfile-path: ./Doxyfile
+          working-directory: ./doc/doxygen
+    
+    # Deploy the HTML documentation to GitHub Pages
+    - name: GH Pages Deployment
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GH_REPO_TOKEN }} # ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./doc/html/
+        enable_jekyll: false
+        allow_empty_commit: false
+        force_orphan: true
+        publish_branch: gh-pages

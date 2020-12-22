@@ -37,7 +37,9 @@ echo 'Setting up the script...'
 set -e
 
 # Get the current gh-pages branch
-git clone -b gh-pages https://github.com/prittt/GRAPHGEN.git gh-pages
+git clone -b gh-pages https://github.com/prittt/GRAPHGEN.git gh-pages # when public
+# git clone -b gh-pages "https://${GH_REPO_TOKEN}@${GH_REPO_REF}" # if private (not working)
+
 
 ################################################################################
 ##### Configure git for pushing the new doc.                               #####
