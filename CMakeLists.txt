@@ -112,7 +112,7 @@ foreach(ALGO ${CHAINCODE_ALGORITHMS})
 	target_link_libraries (${ALGO} GRAPHGEN)
 endforeach()
 
-set(MORPHOLOGY_ALGORITHMS Erosion_Spaghetti Dilation_Spaghetti CACHE INTERNAL ON FORCE)
+set(MORPHOLOGY_ALGORITHMS Erosion_Tree Erosion_Spaghetti Dilation_Tree Dilation_Spaghetti CACHE INTERNAL ON FORCE)
 if(GRAPHGEN_FREQUENCIES_ENABLED)
 	set(MORPHOLOGY_ALGORITHMS ${MORPHOLOGY_ALGORITHMS} Erosion_Spaghetti_FREQ Dilation_Spaghetti_FREQ)
 endif()
