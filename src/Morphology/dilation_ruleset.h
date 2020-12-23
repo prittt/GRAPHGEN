@@ -54,12 +54,12 @@ public:
         morphology.generate_rules([&](rule_set& rs, uint i) {
             rule_wrapper r(rs, i);
 
-            if (r["x"]) {
-                r << "nothing";
-                return;
-            }
+            //if (r["x"]) {
+            //    r << "nothing";
+            //    return;
+            //}
 
-            if (r["a"] || r["b"] || r["c"] || r["d"] || r["e"] || r["f"] || r["g"] || r["h"]) {
+            if (r["x"] || r["a"] || r["b"] || r["c"] || r["d"] || r["e"] || r["f"] || r["g"] || r["h"]) {
                 r << "dilate";
             }
             else {

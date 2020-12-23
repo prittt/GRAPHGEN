@@ -26,30 +26,30 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// This target generates the optimal decision tree for the Rosenfeld mask
-
 #include "graphgen.h"
 
-#include "erosion_ruleset.h"
+#include "dilation_ruleset.h"
 
 using namespace std;
 
 int main()
 {
-    string algorithm_name = "Erosion3x3";
+    string algorithm_name = "Dilation3x3_FREQ";
     string mask_name = "kernel_3x3";
 
-    conf = ConfigData(algorithm_name, mask_name);
+    conf = ConfigData(algorithm_name, mask_name, true);
 
-    ErosionRS e_rs;
-    auto rs = e_rs.GetRuleSet();
+    DilationRS d_rs;
+    auto rs = d_rs.GetRuleSet();
 
     // Call GRAPHGEN:
-    // 1) Load or generate Optimal Decision Tree based on Erosion 3x3 mask
-    
+    // 1) Count frequencies
+    AddFrequenciesToRuleset(rs);
+
+    // 2) Load or generate Optimal Decision Tree based on Erosion 3x3 mask
     BinaryDrag<conact> bd = GetOdt(rs);
 
-    // 2) Draw the generated tree to pdf
+    // 3) Draw the generated tree to pdf
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
@@ -58,24 +58,24 @@ int main()
         GenerateDragCode(os, bd);
     }
 
-    // 3) Generate forests of trees
+    // 4) Generate forests of trees
     LOG(algorithm_name + " - making forests",
         ForestHandler fh(bd, rs.ps_,
             ForestHandlerFlags::CENTER_LINES |
-            ForestHandlerFlags::FIRST_LINE   |
-            ForestHandlerFlags::LAST_LINE    |
-            ForestHandlerFlags::SINGLE_LINE    );
+            ForestHandlerFlags::FIRST_LINE |
+            ForestHandlerFlags::LAST_LINE |
+            ForestHandlerFlags::SINGLE_LINE);
     );
 
-    // 4) Compress the forest
+    // 5) Compress the forest
     fh.Compress();
 
-    // 5) Draw the compressed forests on file
+    // 6) Draw the compressed forests on file
     fh.DrawOnFile(algorithm_name, DrawDagFlags::DELETE_DOTCODE);
 
-    // 6) Generate the C/C++ source code
+    // 7) Generate the C/C++ source code
     fh.GenerateCode();
-    // GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::NONE);
+    //GeneratePointersConditionsActionsCode(rs, GenerateConditionActionCodeFlags::NONE);
 
     return EXIT_SUCCESS;
 }

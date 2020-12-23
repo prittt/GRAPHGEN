@@ -56,7 +56,6 @@ int main()
     //if (os) {
     //    GenerateDragCode(os, bd);
     //}
-    //return 0;
 
     // 3) Generate forests of trees
     LOG(algorithm_name + " - making forests",

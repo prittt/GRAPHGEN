@@ -41,10 +41,6 @@ public:
 
     rule_set GenerateRuleSet()
     {
-        // Blocks (kernel 3x3) are named as -> center pixel name uppercase:
-        //  G H I
-        //  L X M
-        //  P Q R
 
         pixel_set kernel_5x5{
             { "a", {-2, -2} }, { "b", {-1, -2} }, { "c", {0, -2} }, { "d", {+1, -2} }, { "e", {+2, -2} },

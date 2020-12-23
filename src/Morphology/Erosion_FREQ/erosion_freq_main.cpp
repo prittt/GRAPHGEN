@@ -36,17 +36,16 @@ using namespace std;
 
 int main()
 {
-    string algorithm_name = "Erosion3x3";
+    string algorithm_name = "Erosion3x3_FREQ";
     string mask_name = "kernel_3x3";
 
-    conf = ConfigData(algorithm_name, mask_name);
+    conf = ConfigData(algorithm_name, mask_name, true);
 
     ErosionRS e_rs;
     auto rs = e_rs.GetRuleSet();
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Erosion 3x3 mask
-    
     BinaryDrag<conact> bd = GetOdt(rs);
 
     // 2) Draw the generated tree to pdf
