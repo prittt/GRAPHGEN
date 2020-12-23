@@ -26,8 +26,6 @@
 // OR TORT(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// This target generates the optimal decision tree for the Rosenfeld mask
-
 #include "graphgen.h"
 
 #include "erosion_ruleset.h"
@@ -36,8 +34,8 @@ using namespace std;
 
 int main()
 {
-    string algorithm_name = "Erosion3x3_FREQ";
-    string mask_name = "kernel_3x3";
+    string algorithm_name = "Erosion3x3_Spaghetti_FREQ";
+    string mask_name = "kernel3x3";
 
     conf = ConfigData(algorithm_name, mask_name, true);
 
