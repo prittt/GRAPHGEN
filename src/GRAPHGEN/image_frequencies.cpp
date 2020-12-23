@@ -22,7 +22,7 @@ using namespace cv;
 mask::mask(const rule_set& rs) : rs_{ rs } {
 	const auto& ps = rs.ps_;
     increment_ = ps.GetShiftX();
-    exp_ = ps.pixels_.size();
+    exp_ = static_cast<int>(ps.pixels_.size());
     for (int i = 0; i < exp_; ++i) {
         border_ = max(border_, max(abs(ps.pixels_[i].GetDx()), abs(ps.pixels_[i].GetDy())));
         top_ = min(top_, ps.pixels_[i].GetDy());
@@ -215,8 +215,8 @@ bool CountFrequenciesOnDataset(const string& dataset, rule_set& rs, bool force) 
 
     vector<unsigned long long> freqs(rs.rules.size(), 0);
 
-    unsigned int files_list_size = files_list.size();
-    for (uint d = 0; d < files_list_size; ++d) {
+    size_t files_list_size = files_list.size();
+    for (size_t d = 0; d < files_list_size; ++d) {
         cout << '\r' << d << '/' << files_list_size;
         path file_name = files_list[d].first;
         GetBinaryImage((dataset_path / file_name).string(), img);
