@@ -40,7 +40,7 @@
 
 struct rule {
     unsigned long long frequency = 1;
-    std::bitset</*11881*/128> actions; // bitmapped
+    std::bitset<131/*CTBE needs 131 bits*/> actions; // bitmapped
 };
 
 

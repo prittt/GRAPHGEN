@@ -1,21 +1,31 @@
 ![Header Image](./doc/logo/graphgen_inline.png)
 
----
+[![docs](https://readthedocs.org/projects/pip/badge/?version=latest&style=flat)](https://prittt.github.io/GRAPHGEN/)
+[![release](https://img.shields.io/github/v/release/prittt/GRAPHGEN)](https://github.com/prittt/GRAPHGEN/releases/latest/)
+[![license](https://img.shields.io/github/license/prittt/GRAPHGEN)](https://github.com/prittt/GRAPHGEN/blob/master/LICENSE)<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![contributors](https://img.shields.io/badge/all_contributors-3-orange.svg?style=flat)](#contributors)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
+<p align="justify">
+GRAPHGEN is a framework for optimizing algorithms that can be modeled with decision tables such as Connected Component Labeling, Thinning, Chain Code (Contour Tracing), and Morphological operators. Generally, all those algorithms in which the output value for each image pixel is obtained from the value of the pixel itself and of some of its neighbors can be defined in such a way. The framework allows to automatically apply many different optimization strategies to a given problem, taking its definition in terms of conditions to check and actions to be performed as input and directly producing the C/C++ code including those optimizations as output.
+</p>
+In short, GRAPHGEN is able to:
 
-**GRAPHGEN** is a framework for optimizing algorithms that can be modeled with decision tables such as Connected Component Labeling, Thinning, Chain Code (Contour Tracing), and Morphological operators. Generally, all those algorithms in which the output value for each image pixel is obtained from the value of the pixel itself and of some of its neighbors can be defined in such a way. The framework allows to automatically apply many different optimization strategies to a given problem, taking its definition in terms of conditions to check and actions to be performed as input and directly producing the C/C++ code including those optimizations as output. In short, GRAPHGEN is able to: 
-- generate the Optimal Decision Tree (ODT) associated to a given problem <a href="#HYPERCUBE">[1]</a>;
-- compress the ODT into a Directed Rooted Acyclic Graph (DRAG) and generate it, in order to better fit instruction cache <a href="#DRAG">[2]</a>;
-- apply pixel (or state) prediction <a href="#EFM">[3]</a>,<a href="#CTB">[4]</a> thus generating a Forest of Decision Trees (FDT) from the original ODT. Prediction allows to recycle information obtained in the previous step in the current one, thus saving memory accesses and reducing the total execution time <a href="#PRED">[5]</a>;
-- remove condition checks by generating special decision trees (DT) for the start/end of the line and special FDT for the first/last line <a href="#Spaghetti">[6]</a>;
-- compress the FDT into a multi-rooted acyclic graph in order to better fit instruction cache;
-- introduce frequencies in the generation of ODTs to better fit data and improve the performance of an algorithm over a particular use-case scenario;
+- <p align="justify"> Generate the Optimal Decision Tree (ODT) associated to a given problem <a href="#HYPERCUBE">[1]</a>;</p>
+- <p align="justify"> Compress the ODT into a Directed Rooted Acyclic Graph (DRAG) and generate it, in order to better fit instruction cache <a href="#DRAG">[2]</a>;</p>
+- <p align="justify"> Apply pixel (or state) prediction <a href="#EFM">[3]</a>,<a href="#CTB">[4]</a> thus generating a Forest of Decision Trees (FDT) from the original ODT. Prediction allows to recycle information obtained in the previous step in the current one, thus saving memory accesses and reducing the total execution time <a href="#PRED">[5]</a>;</p>
+- <p align="justify"> Remove condition checks by generating special decision trees (DT) for the start/end of the line and special FDT for the first/last line <a href="#Spaghetti">[6]</a>;</p>
+- <p align="justify"> Compress the FDT into a multi-rooted acyclic graph in order to better fit instruction cache;</p>
+- <p align="justify"> Introduce frequencies in the generation of ODTs to better fit data and improve the performance of an algorithm over a particular use-case scenario.</p>
 
-As mentioned, the generation process is only related to the definition of the problem, meaning that the same problem can be solved using different definitions such as exploiting different scanning masks <a href="#CTB">[4]</a>, <a href="#SAUF">[7]</a>, <a href="#BBDT">[8]</a>, <a href="#CCIT">[9]</a>.
+<p align="justify">
+As mentioned, the generation process is only related to the definition of the problem, meaning that the same problem can be solved using different definitions such as exploiting different scanning masks <a href="#CTB">[4]</a>, <a href="#SAUF">[7]</a>, <a href="#BBDT">[8]</a>, <a href="#CCIT">[9]</a>.</p>
 
+<p align="justify">
 For all the aforementioned optimization strategies GRAPHGEN is able to generate both the visual representation of the Decision Tree/Forest/DRAG and the C/C++ code implementing it.
+</p>
 
-*Supported platforms*: Windows (VS2017), Linux (GCC 9.x or later).
+***Tested Platforms*: Windows (VS2017), Linux (GCC 9.x or later).**
 
 ## Requirements
 ### Windows
@@ -60,24 +70,100 @@ Some application behavior can be configured by changing the `config.yaml` in the
 - `dot`: 
     * `out_format`: output format of the generated graphs. Currently supported: `"pdf"`, `"png"`, and `"svg"`. *Default: svg*
     * `background`:background color of the generated graphs. It can be one of the color supported by dot, such as `"white"`, `"red"`, `"turquoise"`, `"sienna"`, `"transparent"`, etc.
-    
- ## References
-  
-<p align="justify"><em><a name="HYPERCUBE">[1]</a>H. Schumacher and K. C. Sevcik, "The syntheticapproach  to  decision  table  conversion," Commun. ACM, 19(6):343–351, June 1976</em></p>
 
-<p align="justify"><em><a name="DRAG">[2]</a> Bolelli, Federico; Baraldi, Lorenzo; Cancilla, Michele; Grana, Costantino "Connected Components Labeling on DRAGs" Proceedings of the 23rd International Conference on Pattern Recognition, Beijing, China, 20-24 Aug 2018.</em></p>
+## Contributors
 
-<p align="justify"><em><a name="EFM">[3]</a>L. He, Y. Chao, and K. Suzuki, “An efficient first-scan method for label-equivalence-based  labeling  algorithms,” Pattern Recognition Letters,vol. 31, no. 1, pp. 28–35, 2010.</em></p>
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tr>
+    <td align="center"><a href="http://www.federicobolelli.it"><img src="https://avatars3.githubusercontent.com/u/6863130?v=4" width="100px;" alt=""/><br /><sub><b>Federico Bolelli</b></sub></a><br /><a href="https://github.com/prittt/GRAPHGEN/commits?author=prittt" title="Code">💻</a> <a href="#projectManagement-prittt" title="Project Management">📆</a> <a href="#maintenance-prittt" title="Maintenance">🚧</a> <a href="#infra-prittt" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#ideas-prittt" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/prittt/GRAPHGEN/commits?author=prittt" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/stal12"><img src="https://avatars2.githubusercontent.com/u/34423515?v=1" width="100px;" alt=""/><br /><sub><b>Stefano Allegretti</b></sub></a><br /><a href="https://github.com/prittt/GRAPHGEN/commits?author=stal12" title="Code">💻</a> <a href="#maintenance-stal12" title="Maintenance">🚧</a> <a href="#infra-stal12" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+    <td align="center"><a href="https://github.com/CostantinoGrana"><img src="https://avatars2.githubusercontent.com/u/18437151?v=1" width="100px;" alt=""/><br /><sub><b>Costantino Grana</b></sub></a><br /><a href="https://github.com/prittt/GRAPHGEN/commits?author=CostantinoGrana" title="Code">💻</a> <a href="#projectManagement-CostantinoGrana" title="Project Management">📆</a> <a href="#ideas-CostantinoGrana" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-CostantinoGrana" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
+  </tr>
+</table>
 
-<p align="justify"><em><a name="CTB">[4]</a> L.  He,  X.  Zhao,  Y.  Chao,  and  K.  Suzuki, Configuration-Transition-
-Based  Connected-Component  Labeling, IEEE  Transactions  on  Image Processing, vol. 23, no. 2, pp. 943–951, 2014.</em></p>
+<!-- markdownlint-enable -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
-<p align="justify"><em><a name="PRED">[5]</a> C. Grana, L. Baraldi, and F. Bolelli, Optimized Connected Components Labeling  with  Pixel  Prediction, in Advanced  Concepts  for  Intelligent Vision Systems, 2016.</em></p>
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome.
 
-<p align="justify"><em><a name="Spaghetti">[6]</a> Bolelli, Federico; Allegretti Stefano; Baraldi, Lorenzo; Grana, Costantino "Spaghetti Labeling: Directed Acyclic Graphs for Block-Based Connected Components Labeling" IEEE Transactions on Image Processing, 2019.</em></p>
+## References
 
-<p align="justify"><em><a name="SAUF">[7]</a> K. Wu, E. Otoo, and K. Suzuki, Optimizing two-pass connected-component labeling algorithms,” Pattern Analysis and Applications, vol. 12, no. 2, pp. 117–135, 2009.</em></p>
-
-<p align="justify"><em><a name="BBDT">[8]</a> C.  Grana,  D.  Borghesani,  and  R.  Cucchiara,  “Optimized  Block-based Connected Components Labeling with Decision Trees,” IEEE Transac-tions on Image Processing, vol. 19, no. 6, pp. 1596–1609, 2010.</em></p>
-
-<p align="justify"><em><a name="CCIT">[9]</a> W.-Y.  Chang,  C.-C.  Chiu,  and  J.-H.  Yang,  “Block-based  connected-component  labeling  algorithm  using  binary  decision  trees,” Sensors, vol. 15, no. 9, pp. 23 763–23 787, 2015.</em></p>
+<table style="border:0;">
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+      <a name="HYPERCUBE">[1]</a>
+    </td>
+    <td>
+      <p align="justify">H. Schumacher and K. C. Sevcik, "The syntheticapproach to decision table conversion," Communications of the ACM, 19(6):343–351, June 1976.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+      <a name="DRAG">[2]</a>
+    </td>
+    <td>
+      <p align="justify">F. Bolelli, L. Baraldi, M. Cancilla, C. Grana, "Connected Components Labeling on DRAGs," in International Conference on Pattern Recognition, 2018, pp. 121-126.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+        <a name="EFM">[3]</a>
+    </td>
+    <td>
+      <p align="justify">L. He, Y. Chao, and K. Suzuki, "An efficient first-scan method for label-equivalence-based  labeling  algorithms," Pattern Recognition Letters, vol. 31, no. 1, pp. 28–35, 2010.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+      <a name="CTB">[4]</a>
+    </td>
+    <td>
+      <p align="justify">L. He, X. Zhao, Y. Chao, and  K. Suzuki, "Configuration-Transition-Based Connected-Component Labeling," IEEE  Transactions on Image Processing, vol. 23, no. 2, pp. 943–951, 2014.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+      <a name="PRED">[5]</a>
+    </td>
+    <td>
+      <p align="justify"> C. Grana, L. Baraldi, and F. Bolelli, "Optimized Connected Components Labeling with Pixel Prediction", in Advanced  Concepts for Intelligent Vision Systems, 2016, pp. 431-440.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+      <a name="Spaghetti">[6]</a>
+    </td>
+    <td>
+      <p align="justify">F. Bolelli, S. Allegretti, L. Baraldi, and C. Grana, "Spaghetti Labeling: Directed Acyclic Graphs for Block-Based Bonnected Components Labeling," IEEE Transactions on Image Processing, vol. 29, no. 1, pp. 1999-2012, 2019.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+      <a name="SAUF">[7]</a>
+    </td>
+    <td>
+      <p align="justify">K. Wu, E. Otoo, and K. Suzuki, "Optimizing two-pass connected-component labeling algorithms," Pattern Analysis and Applications, vol. 12, no. 2, pp. 117–135, 2009.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+      <a name="BBDT">[8]</a>
+    </td>
+    <td>
+      <p align="justify">C.  Grana,  D.  Borghesani,  and  R.  Cucchiara,  "Optimized  Block-based Connected Components Labeling with Decision Trees," IEEE Transactions on Image Processing, vol. 19, no. 6, pp. 1596–1609, 2010.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+      <a name="CCIT">[9]</a>
+    </td>
+    <td>
+      <p align="justify">W.-Y. Chang, C.-C. Chiu, and  J.-H. Yang,  "Block-based connected-component labeling algorithm using binary decision trees," Sensors, vol. 15, no. 9, pp. 23 763–23 787, 2015.</p>
+    </td>
+</tr>
+</table>
