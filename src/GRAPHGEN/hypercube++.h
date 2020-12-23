@@ -43,7 +43,7 @@ class HyperCube {
 
     size_t GetIndex(size_t value) {
         size_t index = 0;
-        for (int pos = 0; pos < nbits_; ++pos) {
+        for (int pos = 0; pos < static_cast<int>(nbits_); ++pos) {
             index += ((value >> pos) & 1)*pow3_[pos];
         }
         return index;

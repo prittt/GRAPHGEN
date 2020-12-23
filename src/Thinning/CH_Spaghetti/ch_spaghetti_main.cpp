@@ -13,7 +13,7 @@ using namespace std;
 int main()
 {
     string algo_name = "CH_Spaghetti";
-    string mask_name = "3x3";
+    string mask_name = "kernel3x3";
     conf = ConfigData(algo_name, mask_name);
 
     ChenHsuRS ch_rs;
