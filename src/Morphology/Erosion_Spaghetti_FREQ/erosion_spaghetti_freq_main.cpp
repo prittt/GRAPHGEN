@@ -6,19 +6,19 @@
 
 #include "graphgen.h"
 
-#include "dilation_ruleset.h"
+#include "erosion_ruleset.h"
 
 using namespace std;
 
 int main()
 {
-    string algorithm_name = "Dilation3x3_Spaghetti";
+    string algorithm_name = "Erosion3x3_Spaghetti_FREQ";
     string mask_name = "kernel3x3";
 
-    conf = ConfigData(algorithm_name, mask_name);
+    conf = ConfigData(algorithm_name, mask_name, true);
 
-    DilationRS d_rs;
-    auto rs = d_rs.GetRuleSet();
+    ErosionRS e_rs;
+    auto rs = e_rs.GetRuleSet();
 
     // Call GRAPHGEN:
     // 1) Load or generate Optimal Decision Tree based on Erosion 3x3 mask
@@ -28,13 +28,18 @@ int main()
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
+    ofstream os(conf.treecode_path_);
+    if (os) {
+        GenerateDragCode(os, bd);
+    }
+
     // 3) Generate forests of trees
     LOG(algorithm_name + " - making forests",
         ForestHandler fh(bd, rs.ps_,
             ForestHandlerFlags::CENTER_LINES |
-            ForestHandlerFlags::FIRST_LINE |
-            ForestHandlerFlags::LAST_LINE |
-            ForestHandlerFlags::SINGLE_LINE);
+            ForestHandlerFlags::FIRST_LINE   |
+            ForestHandlerFlags::LAST_LINE    |
+            ForestHandlerFlags::SINGLE_LINE    );
     );
 
     // 4) Compress the forest
