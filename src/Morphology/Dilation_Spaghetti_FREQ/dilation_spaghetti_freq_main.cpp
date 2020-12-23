@@ -31,11 +31,6 @@ int main()
     string tree_filename = algorithm_name + "_tree";
     DrawDagOnFile(tree_filename, bd);
 
-    ofstream os(conf.treecode_path_);
-    if (os) {
-        GenerateDragCode(os, bd);
-    }
-
     // 4) Generate forests of trees
     LOG(algorithm_name + " - making forests",
         ForestHandler fh(bd, rs.ps_,
