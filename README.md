@@ -92,6 +92,43 @@ paths: {input: "<datasets_path>", output: "<output_results_path>"}
 dot: {out_format: "svg", background: "transparent", ranksep: "0.5"}
 ```
 
+## Code Structure
+<p align="justify">
+The source code contains the library itself and dozens of example targets specific for different algorithms, already available in literature or newly generated with GRAPHGEN (the latter are identified with a *). A complete description follows.
+</p>
+
+### Connected Component Labeling (Labeling)
+- `SAUF` reproduce the Scan Array-based Union Find algorithm generating the optimal decision tree for the Rosenfeld scanning mask <a href="#SAUF">[7]</a>;
+- `PRED` reproduce the algorithm proposed in <a href="#PRED">[5]</a>, generating the optimal decision tree for the Rosenfeld scanning mask and thus applying prediction;
+- `PRED++*` applies the code compression strategy on the forest of PRED algorithm;
+- `SAUF3D*` generates the optimal decision tree for the 3D Rosenfeld scanning mask;
+- `SAUF++3D*` generate the optimal decision tree for the 3D Rosenfeld scanning mask and applies compression converting the tree into a Directed Rooted Acyclic Graphs (DRAG);
+- `BBDT` reproduces the Block-Based approach with Decision Trees generating the optimal decision tree for the Grana scanning mask <a href="#BBDT">[8]</a>;
+- `BBDT_FREQ` is the optimal decision tree generated from the Grana scanning mask considering patterns frequency <a href="#BBDT_FREQ">[10]</a>.
+- `DRAG` reproduces the connected component labeling on DRAG ([ˈdrʌg]) algorithm that is the optimal decision tree of BBDT converted into a Directed Rooted Acyclic Graphs (DRAG) and compressed <a href="#DRAG">[2]</a>;
+- `DRAG_FREQ*` the same as DRAG but generated considering patterns frequency;
+- `Spaghetti` reproduces the Spaghetti algorithm proposed in <a href="#Spaghetti">[6]</a> generating the optimal decision tree associated to the Grana scanning mask and applying prediction and compression;
+- `Spaghetti_FREQ` the same as Spaghetti but considers patterns frequencies;
+- `Tagliatelle*` generates the optimal decision tree for the Grana scanning mask and applies prediction;
+- `PRED3D*` generates the optimal decision tree for the 3D Rosenfeld scanning mask and applies prediction;
+- `PRED++3D*` generates the optimal decision tree for the 3D Rosenfeld scanning mask and applies prediction and compression.
+
+### Image Skeletonization (Thinning)
+- `ZS_TREE` reproduce the algorithm presented in <a href="#BBDT_FREQ">[10]</a> generating the optimal decision tree for the Zhang and Suen <a href="#ZS">[11]</a> approach;
+- `ZS_Spaghetti*` generates the optimal decision tree for the Zhang and Suen <a href="#ZS">[11]</a> approach applying both prediction and compression;
+- `ZS_Spaghetti_FREQ*` the same as `ZS_Spaghetti` but considering patterns frequency;
+- `GH_TREE*` generates the optimal decision tree for the Guo and Hall <a href="#GH">[12]</a> approach;
+- `GH_Spaghetti*` generates the optimal decision tree for the Guo and Hall <a href="#GH">[12]</a> approach, applying also prediction and compression.
+- `GH_Spaghetti_FREQ*` the same as `GH_Spaghetti` but considering patterns frequency;
+- `CH_TREE*` generates the optimal decision tree for the Chen and Hsu <a href="#CH">[13]</a> approach;
+- `CH_Spaghetti*` generates the optimal decision tree for the Chen and Hsu <a href="#CH">[13]</a>, applying also prediction and compression;
+- `CH_Spaghetti_FREQ*` the same as `CH_Spaghetti` but considering patterns frequency.
+
+### Chain-Code
+- `Cederberg_TREE*` generates the optimal decision tree for the Cederberg <a href="#Cederberg">[14]</a> algorithm;
+- `Cederberg_Spaghetti*` generates the optimal decision tree for the Cederberg <a href="#Cederberg">[14]</a> algorithm, applying also prediction and compression;
+- `Cederberg_Spaghetti_FREQ*` the same as `Cederberg_Spaghetti` but considering patterns frequency.
+
 ## Contributors
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
@@ -184,7 +221,47 @@ This project follows the [all-contributors](https://github.com/all-contributors/
       <a name="CCIT">[9]</a>
     </td>
     <td>
-      <p align="justify">W.-Y. Chang, C.-C. Chiu, and  J.-H. Yang,  "Block-based connected-component labeling algorithm using binary decision trees," Sensors, vol. 15, no. 9, pp. 23 763–23 787, 2015.</p>
+      <p align="justify">W.-Y. Chang, C.-C. Chiu, and  J.-H. Yang,  "Block-based connected-component labeling algorithm using binary decision trees," Sensors, vol. 15, no. 9, pp. 763–23, 2015.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+        <a name="BBDT_FREQ">[10]</a>
+    </td>
+    <td>
+        <p align="justify">C. Grana, M. Montangero, and D. Borghesani, "Optimal decision trees for local image processing algorithms,"Pattern Recognition Letters, vol. 33, no. 16, pp. 2302–2310, 2012.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+        <a name="ZS">[11]</a>
+    </td>
+    <td>
+        <p align="justify">T.Y. Zhang, and C. Y. Suen, "A Fast Parallel Algorithm for Thinning Digital Patterns," Communications of the ACM, vol. 27, no. 3, pp. 236–239, 1984.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+        <a name="GH">[12]</a>
+    </td>
+    <td>
+        <p align="justify">Z. Guo, and R. W. Hall, "Parallel Thinning with Two-Subiteration Algorithms," Communications of the ACM, vol. 32, no. 3, pp. 359–373, 1989.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+        <a name="CH">[13]</a>
+    </td>
+    <td>
+        <p align="justify">Y.-S. Chen and W.-H. Hsu, "A modified fast parallel algorithm for thinning digital patterns," Pattern Recognition Letters, vol. 7, no. 2, pp. 99–106, 1988.</p>
+    </td>
+</tr>
+<tr>
+    <td style="vertical-align: top !important;" align="right">
+        <a name="Cederberg">[14]</a>
+    </td>
+    <td>
+        <p align="justify">R. L., Cederberg "Chain-link coding and segmentation for raster scan devices," Computer Graphics and Image Processing, vol. 10, no. 3, pp. 224-234, 1979.</p>
     </td>
 </tr>
 </table>
