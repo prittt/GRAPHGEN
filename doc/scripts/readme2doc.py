@@ -43,7 +43,8 @@ html = html.replace('</p>', '')
 
 
 # Improve format of Contributors
-html = html.replace("<sub><b>", "<sub><br/><b>")
+html = html.replace("<sub>", "<div><sub>")
+html = html.replace("</sub>", "</sub></div>")
 
 file_path = "doc/doxygen/mainpages/home.h"
 with open(file_path, "w+") as homefile:
