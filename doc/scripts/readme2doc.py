@@ -25,13 +25,25 @@ with open("README.md", "r") as readme:
 data = data.split("<!--MAIN-DATA-BEGIN-->")[1]
 #data = data.replace("\r\n", "")
 #data = data.replace("\n", "")
-html = md.markdown(data)
+html = md.markdown(data, extensions=['fenced_code'])
 
 html = html.replace("<h2>", "<h2 class='num'>")
 html = html.replace("<h3>", "<h3 class='num'>")
 html = html.replace("<h4>", "<h4 class='num'>")
 #html = html.replace(">\r\n", ">")
 #html = html.replace(">\n", ">")
+
+# ref_pos = html.find("<!--REFERENCES-BEGIN-->")
+
+html = html.replace('<p align="justify">', '')
+html = html.replace('</p>', '')
+
+# Improve format of References
+# html = html.replace('style="vertical-align: top !important;"', '')
+
+
+# Improve format of Contributors
+html = html.replace("<sub><b>", "<sub><br/><b>")
 
 file_path = "doc/doxygen/mainpages/home.h"
 with open(file_path, "w+") as homefile:

@@ -67,19 +67,19 @@ Some application behavior can be configured by changing the `config.yaml` in the
 
 - `force_odt_generation` - boolean value that forces the optimal decision tree to be generated in every execution. This may be necessary when implementing own algorithms and debugging them:
 
-```yaml
+``` yaml
 force_odt_generation: false
 ```
 
 - `datasets` - list of datasets to be used for frequency calculation. All the [YACCLAB](https://github.com/prittt/YACCLAB) datasets are available if the  `GRAPHGEN_FREQUENCIES_DATASET_DOWNLOAD` was `ON` during the configuration: 
 
-```yaml
+``` yaml
 datasets: ["fingerprints", "hamlet", "3dpes", "xdocs", "tobacco800", "mirflickr", "medical", "classical"]
 ```
 
 - `paths` - dictionary with both input (folder containing the datasets used for frequency calculation) and output (where output code, graphs, and frequenices will be stored) paths. It is automatically filled by Cmake during the creation of the project: 
 
-```yaml
+``` yaml
 paths: {input: "<datasets_path>", output: "<output_results_path>"}
 ```
 
@@ -88,7 +88,7 @@ paths: {input: "<datasets_path>", output: "<output_results_path>"}
     * `background` - background color of the generated graphs. It can be one of the color supported by dot, such as `"white"`, `"red"`, `"turquoise"`, `"sienna"`, `"transparent"`, etc;
     * `ranksep` - vertical separation for objects belonging to two consecutive lines of the output graph.
 
-```yaml
+``` yaml
 dot: {out_format: "svg", background: "transparent", ranksep: "0.5"}
 ```
 
@@ -156,15 +156,15 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
       <a name="HYPERCUBE">[1]</a>
     </td>
-    <td>
-      <p align="justify">H. Schumacher and K. C. Sevcik, "The syntheticapproach to decision table conversion," Communications of the ACM, 19(6):343–351, June 1976.</p>
+    <td style="vertical-align: top !important;">
+      <p align="justify">H. Schumacher and K. C. Sevcik, "The syntheticapproach to decision table conversion," Communications of the ACM, vol. 19 no. 6, pp. 343–351, 1976.</p>
     </td>
 </tr>
 <tr>
     <td style="vertical-align: top !important;" align="right">
       <a name="DRAG">[2]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
       <p align="justify">F. Bolelli, L. Baraldi, M. Cancilla, C. Grana, "Connected Components Labeling on DRAGs," in International Conference on Pattern Recognition, 2018, pp. 121-126.</p>
     </td>
 </tr>
@@ -172,7 +172,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
         <a name="EFM">[3]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
       <p align="justify">L. He, Y. Chao, and K. Suzuki, "An efficient first-scan method for label-equivalence-based  labeling  algorithms," Pattern Recognition Letters, vol. 31, no. 1, pp. 28–35, 2010.</p>
     </td>
 </tr>
@@ -180,7 +180,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
       <a name="CTB">[4]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
       <p align="justify">L. He, X. Zhao, Y. Chao, and  K. Suzuki, "Configuration-Transition-Based Connected-Component Labeling," IEEE  Transactions on Image Processing, vol. 23, no. 2, pp. 943–951, 2014.</p>
     </td>
 </tr>
@@ -188,7 +188,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
       <a name="PRED">[5]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
       <p align="justify"> C. Grana, L. Baraldi, and F. Bolelli, "Optimized Connected Components Labeling with Pixel Prediction", in Advanced  Concepts for Intelligent Vision Systems, 2016, pp. 431-440.</p>
     </td>
 </tr>
@@ -196,7 +196,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
       <a name="Spaghetti">[6]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
       <p align="justify">F. Bolelli, S. Allegretti, L. Baraldi, and C. Grana, "Spaghetti Labeling: Directed Acyclic Graphs for Block-Based Bonnected Components Labeling," IEEE Transactions on Image Processing, vol. 29, no. 1, pp. 1999-2012, 2019.</p>
     </td>
 </tr>
@@ -204,7 +204,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
       <a name="SAUF">[7]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
       <p align="justify">K. Wu, E. Otoo, and K. Suzuki, "Optimizing two-pass connected-component labeling algorithms," Pattern Analysis and Applications, vol. 12, no. 2, pp. 117–135, 2009.</p>
     </td>
 </tr>
@@ -212,7 +212,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
       <a name="BBDT">[8]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
       <p align="justify">C.  Grana,  D.  Borghesani,  and  R.  Cucchiara,  "Optimized  Block-based Connected Components Labeling with Decision Trees," IEEE Transactions on Image Processing, vol. 19, no. 6, pp. 1596–1609, 2010.</p>
     </td>
 </tr>
@@ -220,7 +220,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
       <a name="CCIT">[9]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
       <p align="justify">W.-Y. Chang, C.-C. Chiu, and  J.-H. Yang,  "Block-based connected-component labeling algorithm using binary decision trees," Sensors, vol. 15, no. 9, pp. 763–23, 2015.</p>
     </td>
 </tr>
@@ -228,7 +228,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
         <a name="BBDT_FREQ">[10]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
         <p align="justify">C. Grana, M. Montangero, and D. Borghesani, "Optimal decision trees for local image processing algorithms,"Pattern Recognition Letters, vol. 33, no. 16, pp. 2302–2310, 2012.</p>
     </td>
 </tr>
@@ -236,7 +236,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
         <a name="ZS">[11]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
         <p align="justify">T.Y. Zhang, and C. Y. Suen, "A Fast Parallel Algorithm for Thinning Digital Patterns," Communications of the ACM, vol. 27, no. 3, pp. 236–239, 1984.</p>
     </td>
 </tr>
@@ -244,7 +244,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
         <a name="GH">[12]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
         <p align="justify">Z. Guo, and R. W. Hall, "Parallel Thinning with Two-Subiteration Algorithms," Communications of the ACM, vol. 32, no. 3, pp. 359–373, 1989.</p>
     </td>
 </tr>
@@ -252,7 +252,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
         <a name="CH">[13]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
         <p align="justify">Y.-S. Chen and W.-H. Hsu, "A modified fast parallel algorithm for thinning digital patterns," Pattern Recognition Letters, vol. 7, no. 2, pp. 99–106, 1988.</p>
     </td>
 </tr>
@@ -260,7 +260,7 @@ This project follows the [all-contributors](https://github.com/all-contributors/
     <td style="vertical-align: top !important;" align="right">
         <a name="Cederberg">[14]</a>
     </td>
-    <td>
+    <td style="vertical-align: top !important;">
         <p align="justify">R. L., Cederberg "Chain-link coding and segmentation for raster scan devices," Computer Graphics and Image Processing, vol. 10, no. 3, pp. 224-234, 1979.</p>
     </td>
 </tr>
