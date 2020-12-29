@@ -9,7 +9,7 @@
 <!--MAIN-DATA-BEGIN-->
 
 <p align="justify">
-GRAPHGEN is a general open-source framework for optimizing algorithms that can be modeled with decision tables, such as Connected Components Labeling, Thinning, Chain Code (Contour Tracing), and Morphological operators. Generally, all image processing algorithms where the output value for each pixel is a function of the pixel itself and some of its neighbors can be defined in such a way. The framework allows to automatically apply many different optimization strategies to a given problem, taking as input its definition in terms of <em>conditions</em> to be checked and <em>actions</em> to be performed, and directly produces the C++ code including those optimizations as output.
+GRAPHGEN is an open-source framework for optimizing algorithms that can be modeled with decision tables, such as Connected Components Labeling, Thinning (Skeletonization), Chain-Code (Contour Tracing), and Morphological Operators. The framework allows to automatically apply many different optimization strategies to a given problem, taking as input its definition in terms of <em>conditions</em> to be checked and <em>actions</em> to be performed, and directly producing the C++ code including those optimizations as output.
 </p>
 
 In short, GRAPHGEN is able to:
