@@ -8,6 +8,10 @@
 
 <!--MAIN-DATA-BEGIN-->
 
+<p align="justify">Please include the following reference when citing GRAPHGEN:</p>
+
+- <p align="justify"> Bolelli, Federico; Allegretti, Stefano; Grana, Costantino "One DAG to Rule Them All" IEEE Transactions on Pattern Analysis and Machine Intelligence, 2021. <a title="BibTex" href="https://federicobolelli.it/pub_files/2021tpami.html">BibTex</a>. <a title="Download" href="https://federicobolelli.it/pub_files/2021tpami.pdf">PDF</a>.</p>
+
 <p align="justify">
 GRAPHGEN is an open-source framework for optimizing algorithms that can be modeled with decision tables, such as Connected Components Labeling, Thinning (Skeletonization), Chain-Code (Contour Tracing), and Morphological Operators. The framework allows to automatically apply many different optimization strategies to a given problem, taking as input its definition in terms of <em>conditions</em> to be checked and <em>actions</em> to be performed, and directly producing the C++ code including those optimizations as output.
 </p>
